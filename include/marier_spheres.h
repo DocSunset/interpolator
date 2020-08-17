@@ -1,3 +1,9 @@
+#include<unordered_map>
+#include<numeric_limits>
+#include<string>
+#include<cstddef>
+#include<cmath>
+
 template<typename Scalar, typename S, typename P>
 struct Demonstration
 {

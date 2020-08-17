@@ -409,10 +409,211 @@ return weighted_sum;
 Putting it all together, we get a reasonably generic header-only library
 implementing Marier's algorithm.
 
-@#'marier_spheres.h'
+@#'include/marier_spheres.h'
+#include<unordered_map>
+#include<numeric_limits>
+#include<string>
+#include<cstddef>
+#include<cmath>
+
 @{interpolator base class}
 
 @{weight functions}
 
 @{intersecting n-spheres data structures}
+@
+
+# Usage
+
+We will exercise `intersecting_spheres.h` in a simple command line drawing
+application; the source space will be 2D coordinates, and the destination space
+an RGB color value. The program will randomly generate a handful of
+source-destination demonstrations, and draw an image by systematically querying
+the space. As well as producing an image that might offer some intuition about
+the topology of the interpolated output, this will also serve as a reasonable
+benchmark for the efficiency of the implementation if the number of pixels in
+the image is large enough.
+
+For command line parsing, we'll use kongaskristjan's `fire-hpp`. The program
+takes arguments for the dimensions of the image (`-x` and `-y`) and the number
+of demonstrations to randomly generate (`-n`).
+
+For image drawing we'll use ArashPartow's `bitmap` library.
+
+Here's the overview of the example source code:
+
+@#'examples/color_interpolator.cpp'
+#include <cmath>
+#include <random>
+#include <string>
+#include <chrono>
+#include <iostreams>
+#include "include/fire-hpp/fire.hpp"
+#include "include/bitmap/bitmap_image.hpp"
+
+@{Vec2 datatype}
+
+@{RGB datatype}
+
+int fired_main(
+        unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
+        unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
+        unsigned int n = fire::arg("n", "The number of demonstrations", 25))
+{
+    using Scalar = float;
+    using Demo = Demonstration<Scalar, Vec2<Scalar>, RGBVec<Scalar>>
+    MarierSpheresInterpolator<Scalar, Vec2<Scalar>, RGBVec<Scalar>> interpolator();
+
+    bitmap_image img(x, y); 
+    img.clear();
+
+    @{generate random demonstrations and draw image}
+
+    img.save_image("interpolated_colors.bmp");
+}
+
+FIRE(fired_main)
+@
+
+In use, we assume that the source dimensions range from 0 to 1 and that the 
+color channels in the RGBVec do the same. Randomly generating vectors is then
+trivial.
+
+Drawing the image is also quite simple; simply iterate over the dimensions of
+the image and query the interpolator at each coordinate. 
+
+@='generate random demonstrations and draw image'
+std::uniform_real_distribution<Scalar> random(0, 1);
+auto start = std::chrono::high_resolution_clock::now();
+while(n-- > 0)
+{
+    auto v = Vec2(random(), random());
+    auto c = RGBVec(random(), random(), random());
+    Demo d{std::to_string(n), v, c};
+    interpolator.add_demo(d);
+}
+
+for (unsigned int xpix = 0; xpix < x; ++xpix)
+{
+    for (unsigned int ypix = 0; ypix < y; ++ypix)
+    {
+        auto q = Vec2(xpix/x, ypix/y);
+        auto out = interpolator.query(q) * 255;
+        img.set_pixel(xpix, ypix, 
+                (unsigned char)std::round(out.red),
+                (unsigned char)std::round(out.green),
+                (unsigned char)std::round(out.blue));
+    }
+}
+auto stop = std::chrono::high_resolution_clock::now();
+std::cout << "Generated " << x * y << "interpolations in " << 
+        std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count()
+        << "microseconds";
+@
+
+The remainder of the example program is spent mostly on boilerplate defining
+arithmetic operations for our two vector spaces.  The `bitmap` library provides
+an RGB pixel type, but without any operators and only 8-bit depth per channel.
+To satisfy the requirements of a vector space needed for the interpolator and
+avoid saturating our output image, we define our own pixel type with float
+resolution and the required operators.  
+
+@='RGB datatype'
+template<typename Scalar> struct RGBVec
+{
+    Scalar red;
+    Scalar green;
+    Scalar blue;
+
+    Scalar max() const {return std::max({red, green, blue});}
+}
+
+template<typename Scalar>
+RGBVec<Scalar> operator+(const RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
+{
+    return {a.red + b.red, a.green + b.green, a.blue + b.blue};
+}
+
+template<typename Scalar>
+RGBVec<Scalar> operator-(const RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
+{
+    return {a.red - b.red, a.green - b.green, a.blue - b.blue};
+}
+
+template<typename Scalar>
+RGBVec<Scalar>& operator+=(RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
+{
+    a = a + b;
+}
+
+template<typename Scalar>
+RGBVec<Scalar>& operator-=(RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
+{
+    a = a - b;
+}
+
+template<typename Scalar>
+RGBVec<Scalar> operator*(const Scalar& w, const RGBVec<Scalar>& c)
+{
+    return {a.red * w, a.green * w, a.blue * w};
+}
+
+template<typename Scalar>
+RGBVec<Scalar> operator*(const RGBVec<Scalar>& c, const Scalar& w)
+{
+    return w * c;
+}
+@
+
+For the source space we define a simple 2D vector type.
+
+@='Vec2 datatype'
+template<typename Scalar> struct Vec2
+{
+    Scalar x;
+    Scalar y;
+};
+
+template<typename Scalar>
+Vec2<Scalar> operator+(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
+{
+    return {a.x + b.x, a.y + b.y};
+}
+
+template<typename Scalar>
+Vec2<Scalar> operator-(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
+{
+    return {a.x - b.x, a.y - b.y};
+}
+
+template<typename Scalar>
+Vec2<Scalar>& operator+=(Vec2<Scalar>& a, const Vec2<Scalar>& b)
+{
+    a = a + b;
+}
+
+template<typename Scalar>
+Vec2<Scalar>& operator-=(Vec2<Scalar>& a, const Vec2<Scalar>& b)
+{
+    a = a - b;
+}
+
+template<typename Scalar>
+Vec2<Scalar> operator*(const Scalar& w, const Vec2<Scalar>& v)
+{
+    return {v.x * w, v.y * w};
+}
+
+template<typename Scalar>
+Vec2<Scalar> operator*(const Vec2<Scalar>& v, const Scalar& w)
+{
+    return w * c;
+}
+
+template<typename Scalar>
+Scalar norm(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
+{
+    Vec2<Scalar> difference = a - b;
+    return std::sqrt(a.x * a.x + a.y * a.y);
+}
 @
