@@ -86,7 +86,9 @@ Changing the recorded state of a point is likely to require an update to this
 data structure, as is adding or removing demonstrations (whether directly or
 via associating or deassociating already specified points). In many cases it
 may be more efficient to batch process such updates, especially in case a large
-number of points are moved or demonstrations added all at once. 
+number of points are moved or demonstrations added all at once.  For
+interpolators in which this is not the case, default batch editing methods may
+be provided.
 
 Based on these requirements, base classes for interpolators and demonstrations
 can be outlined.
@@ -119,20 +121,28 @@ public:
     using PVector = P;
     using Demo = Demonstration<Scalar, SVector, PVector>;
 
-    void add_demo(const Demo& d) = void;
-    void update_demo(const Demo& d) = void;
-    void remove_demo(const Demo& d) = void;
+    virtual void add_demo(const Demo& d) = 0;
+    virtual void update_demo(const Demo& d) = 0;
+    virtual void remove_demo(const Demo& d) = 0;
+    virtual PVector query(const SVector& s) = 0;
 
     template<typename DemoList>
-    void add_demo(const DemoList& demos) = void;
+    void add_demo(const DemoList& demos) 
+    {
+        for (const Demo& d : demos) add_demo(d);
+    }
 
     template<typename DemoList>
-    void update_demo(const DemoList& demos) = void;
+    void update_demo(const DemoList& demos)
+    {
+        for (const Demo& d : demos) update_demo(d);
+    }
 
     template<typename DemoList>
-    void remove_demo(const DemoList& demos) = void;
-
-    PVector query(const SVector& s) = void;
+    void remove_demo(const DemoList& demos)
+    {
+        for (const Demo& d : demos) remove_demo(d);
+    }
 };
 @
 
@@ -173,7 +183,7 @@ $A_x$ is given by the following function, which depends only on the radii of
 the two circles and the distance between them:
 
 A_x(R, r, d) &= r^2 cos^(-1) \( \frac{d^2 + r^2 - R^2}{2dr} \)
-             &+ R^2 cos^(-1) \( \frac{d^2 + R^2 - r^2}{2dr} \)
+             &+ R^2 cos^(-1) \( \frac{d^2 + R^2 - r^2}{2dR} \)
              &- \frac{\sqrt{(-d + r + R)(d + r - R)(d - r + R)(d + r + R)}}{2}
 
 4. Normalize the weights so that their sum is equal to one.
@@ -207,9 +217,9 @@ Scalar circle_circle_intersection_area(
     Scalar d2 = d * d;
     Scalar r2 = r * r;
     Scalar R2 = R * R;
-    Scalar two_dr = 2 * d * r;
-    Scalar a = r2 * std::acos((d2 + r2 - R2)/two_dr);
-    Scalar b = R2 * std::acos((d2 + R2 - r2)/two_dr);
+    Scalar two_d = 2 * d;
+    Scalar a = r2 * std::acos((d2 + r2 - R2)/(two_d * r));
+    Scalar b = R2 * std::acos((d2 + R2 - r2)/(two_d * R));
     Scalar c = std::sqrt((-d+r+ R) * (d+r-R) * (d-r+R) * (d+r+R))/2.0;
     return a + b - c;
 }
@@ -271,48 +281,47 @@ class MarierSpheresInterpolator : public PresetInterpolator<Scalar, S, P>
 {
 public:
     struct Circle { Scalar r; Scalar d; };
-    static constexpr std::string cursor_name = "/cursor";
+    using Parent = PresetInterpolator<Scalar, S, P>;
+    using Demo = typename Parent::Demo;
+    using SVector = typename Parent::SVector;
+    using PVector = typename Parent::PVector;
+    const std::string cursor_name = "/cursor";
 
     MarierSpheresInterpolator() {add_demo({cursor_name,{},{}});}
-    const Demo& get_cursor() {return *(set.find({cursor_name,{},{}}));}
-    void set_cursor(const SVector& q) {return update_demo({cursor_name,q,{}});}
-
-    void add_demo(const Demo& d)
+    const Circle& get_cursor() 
     {
-        set.insert(decltype(set)::value_type(d, {}));
+        auto it = set.find(cursor_name);
+        return it->second.second;
     }
 
-    void update_demo(const Demo& d)
+    void set_cursor(const SVector& q) 
     {
-        auto prior_it = set.find(d);
-        if (prior_it != set.end()) prior_it->first = d;
+        Demo cursor = {cursor_name,q,{}};
+        update_demo(cursor);
     }
 
-    void remove_demo(const Demo& d)
+    void add_demo(const Demo& d) override
+    {
+        set.insert({d.name, std::pair<Demo, Circle>({d, {}})});
+    }
+
+    void update_demo(const Demo& d) override
+    {
+        auto prior_it = set.find(d.name);
+        if (prior_it != set.end()) 
+        {
+            Demo& p = prior_it->second.first;
+            p = d;
+        }
+    }
+
+    void remove_demo(const Demo& d) override
     {
         if (d.name == cursor_name) return; // silently ignore if the caller tries to remove the cursor
-        set.erase(d);
+        set.erase(d.name);
     }
 
-    template<typename DemoList>
-    void add_demo(const DemoList& demos) 
-    {
-        for (const Demo& d : demos) add_demo(d);
-    }
-
-    template<typename DemoList>
-    void update_demo(const DemoList& demos)
-    {
-        for (const Demo& d : demos) update_demo(d);
-    }
-
-    template<typename DemoList>
-    void remove_demo(const DemoList& demos)
-    {
-        for (const Demo& d : demos) remove_demo(d);
-    }
-
-    PVector query(const SVector& q)
+    PVector query(const SVector& q) override
     {
         if (set.size() < 2) return PVector();
         set_cursor(q);
@@ -323,8 +332,8 @@ public:
     }
 
 private:
-    std::unordered_map<Demo, Circle, DemonstrationHash<Demo>> set;
-}
+    std::unordered_map<std::string, std::pair<Demo, Circle>> set;
+};
 @
 
 We are not actually concerned with knowing which point is nearest any other,
@@ -350,8 +359,9 @@ $A_x/A$ will not be calculated if the query is too close to a demonstration.
 @='solve the all nearest neighbours problem'
 for (auto& pair1 : set)
 {
-    const auto& d1 = pair1.first;
-    auto& circle = pair1.second;
+    auto& data = pair1.second;
+    const auto& d1 = data.first;
+    auto& circle = data.second;
     if (d1.name != cursor_name)
     {
         Scalar distance = norm(d1.s - q);
@@ -365,7 +375,7 @@ for (auto& pair1 : set)
     Scalar radius = std::numeric_limits<Scalar>::max();
     for (const auto& pair2 : set)
     {
-        const auto& d2 = pair2.first;
+        const auto& d2 = pair2.second.first;
         if (d1.name == d2.name) continue;
         Scalar distance = norm(d1.s - d2.s);
         if (distance < radius) radius = distance;
@@ -388,14 +398,15 @@ store an unknown number of weights.
 Where $z$ is the normalization factor equal to the sum of all $w_i$.
 
 @='calculate weights and weighted sum'
-Scalar sum_of_weights;
-PVector weighted_sum();
+Scalar sum_of_weights = 0;
+PVector weighted_sum{};
 Scalar q_radius = get_cursor().r;
 for (const auto& pair : set)
 {
-    const auto& demo   = pair.first;
+    const auto& data = pair.second;
+    const auto& demo = data.first;
     if (demo.name == cursor_name) continue;
-    const auto& circle = pair.second;
+    const auto& circle = data.second;
     if ((q_radius + circle.r) < circle.d) continue; // the circles are non-intersecting
 
     Scalar w = weight(q_radius, circle.r, circle.d);
@@ -411,7 +422,7 @@ implementing Marier's algorithm.
 
 @#'include/marier_spheres.h'
 #include<unordered_map>
-#include<numeric_limits>
+#include<limits>
 #include<string>
 #include<cstddef>
 #include<cmath>
@@ -447,9 +458,10 @@ Here's the overview of the example source code:
 #include <random>
 #include <string>
 #include <chrono>
-#include <iostreams>
-#include "include/fire-hpp/fire.hpp"
-#include "include/bitmap/bitmap_image.hpp"
+#include <iostream>
+#include "../include/fire-hpp/fire.hpp"
+#include "../include/bitmap/bitmap_image.hpp"
+#include "../include/marier_spheres.h"
 
 @{Vec2 datatype}
 
@@ -461,8 +473,10 @@ int fired_main(
         unsigned int n = fire::arg("n", "The number of demonstrations", 25))
 {
     using Scalar = float;
-    using Demo = Demonstration<Scalar, Vec2<Scalar>, RGBVec<Scalar>>
-    MarierSpheresInterpolator<Scalar, Vec2<Scalar>, RGBVec<Scalar>> interpolator();
+    using Vec2 = Vec2<Scalar>;
+    using RGBVec = RGBVec<Scalar>;
+    using Demo = Demonstration<Scalar, Vec2, RGBVec>;
+    MarierSpheresInterpolator<Scalar, Vec2, RGBVec> interpolator;
 
     bitmap_image img(x, y); 
     img.clear();
@@ -470,6 +484,8 @@ int fired_main(
     @{generate random demonstrations and draw image}
 
     img.save_image("interpolated_colors.bmp");
+
+    return 0;
 }
 
 FIRE(fired_main)
@@ -483,12 +499,14 @@ Drawing the image is also quite simple; simply iterate over the dimensions of
 the image and query the interpolator at each coordinate. 
 
 @='generate random demonstrations and draw image'
+unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
 auto start = std::chrono::high_resolution_clock::now();
 while(n-- > 0)
 {
-    auto v = Vec2(random(), random());
-    auto c = RGBVec(random(), random(), random());
+    auto v = Vec2{random(generator), random(generator)};
+    auto c = RGBVec{random(generator), random(generator), random(generator)};
     Demo d{std::to_string(n), v, c};
     interpolator.add_demo(d);
 }
@@ -497,18 +515,20 @@ for (unsigned int xpix = 0; xpix < x; ++xpix)
 {
     for (unsigned int ypix = 0; ypix < y; ++ypix)
     {
-        auto q = Vec2(xpix/x, ypix/y);
-        auto out = interpolator.query(q) * 255;
+        auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
+        auto out = interpolator.query(q) * (Scalar)255;
+        float test = xpix/(float)x * 255;
         img.set_pixel(xpix, ypix, 
                 (unsigned char)std::round(out.red),
                 (unsigned char)std::round(out.green),
-                (unsigned char)std::round(out.blue));
+                (unsigned char)std::round(out.blue)); 
     }
 }
 auto stop = std::chrono::high_resolution_clock::now();
-std::cout << "Generated " << x * y << "interpolations in " << 
-        std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count()
-        << "microseconds";
+auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
+        << "About " << 1000000 * x * y / usec << " interpolations per second" 
+        << std::endl;
 @
 
 The remainder of the example program is spent mostly on boilerplate defining
@@ -526,7 +546,7 @@ template<typename Scalar> struct RGBVec
     Scalar blue;
 
     Scalar max() const {return std::max({red, green, blue});}
-}
+};
 
 template<typename Scalar>
 RGBVec<Scalar> operator+(const RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
@@ -543,19 +563,19 @@ RGBVec<Scalar> operator-(const RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
 template<typename Scalar>
 RGBVec<Scalar>& operator+=(RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
 {
-    a = a + b;
+    return a = a + b;
 }
 
 template<typename Scalar>
 RGBVec<Scalar>& operator-=(RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
 {
-    a = a - b;
+    return a = a - b;
 }
 
 template<typename Scalar>
 RGBVec<Scalar> operator*(const Scalar& w, const RGBVec<Scalar>& c)
 {
-    return {a.red * w, a.green * w, a.blue * w};
+    return {c.red * w, c.green * w, c.blue * w};
 }
 
 template<typename Scalar>
@@ -589,13 +609,13 @@ Vec2<Scalar> operator-(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
 template<typename Scalar>
 Vec2<Scalar>& operator+=(Vec2<Scalar>& a, const Vec2<Scalar>& b)
 {
-    a = a + b;
+    return a = a + b;
 }
 
 template<typename Scalar>
 Vec2<Scalar>& operator-=(Vec2<Scalar>& a, const Vec2<Scalar>& b)
 {
-    a = a - b;
+    return a = a - b;
 }
 
 template<typename Scalar>
@@ -607,13 +627,12 @@ Vec2<Scalar> operator*(const Scalar& w, const Vec2<Scalar>& v)
 template<typename Scalar>
 Vec2<Scalar> operator*(const Vec2<Scalar>& v, const Scalar& w)
 {
-    return w * c;
+    return w * v;
 }
 
 template<typename Scalar>
-Scalar norm(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
+Scalar norm(const Vec2<Scalar>& a)
 {
-    Vec2<Scalar> difference = a - b;
     return std::sqrt(a.x * a.x + a.y * a.y);
 }
 @

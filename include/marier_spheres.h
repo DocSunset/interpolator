@@ -1,5 +1,5 @@
 #include<unordered_map>
-#include<numeric_limits>
+#include<limits>
 #include<string>
 #include<cstddef>
 #include<cmath>
@@ -31,20 +31,28 @@ public:
     using PVector = P;
     using Demo = Demonstration<Scalar, SVector, PVector>;
 
-    void add_demo(const Demo& d) = void;
-    void update_demo(const Demo& d) = void;
-    void remove_demo(const Demo& d) = void;
+    virtual void add_demo(const Demo& d) = 0;
+    virtual void update_demo(const Demo& d) = 0;
+    virtual void remove_demo(const Demo& d) = 0;
+    virtual PVector query(const SVector& s) = 0;
 
     template<typename DemoList>
-    void add_demo(const DemoList& demos) = void;
+    void add_demo(const DemoList& demos) 
+    {
+        for (const Demo& d : demos) add_demo(d);
+    }
 
     template<typename DemoList>
-    void update_demo(const DemoList& demos) = void;
+    void update_demo(const DemoList& demos)
+    {
+        for (const Demo& d : demos) update_demo(d);
+    }
 
     template<typename DemoList>
-    void remove_demo(const DemoList& demos) = void;
-
-    PVector query(const SVector& s) = void;
+    void remove_demo(const DemoList& demos)
+    {
+        for (const Demo& d : demos) remove_demo(d);
+    }
 };
 
 template<typename Scalar>
@@ -56,9 +64,9 @@ Scalar circle_circle_intersection_area(
     Scalar d2 = d * d;
     Scalar r2 = r * r;
     Scalar R2 = R * R;
-    Scalar two_dr = 2 * d * r;
-    Scalar a = r2 * std::acos((d2 + r2 - R2)/two_dr);
-    Scalar b = R2 * std::acos((d2 + R2 - r2)/two_dr);
+    Scalar two_d = 2 * d;
+    Scalar a = r2 * std::acos((d2 + r2 - R2)/(two_d * r));
+    Scalar b = R2 * std::acos((d2 + R2 - r2)/(two_d * R));
     Scalar c = std::sqrt((-d+r+ R) * (d+r-R) * (d-r+R) * (d+r+R))/2.0;
     return a + b - c;
 }
@@ -82,56 +90,56 @@ class MarierSpheresInterpolator : public PresetInterpolator<Scalar, S, P>
 {
 public:
     struct Circle { Scalar r; Scalar d; };
-    static constexpr std::string cursor_name = "/cursor";
+    using Parent = PresetInterpolator<Scalar, S, P>;
+    using Demo = typename Parent::Demo;
+    using SVector = typename Parent::SVector;
+    using PVector = typename Parent::PVector;
+    const std::string cursor_name = "/cursor";
 
     MarierSpheresInterpolator() {add_demo({cursor_name,{},{}});}
-    const Demo& get_cursor() {return *(set.find({cursor_name,{},{}}));}
-    void set_cursor(const SVector& q) {return update_demo({cursor_name,q,{}});}
-
-    void add_demo(const Demo& d)
+    const Circle& get_cursor() 
     {
-        set.insert(decltype(set)::value_type(d, {}));
+        auto it = set.find(cursor_name);
+        return it->second.second;
     }
 
-    void update_demo(const Demo& d)
+    void set_cursor(const SVector& q) 
     {
-        auto prior_it = set.find(d);
-        if (prior_it != set.end()) prior_it->first = d;
+        Demo cursor = {cursor_name,q,{}};
+        update_demo(cursor);
     }
 
-    void remove_demo(const Demo& d)
+    void add_demo(const Demo& d) override
+    {
+        set.insert({d.name, std::pair<Demo, Circle>({d, {}})});
+    }
+
+    void update_demo(const Demo& d) override
+    {
+        auto prior_it = set.find(d.name);
+        if (prior_it != set.end()) 
+        {
+            Demo& p = prior_it->second.first;
+            p = d;
+        }
+    }
+
+    void remove_demo(const Demo& d) override
     {
         if (d.name == cursor_name) return; // silently ignore if the caller tries to remove the cursor
-        set.erase(d);
+        set.erase(d.name);
     }
 
-    template<typename DemoList>
-    void add_demo(const DemoList& demos) 
-    {
-        for (const Demo& d : demos) add_demo(d);
-    }
-
-    template<typename DemoList>
-    void update_demo(const DemoList& demos)
-    {
-        for (const Demo& d : demos) update_demo(d);
-    }
-
-    template<typename DemoList>
-    void remove_demo(const DemoList& demos)
-    {
-        for (const Demo& d : demos) remove_demo(d);
-    }
-
-    PVector query(const SVector& q)
+    PVector query(const SVector& q) override
     {
         if (set.size() < 2) return PVector();
         set_cursor(q);
 
         for (auto& pair1 : set)
         {
-            const auto& d1 = pair1.first;
-            auto& circle = pair1.second;
+            auto& data = pair1.second;
+            const auto& d1 = data.first;
+            auto& circle = data.second;
             if (d1.name != cursor_name)
             {
                 Scalar distance = norm(d1.s - q);
@@ -145,7 +153,7 @@ public:
             Scalar radius = std::numeric_limits<Scalar>::max();
             for (const auto& pair2 : set)
             {
-                const auto& d2 = pair2.first;
+                const auto& d2 = pair2.second.first;
                 if (d1.name == d2.name) continue;
                 Scalar distance = norm(d1.s - d2.s);
                 if (distance < radius) radius = distance;
@@ -153,14 +161,15 @@ public:
             circle.r = radius;
         }
 
-        Scalar sum_of_weights;
-        PVector weighted_sum();
+        Scalar sum_of_weights = 0;
+        PVector weighted_sum{};
         Scalar q_radius = get_cursor().r;
         for (const auto& pair : set)
         {
-            const auto& demo   = pair.first;
+            const auto& data = pair.second;
+            const auto& demo = data.first;
             if (demo.name == cursor_name) continue;
-            const auto& circle = pair.second;
+            const auto& circle = data.second;
             if ((q_radius + circle.r) < circle.d) continue; // the circles are non-intersecting
         
             Scalar w = weight(q_radius, circle.r, circle.d);
@@ -172,5 +181,5 @@ public:
     }
 
 private:
-    std::unordered_map<Demo, Circle, DemonstrationHash<Demo>> set;
-}
+    std::unordered_map<std::string, std::pair<Demo, Circle>> set;
+};
