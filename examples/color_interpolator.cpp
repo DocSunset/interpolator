@@ -112,6 +112,7 @@ int fired_main(
     MarierSpheresInterpolator<Scalar, Vec2, RGBVec> interpolator;
 
     bitmap_image img(x, y); 
+    image_drawer draw(img);
     img.clear();
 
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -132,8 +133,7 @@ int fired_main(
         {
             auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
             auto out = interpolator.query(q) * (Scalar)255;
-            float test = xpix/(float)x * 255;
-            img.set_pixel(xpix, ypix, 
+            img.set_pixel(xpix, ypix,
                     (unsigned char)std::round(out.red),
                     (unsigned char)std::round(out.green),
                     (unsigned char)std::round(out.blue)); 
@@ -144,6 +144,14 @@ int fired_main(
     std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
             << "About " << 1000000 * x * y / usec << " interpolations per second" 
             << std::endl;
+    
+    draw.pen_width(10);
+    draw.pen_color(0,0,0);
+    for (const auto& pair : interpolator.set)
+    {
+        const Vec2& v = pair.second.first.s;
+        draw.circle(v.x * x, v.y * y, 5);
+    }
 
     img.save_image("interpolated_colors.bmp");
 

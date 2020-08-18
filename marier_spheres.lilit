@@ -331,7 +331,6 @@ public:
         @{calculate weights and weighted sum}
     }
 
-private:
     std::unordered_map<std::string, std::pair<Demo, Circle>> set;
 };
 @
@@ -479,6 +478,7 @@ int fired_main(
     MarierSpheresInterpolator<Scalar, Vec2, RGBVec> interpolator;
 
     bitmap_image img(x, y); 
+    image_drawer draw(img);
     img.clear();
 
     @{generate random demonstrations and draw image}
@@ -517,8 +517,7 @@ for (unsigned int xpix = 0; xpix < x; ++xpix)
     {
         auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
         auto out = interpolator.query(q) * (Scalar)255;
-        float test = xpix/(float)x * 255;
-        img.set_pixel(xpix, ypix, 
+        img.set_pixel(xpix, ypix,
                 (unsigned char)std::round(out.red),
                 (unsigned char)std::round(out.green),
                 (unsigned char)std::round(out.blue)); 
@@ -529,6 +528,14 @@ auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).
 std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
         << "About " << 1000000 * x * y / usec << " interpolations per second" 
         << std::endl;
+
+draw.pen_width(10);
+draw.pen_color(0,0,0);
+for (const auto& pair : interpolator.set)
+{
+    const Vec2& v = pair.second.first.s;
+    draw.circle(v.x * x, v.y * y, 5);
+}
 @
 
 The remainder of the example program is spent mostly on boilerplate defining
