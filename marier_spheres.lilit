@@ -13,17 +13,17 @@ musical instruments can be devised by selecting the most meaningful or
 appropriate paths to navigate within these spaces of possibilities.
 
 A useful tool in the exploration and navigation of these spaces is preset
-interpolation. Recording the points of interest found during manual exploration
-of a given space as presets, preset interpolation algorithms are used to
-automatically move from one preset to another, or from one preset place to a
-point in the space that is intermediate between that preset and several other
-interesting places. This allows the user of a preset interpolation algorithm to
-move easily through the space of possibilities demarcated by the points of
-interest they record as presets, facilitating the discovery of other
-interesting points in space and of interesting paths through space.
+interpolation. After manually recording the points of interest as presets,
+preset interpolation algorithms are used to automatically move between these
+predetermined a-priori interesting places, filling in the space between them
+with intermediate locations that are likely, by proximity, to also be
+interesting. This allows the user of a preset interpolation algorithm to move
+easily through the space of possibilities demarcated by the points of interest
+they record as presets, facilitating the discovery of other interesting points
+in space and of interesting paths through space.
 
-What is especially useful preset interpolation is that it allows the user to
-reframe the navigation of the control parameter space in terms of another
+What is especially useful about preset interpolation is that it allows the user
+to reframe the navigation of the control parameter space in terms of another
 separate space of control sources. For instance, the presets in parameter space
 can be associated with locations on a two dimensional map, often significantly
 reducing the dimensionality of navigation with an associated reduction in the
@@ -36,115 +36,45 @@ intermedia artistic practices.
 
 The basic operating principle of many preset interpolation algorithms,
 including the one presented here, is for the user to specify pairs of
-source-to-destination associations in the form of presets in these two spaces. So
-for instance, the user might explore a bit by hand and record several parameter
-presets that produce interesting behaviors. Then the user might specify several
-positions on a 2D surface and associate each 2D location with a parameter
-location. Both the 2D locations and the parameter presets are considered as
-points in euclidean spaces; in this example the source space has two
-dimensions, while the destination space has as many dimensions are there are
-parameters. The points can be considered as presets in their respective spaces.
+source-to-destination associations in the form of presets in these two spaces.
+As a concrete example, the user might be exploring the space of sounds produced
+by a synthesizer with possibly a very large number of parameters. They might
+explore for a while by manually configuring the synthesizer, and note several
+particularly interesting preset sound configurations. Then, to facilitate live
+performance with the synthesizer, the user may wish to control it with a
+graphics tablet. They can associate several locations on the tablet with
+different presets found earlier, and then use the preset interpolation
+algorithm to navigate between these presets. The tablet locations can also be
+thought of as presets in the source space rather than the destination space of
+the sound synthesizer.
 
 To remain unambiguous, for the rest of this exposition preset points in source
 space will be refered to as source vectors while preset points in destination
 space will be referred to as destination vectors. The word vector reflects the
-assumption inherent in to most preset interpolation algorithms that the source
-and destination spaces are both vector spaces, i.e. that multiplying a source
-or destination vector by a scalar and adding two vectors from the same space
-are both meaningful operations which satisfy certain requirements. A pair made
-of a source vector $s$ and a destination vector $p$ to which the sources in the
-vicinity of $s$ should be associated will be called a demonstration. This
-reflects an interaction metaphor in which the user is thought to provide
-demonstrations of action-to-output relationships, i.e. "when I do $s$, the
-interpolator should output $p$."
+assumption inherent in most preset interpolation algorithms that the source and
+destination spaces are both vector spaces, meaning that presets can be
+meaningfully scaled and added together, and that there is a meaningful notion
+of distance between presets.  A pair made of a source vector $s$ and a
+destination vector $p$ to which the sources in the vicinity of $s$ should be
+associated will be called a demonstration. This reflects an interaction
+metaphor in which the user is thought to provide demonstrations of
+action-to-output relationships, i.e. "when I do $s$, the interpolator should
+output $p$."
 
 The basic principle of many interpolation algorithms is to interpolate between
-destination vectors producing an output parameter vector $y$ via a weighted sum.
+destination vectors producing an output parameter vector $y$ via a weighted
+sum.
 
-y = \sum_{i = 0}^{A - 1} w_i * p_i
+y(\bm{w}) = \sum_{i = 0}^{n - 1} w_i * p_i
 
-Where $|D|$ is the number of demonstrations (i.e. the size of the set $D$ of
+Where $n$ is the number of demonstrations (i.e. the size of the set $D$ of
 demonstrations). The role of the preset interpolator is then reduced to simply
-producing a list of weights, usually as a function of a query or cursor vector
-$q$ in the source space, and the list of demonstrations.
+producing and applying a list of weights, usually as a function of a query or
+cursor vector $q$ in the source space, and the list of demonstrations.
 
-\bm{w}(q, D) = {w_0, w_1, w_2, ..., w_{|D|}}
-D = { {s_0, p_0}, {s_1, p_1}, {s_2, p_2}, ..., {s_|D|, p_|D|} }
+\bm{w}(q, D) = {w_0, w_1, w_2, ..., w_{n}}
+D = { {s_0, p_0}, {s_1, p_1}, {s_2, p_2}, ..., {s_n, p_n} }
 
-# Interaction
-
-A handful of operations can be supported by a preset interpolation algorithm to
-allow the user to interact with the system.  
-
-- add/remove a demonstration including both a source and destination point
-- change the recorded state of point (move the point's position in state space)
-- query the interpolated destination value for a given source value
-
-Most interpolation algorithms will require some kind of internal data structure
-for representing demonstrations so that queries can be performed efficiently.
-Changing the recorded state of a point is likely to require an update to this
-data structure, as is adding or removing demonstrations (whether directly or
-via associating or deassociating already specified points). In many cases it
-may be more efficient to batch process such updates, especially in case a large
-number of points are moved or demonstrations added all at once.  For
-interpolators in which this is not the case, default batch editing methods may
-be provided.
-
-Based on these requirements, base classes for interpolators and demonstrations
-can be outlined.
-
-@='interpolator base class'
-template<typename Scalar, typename S, typename P>
-struct Demonstration
-{
-    using SVector = S;
-    using PVector = P;
-    std::string name;
-    SVector s;
-    PVector p;
-};
-
-template<typename Demo>
-struct DemonstrationHash
-{
-    std::size_t operator()(const Demo& d) const noexcept
-    {
-        return std::hash<std::string>{}(d.name);
-    }
-};
-
-template<typename Scalar, typename S, typename P>
-class PresetInterpolator
-{
-public:
-    using SVector = S;
-    using PVector = P;
-    using Demo = Demonstration<Scalar, SVector, PVector>;
-
-    virtual void add_demo(const Demo& d) = 0;
-    virtual void update_demo(const Demo& d) = 0;
-    virtual void remove_demo(const Demo& d) = 0;
-    virtual PVector query(const SVector& s) = 0;
-
-    template<typename DemoList>
-    void add_demo(const DemoList& demos) 
-    {
-        for (const Demo& d : demos) add_demo(d);
-    }
-
-    template<typename DemoList>
-    void update_demo(const DemoList& demos)
-    {
-        for (const Demo& d : demos) update_demo(d);
-    }
-
-    template<typename DemoList>
-    void remove_demo(const DemoList& demos)
-    {
-        for (const Demo& d : demos) remove_demo(d);
-    }
-};
-@
 
 # Intersecting N-Spheres Interpolation
 
@@ -246,196 +176,133 @@ radius of the circle associated with $p$.
 
 Efficient algorithms exist which solve the all nearest neighbours problem in
 $O(n\log n)$ time, or even in $O(n)$ time if certain constraints are met, which
-is most likely the case for this application. Unfortunately, comprehending the
-linear time algorithms for this problem is non-trivial, so we opt to use a
-simpler algorithm until such time as it becomes clear that more optimization is
-necessary.
+is most likely the case for this application. Unfortunately, comprehending (let
+alone implementing) the linear time algorithms for this problem is non-trivial,
+so we opt to use a simpler algorithm until such time as it becomes clear that
+optimization is necessary.
 
 Updating any of the points in source space including the cursor point always
 requires the nearest neighbour problem to be solved anew, because the nearest
 neighbour of the updated point and any point that it was previously the nearest
-neighbour of will all have to be updated. Because the position of the cursor
-point is assumed to change whenever the interpolator is queried, this means
-that the nearest neighbour problem must be solved for every query. The trivial
+neighbour of all have to be updated. Because the position of the cursor point
+is assumed to change whenever the interpolator is queried, this means that the
+nearest neighbour problem must be solved for every query. The trivial
 implementation used here (as well as in Marier's original presentation of the
 interpolation algorithm) solves this problem with $O(n^2)$ time complexity. In
 Marier's practice this hasn't been reported as an issue, presumably because the
 number of data points has always been reasonably low.
 
-We will use an unordered set to store demonstrations, allowing easy removal and
-update of specific demonstrations. We will also define a new `Demo` subclass
-to store the information specific to intersecting n-spheres interpolation.
-Adding, removing, and updating data points simply edits the set accordingly;
-updating the radius and distance associated with each point is done when
-querying the interpolator.
+Because the all nearest neighbours problem has to be solved for every query,
+there is no need for a special data structure to hold the demonstrations. This
+allows the query function to be written as a generic pure function over the
+query point and the list of demonstrations. Although the function doesn't have
+any side effects in the current implementation, it is not marked `const` as 
+future implementations will likely require mutation of inner state to work
+more efficiently.
 
-To facilitate brevity in the implementation of the all nearest neighbours
-problem, the query point is also included in the set of points as a special
-demonstration named according to the value of the `cursor_name` constant. This
-demonstration cannot be removed.
+Rather than calculate the distance and radius for each point, and then derive
+the weights, normalize the weights, and finally integrate the weighted sum, all
+of these steps are performed for each point in one loop. This saves from having
+to allocate memory to store the the distance and radius before calculating the
+weights, and then to store the weights before normalizing them. Instead, just a
+handful of variables an be reserved on the stack. This makes the current naive
+implementation suitable for running queries in real time, since it has
+deterministic time-behavior and never allocates memory.
 
-@='intersecting n-spheres data structures'
-
-template<typename Scalar, typename S, typename P>
-class MarierSpheresInterpolator : public PresetInterpolator<Scalar, S, P>
+@='intersecting n-spheres'
+template<typename Scalar, typename ID, typename SVector, typename PVector>
+class MarierSpheresInterpolator
 {
 public:
-    struct Circle { Scalar r; Scalar d; };
-    using Parent = PresetInterpolator<Scalar, S, P>;
-    using Demo = typename Parent::Demo;
-    using SVector = typename Parent::SVector;
-    using PVector = typename Parent::PVector;
-    const std::string cursor_name = "/cursor";
+    struct Demo { ID id; SVector s; PVector p; };
 
-    MarierSpheresInterpolator() {add_demo({cursor_name,{},{}});}
-    const Circle& get_cursor() 
+    template<typename DemoList>
+    PVector query(const SVector& q, const DemoList& demos)
     {
-        auto it = set.find(cursor_name);
-        return it->second.second;
-    }
+        Scalar q_radius, radius, distance;
+        Scalar sum_of_weights = 0;
+        PVector weighted_sum = {};
+        if (demos.size() < 1) return weighted_sum;
 
-    void set_cursor(const SVector& q) 
-    {
-        Demo cursor = {cursor_name,q,{}};
-        update_demo(cursor);
-    }
+        @{find q_radius}
 
-    void add_demo(const Demo& d) override
-    {
-        set.insert({d.name, std::pair<Demo, Circle>({d, {}})});
-    }
-
-    void update_demo(const Demo& d) override
-    {
-        auto prior_it = set.find(d.name);
-        if (prior_it != set.end()) 
+        for (const auto& demo : demos)
         {
-            Demo& p = prior_it->second.first;
-            p = d;
+            @{calculate distance}
+        
+            @{find radius}
+        
+            if ((q_radius + radius) < distance) continue; // the circles are non-intersecting
+            Scalar w = weight(q_radius, radius, distance);
+            sum_of_weights += w;
+            weighted_sum += w * demo.p;
         }
+        weighted_sum = (1 / sum_of_weights) * weighted_sum;
+        return weighted_sum;
     }
-
-    void remove_demo(const Demo& d) override
-    {
-        if (d.name == cursor_name) return; // silently ignore if the caller tries to remove the cursor
-        set.erase(d.name);
-    }
-
-    PVector query(const SVector& q) override
-    {
-        if (set.size() < 2) return PVector();
-        set_cursor(q);
-
-        @{solve the all nearest neighbours problem}
-
-        @{calculate weights and weighted sum}
-    }
-
-    std::unordered_map<std::string, std::pair<Demo, Circle>> set;
 };
 @
 
-We are not actually concerned with knowing which point is nearest any other,
-but only wish to know the distance from each point to its nearest neighbour.
-For this reason no special datastructure is used to represent the nearest
-neighbour graph; instead the radii are simply recorded in the `Circle` structs
-associated with each demonstration as they come up.
+The radius associated with the query point (and indeed every point) is searched
+for by brute force. Although far from optimal, this implementation seems good
+enough for now.
 
-While we're iterating over all the demonstrated points, we also take the
-opportunity to record the distance from each point to the query point q, and
-catch the special case that the query point exactly lies at the position of
-a demonstrated point. In such cases, the output of the interpolator is simply
-the destination vector associated with that demonstration, and no further work
-is necessary.
+Although every demonstration will be visited in the main loop of the query
+function, the radius of the query point has to be known in advance in order
+to calculate the weight associated with each point.
 
-As the query point approaches the position of a demonstrated point, the size of
-both $A_x$ and $A$ get smaller and smaller, which would likely lead to
-numerical instability when calculating the weight $A_x/A$. For this reason, an
-arbitrary amount of sloppiness is introduced into the determination of whether
-the query point exactly coincides with a demonstrated point, so that the ratio
-$A_x/A$ will not be calculated if the query is too close to a demonstration.
-
-@='solve the all nearest neighbours problem'
-for (auto& pair1 : set)
+@='find q_radius'
+q_radius = std::numeric_limits<Scalar>::max();
+for (const auto& demo : demos)
 {
-    auto& data = pair1.second;
-    const auto& d1 = data.first;
-    auto& circle = data.second;
-    if (d1.name != cursor_name)
-    {
-        Scalar distance = norm(d1.s - q);
-        constexpr Scalar an_arbitrary_slop_factor = 
-                std::numeric_limits<Scalar>::epsilon() * 5;
-        if (distance <= an_arbitrary_slop_factor) return d1.p;
-
-        circle.d = distance;
-    }
-
-    Scalar radius = std::numeric_limits<Scalar>::max();
-    for (const auto& pair2 : set)
-    {
-        const auto& d2 = pair2.second.first;
-        if (d1.name == d2.name) continue;
-        Scalar distance = norm(d1.s - d2.s);
-        if (distance < radius) radius = distance;
-    }
-    circle.r = radius;
+    Scalar d = norm(demo.s - q);
+    if (d < q_radius) q_radius = d;
 }
 @
 
-All that leaves is producing the output. Rather than calculating the weights,
-normalizing them, and then integrating the weighted sum, the weighted sum is
-integrated as the weights are calculated, and the sum is normalized afterwards
-based on the sum of the weights; the two approaches are mathematically
-equivalent according to the following equation, but as implemented the routine
-is somewhat more succinct and avoids having to allocate memory at runtime to
-store an unknown number of weights.
+If the query is close enough to the demonstration, the exact value of the
+demonstration is returned and further calculation of the weighted sum is
+short-circuited.  As the query point approaches the position of a demonstrated
+point, the size of both $A_x$ and $A$ get smaller and smaller, which would
+likely lead to numerical instability when calculating the weight $A_x/A$. For
+this reason, an arbitrary amount of sloppiness is introduced into the
+determination of whether the query point exactly coincides with a demonstrated
+point, so that the ratio $A_x/A$ will not be calculated if the query is too
+close to a demonstration.
 
-  &(\frac{1}{z} * w_0 * p_0) + (\frac{1}{z} * w_1 * p_1) + ... + (\frac{1}{z} * w_2 * p_2)
-= &((w_0 * p_0) + (w_1 * p_1) + ... + (w_2 * p_2)) * \frac{1}{z}
+@='calculate distance'
+distance = norm(demo.s - q);
+constexpr Scalar an_arbitrary_slop_factor = 
+    std::numeric_limits<Scalar>::epsilon() * 5;
+if (distance <= an_arbitrary_slop_factor) return demo.p;
+@
 
-Where $z$ is the normalization factor equal to the sum of all $w_i$.
-
-@='calculate weights and weighted sum'
-Scalar sum_of_weights = 0;
-PVector weighted_sum{};
-Scalar q_radius = get_cursor().r;
-for (const auto& pair : set)
+@='find radius'
+radius = std::numeric_limits<Scalar>::max();
+for (const auto& demo2 : demos)
 {
-    const auto& data = pair.second;
-    const auto& demo = data.first;
-    if (demo.name == cursor_name) continue;
-    const auto& circle = data.second;
-    if ((q_radius + circle.r) < circle.d) continue; // the circles are non-intersecting
-
-    Scalar w = weight(q_radius, circle.r, circle.d);
-    sum_of_weights += w;
-    weighted_sum += w * demo.p;
+    if (demo.id == demo2.id) continue;
+    Scalar d = norm(demo.s - demo2.s);
+    if (d < radius) radius = d;
 }
-weighted_sum = (1 / sum_of_weights) * weighted_sum;
-return weighted_sum;
+if (distance < radius) radius = distance;
 @
 
 Putting it all together, we get a reasonably generic header-only library
 implementing Marier's algorithm.
 
 @#'include/marier_spheres.h'
-#include<unordered_map>
 #include<limits>
-#include<string>
-#include<cstddef>
 #include<cmath>
-
-@{interpolator base class}
 
 @{weight functions}
 
-@{intersecting n-spheres data structures}
+@{intersecting n-spheres}
 @
 
 # Usage
 
-We will exercise `intersecting_spheres.h` in a simple command line drawing
+We will exercise `marier_spheres.h` in a simple command line drawing
 application; the source space will be 2D coordinates, and the destination space
 an RGB color value. The program will randomly generate a handful of
 source-destination demonstrations, and draw an image by systematically querying
@@ -455,9 +322,9 @@ Here's the overview of the example source code:
 @#'examples/color_interpolator.cpp'
 #include <cmath>
 #include <random>
-#include <string>
 #include <chrono>
 #include <iostream>
+#include <vector>
 #include "../include/fire-hpp/fire.hpp"
 #include "../include/bitmap/bitmap_image.hpp"
 #include "../include/marier_spheres.h"
@@ -472,13 +339,15 @@ int fired_main(
         unsigned int n = fire::arg("n", "The number of demonstrations", 25))
 {
     using Scalar = float;
+    using ID = unsigned int;
     using Vec2 = Vec2<Scalar>;
     using RGBVec = RGBVec<Scalar>;
-    using Demo = Demonstration<Scalar, Vec2, RGBVec>;
-    MarierSpheresInterpolator<Scalar, Vec2, RGBVec> interpolator;
+    using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, RGBVec>;
+    using Demo = typename Interpolator::Demo;
+    Interpolator interpolator;
+    std::vector<Demo> demos;
 
     bitmap_image img(x, y); 
-    image_drawer draw(img);
     img.clear();
 
     @{generate random demonstrations and draw image}
@@ -496,27 +365,32 @@ color channels in the RGBVec do the same. Randomly generating vectors is then
 trivial.
 
 Drawing the image is also quite simple; simply iterate over the dimensions of
-the image and query the interpolator at each coordinate. 
+the image and query the interpolator at each coordinate. We record how long
+this takes so that the program also serves as a simplistic benchmark.
+
+After drawing the overall image, we also take a moment to draw a circle around
+each demonstration point; this helps to better understand how the image relates
+to the topology of the interpolator.
 
 @='generate random demonstrations and draw image'
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
-auto start = std::chrono::high_resolution_clock::now();
 while(n-- > 0)
 {
     auto v = Vec2{random(generator), random(generator)};
     auto c = RGBVec{random(generator), random(generator), random(generator)};
-    Demo d{std::to_string(n), v, c};
-    interpolator.add_demo(d);
+    Demo d{n, v, c};
+    demos.push_back(d);
 }
 
+auto start = std::chrono::high_resolution_clock::now();
 for (unsigned int xpix = 0; xpix < x; ++xpix)
 {
     for (unsigned int ypix = 0; ypix < y; ++ypix)
     {
         auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-        auto out = interpolator.query(q) * (Scalar)255;
+        auto out = interpolator.query(q, demos) * (Scalar)255;
         img.set_pixel(xpix, ypix,
                 (unsigned char)std::round(out.red),
                 (unsigned char)std::round(out.green),
@@ -529,12 +403,15 @@ std::cout << "Generated " << x * y << " interpolations in " << usec << " microse
         << "About " << 1000000 * x * y / usec << " interpolations per second" 
         << std::endl;
 
-draw.pen_width(10);
-draw.pen_color(0,0,0);
-for (const auto& pair : interpolator.set)
+image_drawer draw(img);
+draw.pen_width(1);
+for (const auto& demo : demos)
 {
-    const Vec2& v = pair.second.first.s;
+    const Vec2& v = demo.s;
+    draw.pen_color(0,0,0);
     draw.circle(v.x * x, v.y * y, 5);
+    draw.pen_color(255,255,255);
+    draw.circle(v.x * x, v.y * y, 3);
 }
 @
 

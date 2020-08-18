@@ -1,8 +1,8 @@
 #include <cmath>
 #include <random>
-#include <string>
 #include <chrono>
 #include <iostream>
+#include <vector>
 #include "../include/fire-hpp/fire.hpp"
 #include "../include/bitmap/bitmap_image.hpp"
 #include "../include/marier_spheres.h"
@@ -106,33 +106,35 @@ int fired_main(
         unsigned int n = fire::arg("n", "The number of demonstrations", 25))
 {
     using Scalar = float;
+    using ID = unsigned int;
     using Vec2 = Vec2<Scalar>;
     using RGBVec = RGBVec<Scalar>;
-    using Demo = Demonstration<Scalar, Vec2, RGBVec>;
-    MarierSpheresInterpolator<Scalar, Vec2, RGBVec> interpolator;
+    using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, RGBVec>;
+    using Demo = typename Interpolator::Demo;
+    Interpolator interpolator;
+    std::vector<Demo> demos;
 
     bitmap_image img(x, y); 
-    image_drawer draw(img);
     img.clear();
 
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
     std::uniform_real_distribution<Scalar> random(0, 1);
-    auto start = std::chrono::high_resolution_clock::now();
     while(n-- > 0)
     {
         auto v = Vec2{random(generator), random(generator)};
         auto c = RGBVec{random(generator), random(generator), random(generator)};
-        Demo d{std::to_string(n), v, c};
-        interpolator.add_demo(d);
+        Demo d{n, v, c};
+        demos.push_back(d);
     }
     
+    auto start = std::chrono::high_resolution_clock::now();
     for (unsigned int xpix = 0; xpix < x; ++xpix)
     {
         for (unsigned int ypix = 0; ypix < y; ++ypix)
         {
             auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-            auto out = interpolator.query(q) * (Scalar)255;
+            auto out = interpolator.query(q, demos) * (Scalar)255;
             img.set_pixel(xpix, ypix,
                     (unsigned char)std::round(out.red),
                     (unsigned char)std::round(out.green),
@@ -145,12 +147,15 @@ int fired_main(
             << "About " << 1000000 * x * y / usec << " interpolations per second" 
             << std::endl;
     
-    draw.pen_width(10);
-    draw.pen_color(0,0,0);
-    for (const auto& pair : interpolator.set)
+    image_drawer draw(img);
+    draw.pen_width(1);
+    for (const auto& demo : demos)
     {
-        const Vec2& v = pair.second.first.s;
+        const Vec2& v = demo.s;
+        draw.pen_color(0,0,0);
         draw.circle(v.x * x, v.y * y, 5);
+        draw.pen_color(255,255,255);
+        draw.circle(v.x * x, v.y * y, 3);
     }
 
     img.save_image("interpolated_colors.bmp");
