@@ -75,7 +75,6 @@ cursor vector $q$ in the source space, and the list of demonstrations.
 \bm{w}(q, D) = {w_0, w_1, w_2, ..., w_{n}}
 D = { {s_0, p_0}, {s_1, p_1}, {s_2, p_2}, ..., {s_n, p_n} }
 
-
 # Intersecting N-Spheres Interpolation
 
 Martin Marier introduced the *intersecting n-spheres interpolation* algorithm
@@ -131,8 +130,7 @@ vector space. These assumptions are represented in the implementation by the
 assumption that the templated PVector for the destination space will have an
 operator for multiplication by a scalar, and addition of two vectors, and that
 the templated SVector for the source space will have the same two operators as
-well as a function `Scalar norm(SVector a, SVector b)` that returns the
-distance between two SVectors.
+well as a method `norm` that returns the length of a vector.
 
 The functions to compute the weight for a single destination vector are
 straightforward to implement based on the equations in step 3 above
@@ -162,7 +160,7 @@ Scalar circle_area(const Scalar& r)
 }
 
 template<typename Scalar>
-Scalar weight(const Scalar& R, const Scalar& r, const Scalar& d)
+Scalar marier_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d)
 {
     return circle_circle_intersection_area(R, r, d) / circle_area(r);
 }
@@ -228,10 +226,13 @@ public:
                 demo.w = 0;
                 continue; // the circles are non-intersecting
             }
-            demo.w = weight(q_radius, demo.r, demo.d);
-            if (std::isnan(demo.w)) std::cout << "NaN with args " << q_radius << " " << demo.r << " " << demo.d << "\n";
-            sum_of_weights += demo.w;
-            weighted_sum += demo.w * demo.p;
+            demo.w = marier_spheres_weight(q_radius, demo.r, demo.d);
+            if (std::isnan(demo.w)) std::cout << "NaN with args " << q_radius << " " << demo.r << " " << demo.d
+                    << " intersection area " << circle_circle_intersection_area(q_radius, demo.r, demo.d)
+                    << "\n";
+            "\n";
+            sum_of_weights = sum_of_weights + demo.w;
+            weighted_sum = weighted_sum + demo.w * demo.p;
         }
         weighted_sum = (1 / sum_of_weights) * weighted_sum;
         for (auto& demo : demos) { demo.w = demo.w / sum_of_weights; }
@@ -252,7 +253,7 @@ to calculate the weight associated with each point.
 q_radius = std::numeric_limits<Scalar>::max();
 for (const auto& demo : demos)
 {
-    Scalar d = norm(demo.s - q);
+    Scalar d = (demo.s - q).norm();
     if (d < q_radius) q_radius = d;
 }
 @
@@ -268,7 +269,7 @@ point, so that the ratio $A_x/A$ will not be calculated if the query is too
 close to a demonstration.
 
 @='calculate distance'
-demo.d = norm(demo.s - q);
+demo.d = (demo.s - q).norm();
 constexpr Scalar an_arbitrary_slop_factor = 
     std::numeric_limits<Scalar>::epsilon() * 5;
 if (demo.d <= an_arbitrary_slop_factor) return demo.p;
@@ -279,7 +280,7 @@ demo.r = std::numeric_limits<Scalar>::max();
 for (const auto& demo2 : demos)
 {
     if (demo.id == demo2.id) continue;
-    Scalar d = norm(demo.s - demo2.s);
+    Scalar d = (demo.s - demo2.s).norm();
     if (d < demo.r) demo.r = d;
 }
 if (demo.d < demo.r) demo.r = demo.d;
@@ -300,6 +301,8 @@ implementing Marier's algorithm.
 
 # Usage
 
+## Drawing example
+
 We will exercise `marier_spheres.h` in a simple command line drawing
 application; the source space will be 2D coordinates, and the destination space
 an RGB color value. The program will randomly generate a handful of
@@ -313,11 +316,12 @@ For command line parsing, we'll use kongaskristjan's `fire-hpp`. The program
 takes arguments for the dimensions of the image (`-x` and `-y`) and the number
 of demonstrations to randomly generate (`-n`).
 
-For image drawing we'll use ArashPartow's `bitmap` library.
+For image drawing we'll use ArashPartow's `bitmap` library, and for vectors
+we'll use Eigen.
 
 Here's the overview of the example source code:
 
-@#'examples/color_interpolator.cpp'
+@#'examples/color_image.cpp'
 #include <cmath>
 #include <random>
 #include <chrono>
@@ -326,10 +330,7 @@ Here's the overview of the example source code:
 #include "../include/fire-hpp/fire.hpp"
 #include "../include/bitmap/bitmap_image.hpp"
 #include "../include/marier_spheres.h"
-
-@{Vec2 datatype}
-
-@{RGB datatype}
+#include <Eigen/Core>
 
 int fired_main(
         unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
@@ -338,17 +339,28 @@ int fired_main(
 {
     using Scalar = float;
     using ID = unsigned int;
-    using Vec2 = Vec2<Scalar>;
-    using RGBVec = RGBVec<Scalar>;
+    using Vec2 = Eigen::Vector2f;
+    using RGBVec = Eigen::Vector3f;
     using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, RGBVec>;
     using Demo = typename Interpolator::Demo;
+
     Interpolator interpolator;
     std::vector<Demo> demos;
 
     bitmap_image img(x, y); 
     img.clear();
 
-    @{generate random demonstrations and draw image}
+    @{generate random demonstrations}
+
+    auto start = std::chrono::high_resolution_clock::now();
+    @{draw the image}
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+    std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
+            << "About " << 1000000 * x * y / usec << " interpolations per second" 
+            << std::endl;
+
+    @{draw circles over demonstrated points}
 
     img.save_image("interpolated_colors.bmp");
 
@@ -358,19 +370,11 @@ int fired_main(
 FIRE(fired_main)
 @
 
-In use, we assume that the source dimensions range from 0 to 1 and that the 
+We assume that the source dimensions range from 0 to 1 and that the 
 color channels in the RGBVec do the same. Randomly generating vectors is then
 trivial.
 
-Drawing the image is also quite simple; simply iterate over the dimensions of
-the image and query the interpolator at each coordinate. We record how long
-this takes so that the program also serves as a simplistic benchmark.
-
-After drawing the overall image, we also take a moment to draw a circle around
-each demonstration point; this helps to better understand how the image relates
-to the topology of the interpolator.
-
-@='generate random demonstrations and draw image'
+@='generate random demonstrations'
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
@@ -381,8 +385,13 @@ while(n-- > 0)
     Demo d{n, v, c};
     demos.push_back(d);
 }
+@
 
-auto start = std::chrono::high_resolution_clock::now();
+Drawing the image is also quite simple; simply iterate over the dimensions of
+the image and query the interpolator at each coordinate. We record how long
+this takes so that the program also serves as a simplistic benchmark.
+
+@='draw the image'
 for (unsigned int xpix = 0; xpix < x; ++xpix)
 {
     for (unsigned int ypix = 0; ypix < y; ++ypix)
@@ -390,131 +399,28 @@ for (unsigned int xpix = 0; xpix < x; ++xpix)
         auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
         auto out = interpolator.query(q, demos) * (Scalar)255;
         img.set_pixel(xpix, ypix,
-                (unsigned char)std::round(out.red),
-                (unsigned char)std::round(out.green),
-                (unsigned char)std::round(out.blue)); 
+                (unsigned char)std::round(out.x()),
+                (unsigned char)std::round(out.y()),
+                (unsigned char)std::round(out.z())); 
     }
 }
-auto stop = std::chrono::high_resolution_clock::now();
-auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
-        << "About " << 1000000 * x * y / usec << " interpolations per second" 
-        << std::endl;
+@
 
+After drawing the overall image, we also take a moment to draw a circle around
+each demonstration point; this helps to better understand how the image relates
+to the topology of the interpolator.
+
+@='draw circles over demonstrated points'
 image_drawer draw(img);
 draw.pen_width(1);
 for (const auto& demo : demos)
 {
     const Vec2& v = demo.s;
     draw.pen_color(0,0,0);
-    draw.circle(v.x * x, v.y * y, 5);
+    draw.circle(v.x() * x, v.y() * y, 5);
     draw.pen_color(255,255,255);
-    draw.circle(v.x * x, v.y * y, 3);
+    draw.circle(v.x() * x, v.y() * y, 3);
 }
 @
 
-The remainder of the example program is spent mostly on boilerplate defining
-arithmetic operations for our two vector spaces.  The `bitmap` library provides
-an RGB pixel type, but without any operators and only 8-bit depth per channel.
-To satisfy the requirements of a vector space needed for the interpolator and
-avoid saturating our output image, we define our own pixel type with float
-resolution and the required operators.  
-
-@='RGB datatype'
-template<typename Scalar> struct RGBVec
-{
-    Scalar red;
-    Scalar green;
-    Scalar blue;
-
-    Scalar max() const {return std::max({red, green, blue});}
-};
-
-template<typename Scalar>
-RGBVec<Scalar> operator+(const RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
-{
-    return {a.red + b.red, a.green + b.green, a.blue + b.blue};
-}
-
-template<typename Scalar>
-RGBVec<Scalar> operator-(const RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
-{
-    return {a.red - b.red, a.green - b.green, a.blue - b.blue};
-}
-
-template<typename Scalar>
-RGBVec<Scalar>& operator+=(RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
-{
-    return a = a + b;
-}
-
-template<typename Scalar>
-RGBVec<Scalar>& operator-=(RGBVec<Scalar>& a, const RGBVec<Scalar>& b)
-{
-    return a = a - b;
-}
-
-template<typename Scalar>
-RGBVec<Scalar> operator*(const Scalar& w, const RGBVec<Scalar>& c)
-{
-    return {c.red * w, c.green * w, c.blue * w};
-}
-
-template<typename Scalar>
-RGBVec<Scalar> operator*(const RGBVec<Scalar>& c, const Scalar& w)
-{
-    return w * c;
-}
-@
-
-For the source space we define a simple 2D vector type.
-
-@='Vec2 datatype'
-template<typename Scalar> struct Vec2
-{
-    Scalar x;
-    Scalar y;
-};
-
-template<typename Scalar>
-Vec2<Scalar> operator+(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
-{
-    return {a.x + b.x, a.y + b.y};
-}
-
-template<typename Scalar>
-Vec2<Scalar> operator-(const Vec2<Scalar>& a, const Vec2<Scalar>& b)
-{
-    return {a.x - b.x, a.y - b.y};
-}
-
-template<typename Scalar>
-Vec2<Scalar>& operator+=(Vec2<Scalar>& a, const Vec2<Scalar>& b)
-{
-    return a = a + b;
-}
-
-template<typename Scalar>
-Vec2<Scalar>& operator-=(Vec2<Scalar>& a, const Vec2<Scalar>& b)
-{
-    return a = a - b;
-}
-
-template<typename Scalar>
-Vec2<Scalar> operator*(const Scalar& w, const Vec2<Scalar>& v)
-{
-    return {v.x * w, v.y * w};
-}
-
-template<typename Scalar>
-Vec2<Scalar> operator*(const Vec2<Scalar>& v, const Scalar& w)
-{
-    return w * v;
-}
-
-template<typename Scalar>
-Scalar norm(const Vec2<Scalar>& a)
-{
-    return std::sqrt(a.x * a.x + a.y * a.y);
-}
-@
+## WebGL Interactive Example
