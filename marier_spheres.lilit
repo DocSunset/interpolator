@@ -193,51 +193,48 @@ Marier's practice this hasn't been reported as an issue, presumably because the
 number of data points has always been reasonably low.
 
 Because the all nearest neighbours problem has to be solved for every query,
-there is no need for a special data structure to hold the demonstrations. This
-allows the query function to be written as a generic pure function over the
-query point and the list of demonstrations. Although the function doesn't have
-any side effects in the current implementation, it is not marked `const` as 
-future implementations will likely require mutation of inner state to work
-more efficiently.
-
-Rather than calculate the distance and radius for each point, and then derive
-the weights, normalize the weights, and finally integrate the weighted sum, all
-of these steps are performed for each point in one loop. This saves from having
-to allocate memory to store the the distance and radius before calculating the
-weights, and then to store the weights before normalizing them. Instead, just a
-handful of variables an be reserved on the stack. This makes the current naive
-implementation suitable for running queries in real time, since it has
-deterministic time-behavior and never allocates memory.
+there is no need for a special data structure to hold the demonstrations. The
+query function could be written as a generic pure function over the query point
+and the list of demonstrations. However, for interactive applications it is
+likely to be useful for the caller to query the radii and weights associated
+with each demonstration, so room for these is included in the data structure
+for holding a demonstration.
 
 @='intersecting n-spheres'
 template<typename Scalar, typename ID, typename SVector, typename PVector>
 class MarierSpheresInterpolator
 {
 public:
-    struct Demo { ID id; SVector s; PVector p; };
+    struct Demo { ID id; SVector s; PVector p; Scalar r, d, w;};
 
     template<typename DemoList>
-    PVector query(const SVector& q, const DemoList& demos)
+    PVector query(const SVector& q, DemoList& demos)
     {
-        Scalar q_radius, radius, distance;
+        Scalar q_radius;
         Scalar sum_of_weights = 0;
         PVector weighted_sum = {};
         if (demos.size() < 1) return weighted_sum;
 
         @{find q_radius}
 
-        for (const auto& demo : demos)
+        for (auto& demo : demos)
         {
             @{calculate distance}
         
             @{find radius}
         
-            if ((q_radius + radius) < distance) continue; // the circles are non-intersecting
-            Scalar w = weight(q_radius, radius, distance);
-            sum_of_weights += w;
-            weighted_sum += w * demo.p;
+            if ((q_radius + demo.r) < demo.d) 
+            {
+                demo.w = 0;
+                continue; // the circles are non-intersecting
+            }
+            demo.w = weight(q_radius, demo.r, demo.d);
+            if (std::isnan(demo.w)) std::cout << "NaN with args " << q_radius << " " << demo.r << " " << demo.d << "\n";
+            sum_of_weights += demo.w;
+            weighted_sum += demo.w * demo.p;
         }
         weighted_sum = (1 / sum_of_weights) * weighted_sum;
+        for (auto& demo : demos) { demo.w = demo.w / sum_of_weights; }
         return weighted_sum;
     }
 };
@@ -271,21 +268,21 @@ point, so that the ratio $A_x/A$ will not be calculated if the query is too
 close to a demonstration.
 
 @='calculate distance'
-distance = norm(demo.s - q);
+demo.d = norm(demo.s - q);
 constexpr Scalar an_arbitrary_slop_factor = 
     std::numeric_limits<Scalar>::epsilon() * 5;
-if (distance <= an_arbitrary_slop_factor) return demo.p;
+if (demo.d <= an_arbitrary_slop_factor) return demo.p;
 @
 
 @='find radius'
-radius = std::numeric_limits<Scalar>::max();
+demo.r = std::numeric_limits<Scalar>::max();
 for (const auto& demo2 : demos)
 {
     if (demo.id == demo2.id) continue;
     Scalar d = norm(demo.s - demo2.s);
-    if (d < radius) radius = d;
+    if (d < demo.r) demo.r = d;
 }
-if (distance < radius) radius = distance;
+if (demo.d < demo.r) demo.r = demo.d;
 @
 
 Putting it all together, we get a reasonably generic header-only library
@@ -294,6 +291,7 @@ implementing Marier's algorithm.
 @#'include/marier_spheres.h'
 #include<limits>
 #include<cmath>
+#include<iostream>
 
 @{weight functions}
 

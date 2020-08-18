@@ -1,5 +1,6 @@
 #include<limits>
 #include<cmath>
+#include<iostream>
 
 template<typename Scalar>
 Scalar circle_circle_intersection_area(
@@ -34,12 +35,12 @@ template<typename Scalar, typename ID, typename SVector, typename PVector>
 class MarierSpheresInterpolator
 {
 public:
-    struct Demo { ID id; SVector s; PVector p; };
+    struct Demo { ID id; SVector s; PVector p; Scalar r, d, w;};
 
     template<typename DemoList>
-    PVector query(const SVector& q, const DemoList& demos)
+    PVector query(const SVector& q, DemoList& demos)
     {
-        Scalar q_radius, radius, distance;
+        Scalar q_radius;
         Scalar sum_of_weights = 0;
         PVector weighted_sum = {};
         if (demos.size() < 1) return weighted_sum;
@@ -51,28 +52,34 @@ public:
             if (d < q_radius) q_radius = d;
         }
 
-        for (const auto& demo : demos)
+        for (auto& demo : demos)
         {
-            distance = norm(demo.s - q);
+            demo.d = norm(demo.s - q);
             constexpr Scalar an_arbitrary_slop_factor = 
                 std::numeric_limits<Scalar>::epsilon() * 5;
-            if (distance <= an_arbitrary_slop_factor) return demo.p;
+            if (demo.d <= an_arbitrary_slop_factor) return demo.p;
         
-            radius = std::numeric_limits<Scalar>::max();
+            demo.r = std::numeric_limits<Scalar>::max();
             for (const auto& demo2 : demos)
             {
                 if (demo.id == demo2.id) continue;
                 Scalar d = norm(demo.s - demo2.s);
-                if (d < radius) radius = d;
+                if (d < demo.r) demo.r = d;
             }
-            if (distance < radius) radius = distance;
+            if (demo.d < demo.r) demo.r = demo.d;
         
-            if ((q_radius + radius) < distance) continue; // the circles are non-intersecting
-            Scalar w = weight(q_radius, radius, distance);
-            sum_of_weights += w;
-            weighted_sum += w * demo.p;
+            if ((q_radius + demo.r) < demo.d) 
+            {
+                demo.w = 0;
+                continue; // the circles are non-intersecting
+            }
+            demo.w = weight(q_radius, demo.r, demo.d);
+            if (std::isnan(demo.w)) std::cout << "NaN with args " << q_radius << " " << demo.r << " " << demo.d << "\n";
+            sum_of_weights += demo.w;
+            weighted_sum += demo.w * demo.p;
         }
         weighted_sum = (1 / sum_of_weights) * weighted_sum;
+        for (auto& demo : demos) { demo.w = demo.w / sum_of_weights; }
         return weighted_sum;
     }
 };
