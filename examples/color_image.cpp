@@ -61,10 +61,15 @@ int fired_main(
     for (const auto& demo : demos)
     {
         const Vec2& v = demo.s;
+        const RGBVec& c = demo.p;
         draw.pen_color(0,0,0);
-        draw.circle(v.x() * x, v.y() * y, 5);
+        draw.pen_width(1);
+        draw.circle(v.x() * x, v.y() * y, 7);
         draw.pen_color(255,255,255);
-        draw.circle(v.x() * x, v.y() * y, 3);
+        draw.circle(v.x() * x, v.y() * y, 5);
+        draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
+        draw.pen_width(3);
+        draw.circle(v.x() * x, v.y() * y, 2);
     }
 
     img.save_image("interpolated_colors.bmp");

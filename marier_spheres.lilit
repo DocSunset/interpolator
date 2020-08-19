@@ -133,7 +133,13 @@ the templated SVector for the source space will have the same two operators as
 well as a method `norm` that returns the length of a vector.
 
 The functions to compute the weight for a single destination vector are
-straightforward to implement based on the equations in step 3 above
+generally straightforward to implement based on the equations in step 3 above.
+
+One necessary quirk: when the interpolator is used with `float` scalars, the
+argument to the `acos` and `sqrt` calls sometimes falls just outside the domain
+of the functions. Boundary conditions are checked if `Scalar` is `float`: in
+testing, the `acos` args only ever fell at or slightly above `1.0f`, so this
+is the only condition which is addressed by the boundary check for these args.
 
 @='weight functions'
 template<typename Scalar>
@@ -145,10 +151,26 @@ Scalar circle_circle_intersection_area(
     Scalar d2 = d * d;
     Scalar r2 = r * r;
     Scalar R2 = R * R;
-    Scalar two_d = 2 * d;
-    Scalar a = r2 * std::acos((d2 + r2 - R2)/(two_d * r));
-    Scalar b = R2 * std::acos((d2 + R2 - r2)/(two_d * R));
-    Scalar c = std::sqrt((-d+r+ R) * (d+r-R) * (d-r+R) * (d+r+R))/2.0;
+    Scalar two_d = (Scalar)2 * d;
+    Scalar arg1 = (d2 + r2 - R2)/(two_d * r);
+    Scalar arg2 = (d2 + R2 - r2)/(two_d * R);
+    Scalar arg3 = (-d+r+ R) * (d+r-R) * (d-r+R) * (d+r+R);
+    Scalar a, b, c;
+    if constexpr (std::is_same_v<Scalar, float>)
+    {
+        if (arg1 > 1.0f) a = 0;
+        else a = r2 * std::acos(arg1);
+        if (arg2 > 1.0f) b = 0;
+        else b = R2 * std::acos(arg2);
+        if (arg3 < 0.0f) c = 0;
+        else c = std::sqrt(arg3) / 2.0f;
+    }
+    else
+    {
+        a = r2 * std::acos(arg1);
+        b = R2 * std::acos(arg2);
+        c = std::sqrt(arg3) / (Scalar)2.0;
+    }
     return a + b - c;
 }
 
@@ -210,7 +232,7 @@ public:
     {
         Scalar q_radius;
         Scalar sum_of_weights = 0;
-        PVector weighted_sum = {};
+        PVector weighted_sum = PVector() * 0;
         if (demos.size() < 1) return weighted_sum;
 
         @{find q_radius}
@@ -227,10 +249,6 @@ public:
                 continue; // the circles are non-intersecting
             }
             demo.w = marier_spheres_weight(q_radius, demo.r, demo.d);
-            if (std::isnan(demo.w)) std::cout << "NaN with args " << q_radius << " " << demo.r << " " << demo.d
-                    << " intersection area " << circle_circle_intersection_area(q_radius, demo.r, demo.d)
-                    << "\n";
-            "\n";
             sum_of_weights = sum_of_weights + demo.w;
             weighted_sum = weighted_sum + demo.w * demo.p;
         }
@@ -416,10 +434,15 @@ draw.pen_width(1);
 for (const auto& demo : demos)
 {
     const Vec2& v = demo.s;
+    const RGBVec& c = demo.p;
     draw.pen_color(0,0,0);
-    draw.circle(v.x() * x, v.y() * y, 5);
+    draw.pen_width(1);
+    draw.circle(v.x() * x, v.y() * y, 7);
     draw.pen_color(255,255,255);
-    draw.circle(v.x() * x, v.y() * y, 3);
+    draw.circle(v.x() * x, v.y() * y, 5);
+    draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
+    draw.pen_width(3);
+    draw.circle(v.x() * x, v.y() * y, 2);
 }
 @
 
