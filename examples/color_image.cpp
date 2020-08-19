@@ -3,9 +3,9 @@
 #include <chrono>
 #include <iostream>
 #include <vector>
-#include "../include/fire-hpp/fire.hpp"
-#include "../include/bitmap/bitmap_image.hpp"
-#include "../include/marier_spheres.h"
+#include "include/fire-hpp/fire.hpp"
+#include "include/bitmap/bitmap_image.hpp"
+#include "../interpolator/marier_spheres.h"
 #include <Eigen/Core>
 
 int fired_main(

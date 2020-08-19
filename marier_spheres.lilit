@@ -307,7 +307,9 @@ if (demo.d < demo.r) demo.r = demo.d;
 Putting it all together, we get a reasonably generic header-only library
 implementing Marier's algorithm.
 
-@#'include/marier_spheres.h'
+@#'interpolator/marier_spheres.h'
+#ifndef MARIER_SPHERES_INTERPOLATOR_H
+#define MARIER_SPHERES_INTERPOLATOR_H
 #include<limits>
 #include<cmath>
 #include<iostream>
@@ -315,6 +317,7 @@ implementing Marier's algorithm.
 @{weight functions}
 
 @{intersecting n-spheres}
+#endif
 @
 
 # Usage
@@ -345,9 +348,9 @@ Here's the overview of the example source code:
 #include <chrono>
 #include <iostream>
 #include <vector>
-#include "../include/fire-hpp/fire.hpp"
-#include "../include/bitmap/bitmap_image.hpp"
-#include "../include/marier_spheres.h"
+#include "include/fire-hpp/fire.hpp"
+#include "include/bitmap/bitmap_image.hpp"
+#include "../interpolator/marier_spheres.h"
 #include <Eigen/Core>
 
 int fired_main(

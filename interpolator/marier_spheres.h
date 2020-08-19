@@ -1,3 +1,5 @@
+#ifndef MARIER_SPHERES_INTERPOLATOR_H
+#define MARIER_SPHERES_INTERPOLATOR_H
 #include<limits>
 #include<cmath>
 #include<iostream>
@@ -98,3 +100,4 @@ public:
         return weighted_sum;
     }
 };
+#endif
