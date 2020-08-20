@@ -338,13 +338,12 @@ querying the source space. As well as producing an image that might offer some
 intuition about the topology of the interpolated output, this will also serve
 as a reasonable benchmark for the efficiency of the implementation if the
 number of pixels in the image is large enough.  The initial implementation of
-the interpolator could process about 250 queries per second with 5
-demonstrations, but only about 40 per second with 15 demonstrations, reflecting
-the poor time complexity of the initial implementation.
-
-The user will have to ensure that Eigen is available on their system to compile
-this example; the other dependencies are included in the repository as
-subtrees and should be available automatically.
+the interpolator, when compiled with optimizations enabled, could process about
+15000 queries per second with 5 demonstrations, about 5000 per second with 15
+demonstrations, 2200 with 25 demonstrations, and 1200 with 35 demonstrations.
+As per the quadratic time complexity of this implementation, the number of
+queries processed per second decreases by a multiplicative factor as the number
+of demonstrations increases linearly.
 
 Here's the overview of the example source code:
 
@@ -430,11 +429,11 @@ for (unsigned int xpix = 0; xpix < x; ++xpix)
     for (unsigned int ypix = 0; ypix < y; ++ypix)
     {
         auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-        auto out = interpolator.query(q, demos) * (Scalar)255;
+        auto out = interpolator.query(q, demos);
         img.set_pixel(xpix, ypix,
-                (unsigned char)std::round(out.x()),
-                (unsigned char)std::round(out.y()),
-                (unsigned char)std::round(out.z())); 
+                (unsigned char)std::round(out.x() * 255),
+                (unsigned char)std::round(out.y() * 255),
+                (unsigned char)std::round(out.z() * 255)); 
     }
 }
 @
@@ -461,7 +460,7 @@ for (const auto& demo : demos)
 }
 @
 
-## WebGL Interactive Example
+## OpenGL Interactive Example
 
 This example offers some insight into the inner workings of the interpolator.
 A handful of demonstrations associating random 2D positions with random colors

@@ -44,11 +44,11 @@ int fired_main(
         for (unsigned int ypix = 0; ypix < y; ++ypix)
         {
             auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-            auto out = interpolator.query(q, demos) * (Scalar)255;
+            auto out = interpolator.query(q, demos);
             img.set_pixel(xpix, ypix,
-                    (unsigned char)std::round(out.x()),
-                    (unsigned char)std::round(out.y()),
-                    (unsigned char)std::round(out.z())); 
+                    (unsigned char)std::round(out.x() * 255),
+                    (unsigned char)std::round(out.y() * 255),
+                    (unsigned char)std::round(out.z() * 255)); 
         }
     }
 
