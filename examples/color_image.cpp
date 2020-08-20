@@ -8,21 +8,21 @@
 #include "../interpolator/marier_spheres.h"
 #include <Eigen/Core>
 
+using Scalar = float;
+using ID = unsigned int;
+using Vec2 = Eigen::Vector2f;
+using RGBVec = Eigen::Vector3f;
+using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, RGBVec>;
+using Demo = typename Interpolator::Demo;
+
+Interpolator interpolator;
+std::vector<Demo> demos;
+
 int fired_main(
         unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
         unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
-        unsigned int n = fire::arg("n", "The number of demonstrations", 25))
+        unsigned int n = fire::arg("n", "The number of demonstrations", 5))
 {
-    using Scalar = float;
-    using ID = unsigned int;
-    using Vec2 = Eigen::Vector2f;
-    using RGBVec = Eigen::Vector3f;
-    using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, RGBVec>;
-    using Demo = typename Interpolator::Demo;
-
-    Interpolator interpolator;
-    std::vector<Demo> demos;
-
     bitmap_image img(x, y); 
     img.clear();
 
@@ -38,6 +38,7 @@ int fired_main(
     }
 
     auto start = std::chrono::high_resolution_clock::now();
+
     for (unsigned int xpix = 0; xpix < x; ++xpix)
     {
         for (unsigned int ypix = 0; ypix < y; ++ypix)
@@ -50,6 +51,7 @@ int fired_main(
                     (unsigned char)std::round(out.z())); 
         }
     }
+
     auto stop = std::chrono::high_resolution_clock::now();
     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
     std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 

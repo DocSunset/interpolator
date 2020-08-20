@@ -54,11 +54,11 @@ class MarierSpheresInterpolator
 {
 public:
     struct Demo { ID id; SVector s; PVector p; Scalar r, d, w;};
+    Scalar q_radius;
 
     template<typename DemoList>
     PVector query(const SVector& q, DemoList& demos)
     {
-        Scalar q_radius;
         Scalar sum_of_weights = 0;
         PVector weighted_sum = PVector() * 0;
         if (demos.size() < 1) return weighted_sum;
