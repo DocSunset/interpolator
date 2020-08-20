@@ -468,12 +468,14 @@ A handful of demonstrations associating random 2D positions with random colors
 are generated. The position and color of each point is visualized by drawing a
 dot of the appropriate color at that position. In addition, a circle is drawn
 around each dot with the radius associated to that demonstration by the
-interpolator. Finally, a grey region is drawn beneath each dot whose size
-reflects the contribution of that dot to the weighted sum. 
+interpolator; notice how each demonstrated point's radial circle always
+intersects at least one other dot, which is the nearest neighbour of that
+demonstrated point. Finally, a grey region is drawn beneath each dot whose size
+and brightness reflect the contribution of that dot to the weighted sum. 
 
-The query point is based on the position of the cursor within the screen. Its
-color is based on the result of the interpolation. A radial circle is also
-drawn for this point.
+The position of the query point is based on the position of the cursor within
+the screen. Its color is based on the result of the interpolation. A radial
+circle is also drawn for this point.
 
 The bulk of this happens in the display callback. For some reason, it appears
 to be necessary to draw in depth order (back to front) so that the dots and
@@ -519,7 +521,7 @@ void display()
     {
         const auto& v = d.s;
         // draw disk for weight
-        glColor4f(0.2, 0.2, 0.2, 0.1);
+        glColor4f(d.w, d.w, d.w, d.w);
         drawCircleFilled(v, d.w/3, -1);
     }
 
@@ -530,6 +532,7 @@ void display()
         // draw radial circle
         glColor3f(c.x(), c.y(), c.z());
         drawCircleWire(v, d.r, 1);
+        drawCircleWire(v, d.r - 0.001, 1);
     }
 
     for (const auto& d : demos)
@@ -543,6 +546,7 @@ void display()
 
     glColor3f(q_color.x(), q_color.y(), q_color.z());
     drawCircleWire(q, interpolator.q_radius);
+    drawCircleWire(q, interpolator.q_radius - 0.001);
     drawCircleFilled(q, dot_radius, 1);
 
     glutSwapBuffers();

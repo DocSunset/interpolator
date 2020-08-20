@@ -57,7 +57,7 @@ void display()
     {
         const auto& v = d.s;
         // draw disk for weight
-        glColor4f(0.2, 0.2, 0.2, 0.1);
+        glColor4f(d.w, d.w, d.w, d.w);
         drawCircleFilled(v, d.w/3, -1);
     }
 
@@ -68,6 +68,7 @@ void display()
         // draw radial circle
         glColor3f(c.x(), c.y(), c.z());
         drawCircleWire(v, d.r, 1);
+        drawCircleWire(v, d.r - 0.001, 1);
     }
 
     for (const auto& d : demos)
@@ -81,6 +82,7 @@ void display()
 
     glColor3f(q_color.x(), q_color.y(), q_color.z());
     drawCircleWire(q, interpolator.q_radius);
+    drawCircleWire(q, interpolator.q_radius - 0.001);
     drawCircleFilled(q, dot_radius, 1);
 
     glutSwapBuffers();
