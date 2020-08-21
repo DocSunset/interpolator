@@ -3,24 +3,24 @@
 In sound design, digital musical instrument design, and intermedia art in
 general, creators often deal with complex generative systems with numerous
 control parameters: sound and video synthesizers and processors, simulations,
-and artificially intelligent agents to name just a few. These systems are often
+and artificially intelligent agents are a few examples. These systems are often
 capable of producing a combinatorially immense variety of interesting behaviors
 (sounds, images, etc.) based on the state of their parameters. Much of the
-creative work of using and interacting with these systems often comes down to
-simply exploring these vast spaces of possibilities, perhaps noting points of
-interest along the way. Eventually, entire compositions, installations, or
-musical instruments can be devised by selecting the most meaningful or
-appropriate paths to navigate within these spaces of possibilities.
+creative work of using and interacting with these systems comes down to
+exploring these vast spaces of possibilities, perhaps noting points of interest
+along the way. Eventually, entire compositions, installations, or musical
+instruments can be devised by selecting the paths to navigate within these
+spaces of possibilities.
 
 A useful tool in the exploration and navigation of these spaces is preset
-interpolation. After manually recording the points of interest as presets,
-preset interpolation algorithms are used to automatically move between these
-predetermined a-priori interesting places, filling in the space between them
-with intermediate locations that are likely, by proximity, to also be
-interesting. This allows the user of a preset interpolation algorithm to move
-easily through the space of possibilities demarcated by the points of interest
-they record as presets, facilitating the discovery of other interesting points
-in space and of interesting paths through space.
+interpolation. After manually recording points of interest in parameter space
+as presets, preset interpolation algorithms are used to automatically move
+between these predetermined a-priori interesting places, filling in the space
+between them with intermediate locations that are likely, by proximity, to also
+be interesting. This allows the user of a preset interpolation algorithm to
+move easily through the space of possibilities demarcated by the points of
+interest they record as presets, facilitating the discovery of other
+interesting points in space and of interesting paths through space.
 
 What is especially useful about preset interpolation is that it allows the user
 to reframe the navigation of the control parameter space in terms of another
@@ -65,15 +65,21 @@ The basic principle of many interpolation algorithms is to interpolate between
 destination vectors producing an output parameter vector $y$ via a weighted
 sum.
 
-y(\bm{w}) = \sum_{i = 0}^{n - 1} w_i * p_i
+$$
+y(\boldsymbol{w}) = \sum_{i = 0}^{n - 1} w_i * p_i
+$$
 
 Where $n$ is the number of demonstrations (i.e. the size of the set $D$ of
 demonstrations). The role of the preset interpolator is then reduced to simply
 producing and applying a list of weights, usually as a function of a query or
 cursor vector $q$ in the source space, and the list of demonstrations.
 
-\bm{w}(q, D) = {w_0, w_1, w_2, ..., w_{n}}
+$$
+\boldsymbol{w}(q, D) = {w_0, w_1, w_2, ..., w_{n}} 
+$$
+$$
 D = { {s_0, p_0}, {s_1, p_1}, {s_2, p_2}, ..., {s_n, p_n} }
+$$
 
 # Intersecting N-Spheres Interpolation
 
@@ -111,9 +117,13 @@ both points, and $A$ is the area of the circle defined by $r_i$ and its point.
 $A_x$ is given by the following function, which depends only on the radii of
 the two circles and the distance between them:
 
-A_x(R, r, d) &= r^2 cos^(-1) \( \frac{d^2 + r^2 - R^2}{2dr} \)
-             &+ R^2 cos^(-1) \( \frac{d^2 + R^2 - r^2}{2dR} \)
+$$
+\begin{aligned}
+A_x(R, r, d) &= r^2 cos^(-1) ( \frac{d^2 + r^2 - R^2}{2dr} ) \\
+             &+ R^2 cos^(-1) ( \frac{d^2 + R^2 - r^2}{2dR} ) \\
              &- \frac{\sqrt{(-d + r + R)(d + r - R)(d - r + R)(d + r + R)}}{2}
+\end{aligned}
+$$
 
 4. Normalize the weights so that their sum is equal to one.
 
@@ -141,7 +151,8 @@ of the functions. Boundary conditions are checked if `Scalar` is `float`: in
 testing, the `acos` args only ever fell at or slightly above `1.0f`, so this
 is the only condition which is addressed by the boundary check for these args.
 
-@='weight functions'
+```c++ 
+// @='weight functions'
 template<typename Scalar>
 Scalar circle_circle_intersection_area(
         const Scalar& R, 
@@ -186,7 +197,8 @@ Scalar marier_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d)
 {
     return circle_circle_intersection_area(R, r, d) / circle_area(r);
 }
-@
+// @
+```
 
 Step 1 above is an instance of the "all nearest neighbours" problem. We are
 given a set of points (the demonstrated points in the source space plus the
@@ -220,7 +232,8 @@ likely to be useful for the caller to query the radii and weights associated
 with each demonstration, so room for these is included in the data structure
 for holding a demonstration.
 
-@='intersecting n-spheres'
+```c++ 
+// @='intersecting n-spheres'
 template<typename Scalar, typename ID, typename SVector, typename PVector>
 class MarierSpheresInterpolator
 {
@@ -257,7 +270,8 @@ public:
         return weighted_sum;
     }
 };
-@
+// @
+```
 
 The radius associated with the query point (and indeed every point) is searched
 for by brute force. Although far from optimal, this implementation seems good
@@ -267,14 +281,16 @@ Although every demonstration will be visited in the main loop of the query
 function, the radius of the query point has to be known in advance in order
 to calculate the weight associated with each point.
 
-@='find q_radius'
+```c++ 
+// @='find q_radius'
 q_radius = std::numeric_limits<Scalar>::max();
 for (const auto& demo : demos)
 {
     Scalar d = (demo.s - q).norm();
     if (d < q_radius) q_radius = d;
 }
-@
+// @
+```
 
 If the query is close enough to the demonstration, the exact value of the
 demonstration is returned and further calculation of the weighted sum is
@@ -286,14 +302,17 @@ determination of whether the query point exactly coincides with a demonstrated
 point, so that the ratio $A_x/A$ will not be calculated if the query is too
 close to a demonstration.
 
-@='calculate distance'
+```c++ 
+// @='calculate distance'
 demo.d = (demo.s - q).norm();
 constexpr Scalar an_arbitrary_slop_factor = 
     std::numeric_limits<Scalar>::epsilon() * 5;
 if (demo.d <= an_arbitrary_slop_factor) return demo.p;
-@
+// @
+```
 
-@='find radius'
+```c++ 
+// @='find radius'
 demo.r = std::numeric_limits<Scalar>::max();
 for (const auto& demo2 : demos)
 {
@@ -302,12 +321,14 @@ for (const auto& demo2 : demos)
     if (d < demo.r) demo.r = d;
 }
 if (demo.d < demo.r) demo.r = demo.d;
-@
+// @
+```
 
 Putting it all together, we get a reasonably generic header-only library
 implementing Marier's algorithm.
 
-@#'interpolator/marier_spheres.h'
+```c++ 
+// @#'interpolator/marier_spheres.h'
 #ifndef MARIER_SPHERES_INTERPOLATOR_H
 #define MARIER_SPHERES_INTERPOLATOR_H
 #include<limits>
@@ -318,7 +339,8 @@ implementing Marier's algorithm.
 
 @{intersecting n-spheres}
 #endif
-@
+// @
+```
 
 # Usage
 
@@ -347,7 +369,8 @@ of demonstrations increases linearly.
 
 Here's the overview of the example source code:
 
-@='basic globals'
+```c++ 
+// @='basic globals'
 using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
@@ -357,9 +380,11 @@ using Demo = typename Interpolator::Demo;
 
 Interpolator interpolator;
 std::vector<Demo> demos;
-@
+// @
+```
 
-@#'examples/color_image.cpp'
+```c++ 
+// @#'examples/color_image.cpp'
 #include <cmath>
 #include <random>
 #include <chrono>
@@ -400,13 +425,15 @@ int fired_main(
 }
 
 FIRE(fired_main)
-@
+// @
+```
 
 We assume that the source dimensions range from 0 to 1 and that the 
 color channels in the RGBVec do the same. Randomly generating vectors is then
 trivial.
 
-@='generate random demonstrations'
+```c++ 
+// @='generate random demonstrations'
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
@@ -417,13 +444,15 @@ while(n-- > 0)
     Demo d{n, v, c};
     demos.push_back(d);
 }
-@
+// @
+```
 
 Drawing the image is also quite simple; simply iterate over the dimensions of
 the image and query the interpolator at each coordinate. We record how long
 this takes so that the program also serves as a simplistic benchmark.
 
-@='draw the image'
+```c++ 
+// @='draw the image'
 for (unsigned int xpix = 0; xpix < x; ++xpix)
 {
     for (unsigned int ypix = 0; ypix < y; ++ypix)
@@ -436,13 +465,15 @@ for (unsigned int xpix = 0; xpix < x; ++xpix)
                 (unsigned char)std::round(out.z() * 255)); 
     }
 }
-@
+// @
+```
 
 After drawing the overall image, we also take a moment to draw a circle around
 each demonstration point; this helps to better understand how the image relates
 to the topology of the interpolator.
 
-@='draw circles over demonstrated points'
+```c++ 
+// @='draw circles over demonstrated points'
 image_drawer draw(img);
 draw.pen_width(1);
 for (const auto& demo : demos)
@@ -458,7 +489,8 @@ for (const auto& demo : demos)
     draw.pen_width(3);
     draw.circle(v.x() * x, v.y() * y, 2);
 }
-@
+// @
+```
 
 ## OpenGL Interactive Example
 
@@ -482,7 +514,8 @@ radial lines dont become obscured by the weight disk in the back. If anyone
 can explain why this is, please contact me. The z-coordinate doesn't appear to
 have any influence, even with depth testing enabled.
 
-@='display callback'
+```c++ 
+// @='display callback'
 void drawCircle(const Vec2& position, const Scalar& radius, const Scalar& depth = 0)
 {
     constexpr Scalar pi = 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863;
@@ -550,7 +583,8 @@ void display()
 
     glutSwapBuffers();
 }
-@
+// @
+```
 
 All of the points in the scene in world coordinates are in the square region
 ([0 - 1], [0 - 1]). The reshape callback appropriately sets the viewport and
@@ -559,7 +593,8 @@ the window is wider than it is tall, padding is added on the sides so that the
 scene is centered. Otherwise, when the window is taller than it is wide, the
 padding is added above and below the scene.
 
-@='reshape callback'
+```c++ 
+// @='reshape callback'
 void reshape(int w, int h)
 {
     glViewport(0,0,w,h);
@@ -576,21 +611,26 @@ void reshape(int w, int h)
         glOrtho(0,       1,          -offset, 1 + offset, -1, 1);
     }
 }
-@
+// @
+```
 
-@='h < w: calculate pixels_per_unit and offset'
+```c++ 
+// @='h < w: calculate pixels_per_unit and offset'
 Scalar padding = (w - h)/2; // there is `padding` space on either size of the scene square
 Scalar pixels_per_unit = h; // this many pixels per unit in world coordinates
 Scalar units_per_pixel = 1/pixels_per_unit;
 Scalar offset = padding * units_per_pixel;
-@
+// @
+```
 
-@='w <= h: calculate pixels_per_unit and offset'
+```c++ 
+// @='w <= h: calculate pixels_per_unit and offset'
 Scalar padding = (h - w)/2; // there is `padding` space above and below the scene square
 Scalar pixels_per_unit = w; // this many pixels per unit in world coordinates
 Scalar units_per_pixel = 1/pixels_per_unit;
 Scalar offset = padding * units_per_pixel;
-@
+// @
+```
 
 The position of the query vector `q` is updated in the mouse move callback.
 This requires a similar calculation as the reshape callback, only going the
@@ -599,7 +639,8 @@ other direction.
 This callback also drives updates to the display, since moving the cursor
 will change the state of the interpolator.
 
-@='motion callback'
+```c++ 
+// @='motion callback'
 void mouse_move(int x, int y)
 {
     y = glutGet(GLUT_WINDOW_HEIGHT) - y; // flip y so it goes from the bottom left
@@ -619,11 +660,13 @@ void mouse_move(int x, int y)
     }
     glutPostRedisplay();
 }
-@
+// @
+```
 
 The rest of the program is basically boilerplate for setting up openGL.
 
-@='setup display and callbacks'
+```c++ 
+// @='setup display and callbacks'
 // fake argv and argc since we can't access the real ones behind fire-hpp
 char * fake_argv[1];
 std::string prog_name = "interactive_colors";
@@ -643,9 +686,11 @@ glEnable(GL_DEPTH_TEST);
 glClearColor(0,0,0,0);
 glClear(GL_COLOR_BUFFER_BIT);
 glutSwapBuffers();
-@
+// @
+```
 
-@#'examples/interactive_colors.cpp'
+```c++ 
+// @#'examples/interactive_colors.cpp'
 #include <string>
 #include <cmath>
 #include <chrono>
@@ -678,4 +723,29 @@ int fired_main(unsigned int n = fire::arg("n", "The number of demonstrations", 5
 }
 
 FIRE(fired_main)
-@
+// @
+```
+
+## Compiling Examples
+
+Both examples are relatively simple with just a few dependencies. Both rely
+on Eigen, and the interactive example additionally requires OpenGL. Make sure
+that these libraries are installed on your system. The other dependencies 
+(fire-hpp and bitmap) are both included as subtrees in this repository, so you
+should not have to do anything to install them.
+
+The image example can be compiled with this command:
+
+`g++ -std=c++17 -I/usr/include/eigen3/ -O3 examples/color_image.cpp`
+
+The interactive example can be compiled with this command:
+
+`g++ -std=c++17 -I/usr/include/eigen3/ -lGL -lglut -O3 examples/interactive_colors.cpp`
+
+In both cases, you may need to update the path to Eigen based on the
+particularities of your system. The above commands, possibly with slight
+modifications, should work on most Linux distributions and MacOS. 
+
+If you are a Windows user, it should be relatively straightforward to adapt
+the above commands to use Windows development tools. Please let me know how it
+goes and I would be happy to include more detailed instructions here.
