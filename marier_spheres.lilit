@@ -1,4 +1,4 @@
-# Background
+# Introduction
 
 In sound design, digital musical instrument design, and intermedia art in
 general, creators often deal with complex generative systems with numerous
@@ -34,6 +34,8 @@ afforded by the interface. These kinds of mappings are often essential in the
 design of digital musical instruments, and can be equally rewarding in other
 intermedia artistic practices.
 
+# Theory
+
 The basic operating principle of many preset interpolation algorithms,
 including the one presented here, is for the user to specify pairs of
 source-to-destination associations in the form of presets in these two spaces.
@@ -45,8 +47,9 @@ performance with the synthesizer, the user may wish to control it with a
 graphics tablet. They can associate several locations on the tablet with
 different presets found earlier, and then use the preset interpolation
 algorithm to navigate between these presets. The tablet locations can also be
-thought of as presets in the source space rather than the destination space of
-the sound synthesizer.
+thought of as presets, but located in the source space (the tablet's control
+dimensions) rather than the destination space (the sound synthesizer
+parameters).
 
 To remain unambiguous, for the rest of this exposition preset points in source
 space will be refered to as source vectors while preset points in destination
@@ -56,29 +59,31 @@ destination spaces are both vector spaces, meaning that presets can be
 meaningfully scaled and added together, and that there is a meaningful notion
 of distance between presets.  A pair made of a source vector $s$ and a
 destination vector $p$ to which the sources in the vicinity of $s$ should be
-associated will be called a demonstration. This reflects an interaction
-metaphor in which the user is thought to provide demonstrations of
+associated will be called a demonstration, $d = \{s, p\}$. This reflects an
+interaction metaphor in which the user is thought to provide demonstrations of
 action-to-output relationships, i.e. "when I do $s$, the interpolator should
-output $p$."
+output $p$."  The symbol $p$ is chosen for destination vectors based on the
+common situtation in which the destination space consists of the control
+parameters of some media generator such as a sound synthesizer, and to avoid
+collision with $d$ for a demonstration of a source-to-destination pair.
 
 The basic principle of many interpolation algorithms is to interpolate between
-destination vectors producing an output parameter vector $y$ via a weighted
-sum.
+$N$ destination vectors $p_n$ producing an output vector $y$ in destination
+space via a weighted sum with weights given by $\boldsymbol{w}$:
 
 $$
-y(\boldsymbol{w}) = \sum_{i = 0}^{n - 1} w_i * p_i
+y(\boldsymbol{w}) = \sum_{n = 0}^{N - 1} w_n * p_n
 $$
 
-Where $n$ is the number of demonstrations (i.e. the size of the set $D$ of
-demonstrations). The role of the preset interpolator is then reduced to simply
-producing and applying a list of weights, usually as a function of a query or
-cursor vector $q$ in the source space, and the list of demonstrations.
+The role of the preset interpolator is then reduced to simply producing and
+applying a list of weights, usually as a function of a query or cursor vector
+$q$ in the source space, and list $D$ of $N$ demonstrations.
 
 $$
 \boldsymbol{w}(q, D) = {w_0, w_1, w_2, ..., w_{n}} 
 $$
 $$
-D = { {s_0, p_0}, {s_1, p_1}, {s_2, p_2}, ..., {s_n, p_n} }
+D = \{s_0, p_0\}, \{s_1, p_1\}, \{s_2, p_2\}, ..., \{s_n, p_n\}
 $$
 
 # Intersecting N-Spheres Interpolation
@@ -98,22 +103,40 @@ higher-level mappings such as navigating destination presets for the preset
 interpolation system itself using a higher-level preset interpolator. 
 
 Intersecting n-spheres interpolation produces weights for a weighted sum
-according to the following procedure:
+according to the following procedure. In summary, for each demonstration two
+circles are drawn: one centered on the source vector of the demonstration, and
+one centered on the query vector (again in source space). The radius of either
+circle is given by the distance from the circle's center point (either the query
+vector or the source vector in a demonstration) to its nearest neighbour in
+source space (which may again be either the query point or a source vector in
+a demonstration). The weight for each demonstration is given by the ratio of
+the area of the circle centered on the demonstration's source vector, and the
+area of the intersection of that circle with the circle centered on the query
+point. The procedure if full proceeds in this way:
 
 1. For every point in source space including the cursor point, determine the
-distance ($R$ for the cursor point, $r_i$ for the demonstrated source points)
-from that point to its nearest neighbour in source space. Consider the
-distances $R$ and $r_i$ as the radii of circles centered on their respective
-points.
+distance from that point to its nearest neighbour in source space. Consider the
+distances as the radii of circles centered on their respective points, $r_q$ for
+the cursor point $q$, $r_n$ for the $N$ demonstrated source points $s_n$.
 
-2. Determine the distance $d_i$ from each demonstrated source point $s_i$ to
-the cursor point.
+2. Determine the distance $d_n$ from each demonstrated source point $s_n$ to
+the cursor point $q$.
 
-3. The weight $w_i$ associated with the destination vector $p_i$ of the $i$th
-demonstration is given by the $A_x(R, r_i, d_i) / A(r_i)$ where $A_x$ is the
-area of the intersection of the circles defined by $R$, $r_i$, and their
-respective data points as though the circles lay on a plane passing through
-both points, and $A$ is the area of the circle defined by $r_i$ and its point.
+3. The weight $w_n$ associated with the destination vector $p_n$ of the $n$th
+demonstration is given by $A_x(r_q, r_n, d_n) / A(r_n)$ where $A$ is the area
+of the circle centered on $s_n$ with radius $r_n$, and
+
+    - where $A_x$ is the area
+        - of the intersection 
+        - of the circle centered on $s_n$ with radius $r_n$
+        - and the circle centered on $q$ with radius $r_q$,
+        - whose center points are seperated by the distance $d_n$,
+        - with the circles defined to lay on any plane passing through both points.
+
+4. Normalize the weights so that their sum is equal to one by dividing each
+weight $w_n$ by the mean of all the weights $\mu = \frac{1}{N}\sum_{n = 0}^{N -
+1} w_n$
+
 $A_x$ is given by the following function, which depends only on the radii of
 the two circles and the distance between them:
 
@@ -125,10 +148,13 @@ A_x(R, r, d) &= r^2 cos^(-1) ( \frac{d^2 + r^2 - R^2}{2dr} ) \\
 \end{aligned}
 $$
 
-4. Normalize the weights so that their sum is equal to one.
+And the $A$ is given by the usual equation for the area of a circle:
+$$
+A(r) = \pi r^2
+$$
 
-The algorithm, despite its name, actually doesn't utilized hyperspheres.
-Intead, 2D areas are used, simplifying the algorithm while producing results
+The algorithm, despite its name, actually doesn't involve any n-spheres.
+Intead, 2D circles are used, simplifying the algorithm while producing results
 that "are predictable and feel natural to the user" according to Marier.
 
 # Implementation
@@ -137,16 +163,16 @@ The weighted sum in Marier's algorithm implies that the destination space is
 some kind of vector space, while the requirement for a notion of distance
 implies that the source space is a normed vector space, most often an Euclidean
 vector space. These assumptions are represented in the implementation by the
-assumption that the templated PVector for the destination space will have an
+assumption that the templated `PVector` for the destination space will have an
 operator for multiplication by a scalar, and addition of two vectors, and that
-the templated SVector for the source space will have the same two operators as
-well as a method `norm` that returns the length of a vector.
+the templated `SVector` for the source space will have the same two operators
+as well as a method `norm` that returns the length of a vector.
 
 The functions to compute the weight for a single destination vector are
-generally straightforward to implement based on the equations in step 3 above.
+generally straightforward to implement based on the equations above.
 
 One necessary quirk: when the interpolator is used with `float` scalars, the
-argument to the `acos` and `sqrt` calls sometimes falls just outside the domain
+argument to the `acos` and `sqrt` calls sometimes fall just outside the domain
 of the functions. Boundary conditions are checked if `Scalar` is `float`: in
 testing, the `acos` args only ever fell at or slightly above `1.0f`, so this
 is the only condition which is addressed by the boundary check for these args.
@@ -216,21 +242,21 @@ optimization is necessary.
 Updating any of the points in source space including the cursor point always
 requires the nearest neighbour problem to be solved anew, because the nearest
 neighbour of the updated point and any point that it was previously the nearest
-neighbour of all have to be updated. Because the position of the cursor point
-is assumed to change whenever the interpolator is queried, this means that the
-nearest neighbour problem must be solved for every query. The trivial
-implementation used here (as well as in Marier's original presentation of the
-interpolation algorithm) solves this problem with $O(n^2)$ time complexity. In
-Marier's practice this hasn't been reported as an issue, presumably because the
-number of data points has always been reasonably low.
+neighbour of it all have to be updated. Because the position of the cursor
+point is assumed to change whenever the interpolator is queried, this means
+that the nearest neighbour problem must be solved for every query. The trivial
+implementation used here (as well as in Marier's original Supercollider
+implementation of the algorithm) solves this problem with $O(n^2)$ time
+complexity. In Marier's practice this hasn't been reported as an issue,
+presumably because the number of data points has always been reasonably low.
 
 Because the all nearest neighbours problem has to be solved for every query,
 there is no need for a special data structure to hold the demonstrations. The
 query function could be written as a generic pure function over the query point
-and the list of demonstrations. However, for interactive applications it is
-likely to be useful for the caller to query the radii and weights associated
-with each demonstration, so room for these is included in the data structure
-for holding a demonstration.
+and the list of demonstrations. However, for interactive applications (such as
+the OpenGL demo program below) it is useful for the caller to query the radii
+and weights associated with each demonstration, so room for these is included
+in the data structure for holding a demonstration.
 
 ```c++ 
 // @='intersecting n-spheres'
@@ -245,7 +271,7 @@ public:
     PVector query(const SVector& q, DemoList& demos)
     {
         Scalar sum_of_weights = 0;
-        PVector weighted_sum = PVector() * 0;
+        PVector weighted_sum = PVector() * 0; // hack to initialize weighted_sum to zero
         if (demos.size() < 1) return weighted_sum;
 
         @{find q_radius}
@@ -273,13 +299,23 @@ public:
 // @
 ```
 
+One quirk of the above implementation is the line which initializes the
+`PVector` for the weighted sum that is returned by the query function.
+Initialization is achieved by multiplying the default constructed PVector by
+zero.  This is done in order to avoid imposing any calling semantic for
+zero-initializing a `PVector`, such as a static member function
+`PVector::Zero()`, fill function `weighted_sum.fill(0)' or constructor
+accepting a number `PVector(0)`.  The chosen method only relies on the
+aforementioned assumption that `PVector` defines an operator for multiplication
+by a scalar.
+
 The radius associated with the query point (and indeed every point) is searched
 for by brute force. Although far from optimal, this implementation seems good
 enough for now.
 
 Although every demonstration will be visited in the main loop of the query
 function, the radius of the query point has to be known in advance in order
-to calculate the weight associated with each point.
+to calculate the weight associated with each demonstration.
 
 ```c++ 
 // @='find q_radius'
@@ -292,15 +328,17 @@ for (const auto& demo : demos)
 // @
 ```
 
-If the query is close enough to the demonstration, the exact value of the
-demonstration is returned and further calculation of the weighted sum is
-short-circuited.  As the query point approaches the position of a demonstrated
-point, the size of both $A_x$ and $A$ get smaller and smaller, which would
-likely lead to numerical instability when calculating the weight $A_x/A$. For
-this reason, an arbitrary amount of sloppiness is introduced into the
-determination of whether the query point exactly coincides with a demonstrated
-point, so that the ratio $A_x/A$ will not be calculated if the query is too
-close to a demonstration.
+As the query point approaches the position of a demonstrated point, the size of
+both $A_x$ and $A$ get smaller and smaller, which would likely lead to
+numerical instability when calculating the weight $A_x/A$. For this reason, an
+arbitrary amount of sloppiness is introduced into the determination of whether
+the query point exactly coincides with a demonstrated point, so that the ratio
+$A_x/A$ will not be calculated if the query is too close to a demonstration.
+Instead, if the query is close enough to the demonstration then the exact value
+of the demonstration is returned and further calculation of the weighted sum is
+short-circuited.  This condition is checked while calculating the distance from
+the current source vector to the query point, which takes place just before
+searching for the radius of the circle centered on the source vector.
 
 ```c++ 
 // @='calculate distance'
@@ -311,16 +349,23 @@ if (demo.d <= an_arbitrary_slop_factor) return demo.p;
 // @
 ```
 
+Finding the radius of the circle centered on the demonstration `demo` is done
+by brute force search, as mentioned above. The distance from `demo` to ever
+other demonstration is checked, and the least distance is recorded. Finally,
+the distance from the demonstration to the query point is checked, and this is
+used if it is less than the distance from the demonstration to the nearest
+other demonstration.
+
 ```c++ 
 // @='find radius'
 demo.r = std::numeric_limits<Scalar>::max();
 for (const auto& demo2 : demos)
 {
-    if (demo.id == demo2.id) continue;
-    Scalar d = (demo.s - demo2.s).norm();
-    if (d < demo.r) demo.r = d;
+    if (demo.id == demo2.id) continue; // demo cannot be its own nearest neighbour
+    Scalar r = (demo.s - demo2.s).norm();
+    if (r < demo.r) demo.r = r;
 }
-if (demo.d < demo.r) demo.r = demo.d;
+if (demo.d < demo.r) demo.r = demo.d; // check if query point is closer
 // @
 ```
 

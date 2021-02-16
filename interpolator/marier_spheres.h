@@ -60,7 +60,7 @@ public:
     PVector query(const SVector& q, DemoList& demos)
     {
         Scalar sum_of_weights = 0;
-        PVector weighted_sum = PVector() * 0;
+        PVector weighted_sum = PVector() * 0; // hack to initialize weighted_sum to zero
         if (demos.size() < 1) return weighted_sum;
 
         q_radius = std::numeric_limits<Scalar>::max();
@@ -80,11 +80,11 @@ public:
             demo.r = std::numeric_limits<Scalar>::max();
             for (const auto& demo2 : demos)
             {
-                if (demo.id == demo2.id) continue;
-                Scalar d = (demo.s - demo2.s).norm();
-                if (d < demo.r) demo.r = d;
+                if (demo.id == demo2.id) continue; // demo cannot be its own nearest neighbour
+                Scalar r = (demo.s - demo2.s).norm();
+                if (r < demo.r) demo.r = r;
             }
-            if (demo.d < demo.r) demo.r = demo.d;
+            if (demo.d < demo.r) demo.r = demo.d; // check if query point is closer
         
             if ((q_radius + demo.r) < demo.d) 
             {
