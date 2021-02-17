@@ -323,36 +323,35 @@ A(r) = \pi r^2
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    Scalar q_radius;</span>
 <span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>    <span class="kw">template</span>&lt;<span class="kw">typename</span> DemoList&gt;</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    PVector query(<span class="at">const</span> SVector&amp; q, DemoList&amp; demos)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    PVector query(<span class="at">const</span> SVector&amp; q, DemoList&amp; demos, PVector&amp; weighted_sum)</span>
 <span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>    {</span>
 <span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>        Scalar sum_of_weights = <span class="dv">0</span>;</span>
-<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        PVector weighted_sum = PVector() * <span class="dv">0</span>; <span class="co">// hack to initialize weighted_sum to zero</span></span>
-<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (demos.size() &lt; <span class="dv">1</span>) <span class="cf">return</span> weighted_sum;</span>
-<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>        <span class="er">@</span>{find q_radius}</span>
-<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (<span class="kw">auto</span>&amp; demo : demos)</span>
-<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>        {</span>
-<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>            <span class="er">@</span>{calculate distance}</span>
-<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>            <span class="er">@</span>{find radius}</span>
-<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>        </span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> ((q_radius + demo.r) &lt; demo.d) </span>
-<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>            {</span>
-<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>                demo.w = <span class="dv">0</span>;</span>
-<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span>; <span class="co">// the circles are non-intersecting</span></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>            }</span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>            demo.w = marier_spheres_weight(q_radius, demo.r, demo.d);</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            sum_of_weights = sum_of_weights + demo.w;</span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>            weighted_sum = weighted_sum + demo.w * demo.p;</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        }</span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        weighted_sum = (<span class="dv">1</span> / sum_of_weights) * weighted_sum;</span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (<span class="kw">auto</span>&amp; demo : demos) { demo.w = demo.w / sum_of_weights; }</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> weighted_sum;</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>};</span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
-<p>One quirk of the above implementation is the line which initializes the <code>PVector</code> for the weighted sum that is returned by the query function. Initialization is achieved by multiplying the default constructed PVector by zero. This is done in order to avoid imposing any calling semantic for zero-initializing a <code>PVector</code>, such as a static member function <code>PVector::Zero()</code>, fill function <code>weighted_sum.fill(0)' or constructor accepting a number</code>PVector(0)<code>.  The chosen method only relies on the aforementioned assumption that</code>PVector` defines an operator for multiplication by a scalar.</p>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (demos.size() &lt; <span class="dv">1</span>) <span class="cf">return</span> weighted_sum;</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>        <span class="er">@</span>{find q_radius}</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (<span class="kw">auto</span>&amp; demo : demos)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>        {</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>            <span class="er">@</span>{calculate distance}</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>            <span class="er">@</span>{find radius}</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> ((q_radius + demo.r) &lt; demo.d) </span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>            {</span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>                demo.w = <span class="dv">0</span>;</span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>                <span class="cf">continue</span>; <span class="co">// the circles are non-intersecting</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a>            }</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>            demo.w = marier_spheres_weight(q_radius, demo.r, demo.d);</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>            sum_of_weights = sum_of_weights + demo.w;</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>            weighted_sum = weighted_sum + demo.w * demo.p;</span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>        }</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>        weighted_sum = (<span class="dv">1</span> / sum_of_weights) * weighted_sum;</span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> (<span class="kw">auto</span>&amp; demo : demos) { demo.w = demo.w / sum_of_weights; }</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> weighted_sum;</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>};</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<p>One quirk of the above implementation is that the output (<code>weighted_sum</code>) is passed by variable. This is necessary to avoid having to initialize <code>weighted_sum</code> to zero. By leaving this responsibility to the caller, the implementation of the interpolator is more generic, only imposing the need for operators for addition and multiplication by a scalar. In other words, the interpolator doesn’t know how to initialize a <code>PVector</code>, which could be a raw float array, a complicated linear algebra library vector, or anything else, as long as it has addition and multiplication by a scalar. Since <code>PVector</code> is so generic, the implementation of the interpolator can’t make assumptions about how to construct or initialize it.</p>
 <p>The radius associated with the query point (and indeed every point) is searched for by brute force. Although far from optimal, this implementation seems good enough for now.</p>
 <p>Although every demonstration will be visited in the main loop of the query function, the radius of the query point has to be known in advance in order to calculate the weight associated with each demonstration.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;find q_radius&#39;</span></span>
@@ -398,18 +397,21 @@ A(r) = \pi r^2
 <p>The remainder of this document elaborates some example programs demonstrating the usage of the library. The drawing example renders an image based on interpolating randomly generated colors associated with randomly generated 2D positions. The interactive example works similarly, only instead of systematically querying the image the user moves a cursor around it to query the interpolated colors, and the graphics are updated in real time to reflect the underlying state of the interpolator.</p>
 <h2 id="drawing-example">Drawing example</h2>
 <p>This simple command line drawing application will randomly generate a handful of source-destination demonstrations, and draw an image by systematically querying the source space. As well as producing an image that might offer some intuition about the topology of the interpolated output, this will also serve as a reasonable benchmark for the efficiency of the implementation if the number of pixels in the image is large enough. The initial implementation of the interpolator, when compiled with optimizations enabled, could process about 15000 queries per second with 5 demonstrations, about 5000 per second with 15 demonstrations, 2200 with 25 demonstrations, and 1200 with 35 demonstrations. As per the quadratic time complexity of this implementation, the number of queries processed per second decreases by a multiplicative factor as the number of demonstrations increases linearly.</p>
+<p>The colour interpolations are performed in <a href="https://doi.org/10.1364/OE.25.015131">J_zA_zB_z colour space</a>, a colour representation that is designed to provide the best balance of perceptual uniformity and iso-hue linearity. This is meant to ensure that the image produced reflects the topology of the interpolation rather than the non-linearity of sRGB colour space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to J_zA_zB_z colour space and back are given below.</p>
 <p>Here’s the overview of the example source code:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;basic globals&#39;</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Scalar = <span class="dt">float</span>;</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> ID = <span class="dt">unsigned</span> <span class="dt">int</span>;</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Vec2 = Eigen::Vector2f;</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> RGBVec = Eigen::Vector3f;</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Interpolator = MarierSpheresInterpolator&lt;Scalar, ID, Vec2, RGBVec&gt;;</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Demo = <span class="kw">typename</span> Interpolator::Demo;</span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>Interpolator interpolator;</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="bu">std::</span>vector&lt;Demo&gt; demos;</span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> CIEXYZVec = Eigen::Vector3f;</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> JzAzBzVec = Eigen::Vector3f;</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Interpolator = MarierSpheresInterpolator&lt;Scalar, ID, Vec2, JzAzBzVec&gt;;</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="kw">using</span> Demo = <span class="kw">typename</span> Interpolator::Demo;</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>Interpolator interpolator;</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="bu">std::</span>vector&lt;Demo&gt; demos;</span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
 <div class="sourceCode" id="cb8"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @#&#39;examples/color_image.cpp&#39;</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;cmath&gt;</span></span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;random&gt;</span></span>
@@ -420,39 +422,34 @@ A(r) = \pi r^2
 <span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;include/bitmap/bitmap_image.hpp&quot;</span></span>
 <span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;../interpolator/marier_spheres.h&quot;</span></span>
 <span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;Eigen/Core&gt;</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{basic globals}</span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> fired_main(</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a>        <span class="dt">unsigned</span> <span class="dt">int</span> x = fire::arg(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;The horizontal dimension in pixels&quot;</span>, <span class="dv">500</span>), </span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>        <span class="dt">unsigned</span> <span class="dt">int</span> y = fire::arg(<span class="st">&quot;y&quot;</span>, <span class="st">&quot;The vertical dimension in pixels&quot;</span>, <span class="dv">500</span>), </span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>        <span class="dt">unsigned</span> <span class="dt">int</span> n = fire::arg(<span class="st">&quot;n&quot;</span>, <span class="st">&quot;The number of demonstrations&quot;</span>, <span class="dv">5</span>))</span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>    bitmap_image img(x, y); </span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>    img.clear();</span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{generate random demonstrations}</span>
-<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> start = <span class="bu">std::</span>chrono<span class="bu">::</span>high_resolution_clock<span class="bu">::</span>now();</span>
-<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{draw the image}</span>
-<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> stop = <span class="bu">std::</span>chrono<span class="bu">::</span>high_resolution_clock<span class="bu">::</span>now();</span>
-<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> usec = <span class="bu">std::</span>chrono<span class="bu">::</span>duration_cast&lt;<span class="bu">std::</span>chrono<span class="bu">::</span>microseconds&gt;(stop - start).count();</span>
-<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a>    <span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;Generated &quot;</span> &lt;&lt; x * y &lt;&lt; <span class="st">&quot; interpolations in &quot;</span> &lt;&lt; usec &lt;&lt; <span class="st">&quot; microseconds</span><span class="sc">\n</span><span class="st">&quot;</span> </span>
-<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>            &lt;&lt; <span class="st">&quot;About &quot;</span> &lt;&lt; <span class="dv">1000000</span> * x * y / usec &lt;&lt; <span class="st">&quot; interpolations per second&quot;</span> </span>
-<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a>            &lt;&lt; <span class="bu">std::</span>endl;</span>
-<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{draw circles over demonstrated points}</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;Eigen/LU&gt;</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{basic globals}</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{colour conversions}</span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> fired_main(</span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>        <span class="dt">unsigned</span> <span class="dt">int</span> x = fire::arg(<span class="st">&quot;x&quot;</span>, <span class="st">&quot;The horizontal dimension in pixels&quot;</span>, <span class="dv">500</span>), </span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>        <span class="dt">unsigned</span> <span class="dt">int</span> y = fire::arg(<span class="st">&quot;y&quot;</span>, <span class="st">&quot;The vertical dimension in pixels&quot;</span>, <span class="dv">500</span>), </span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>        <span class="dt">unsigned</span> <span class="dt">int</span> n = fire::arg(<span class="st">&quot;n&quot;</span>, <span class="st">&quot;The number of demonstrations&quot;</span>, <span class="dv">5</span>))</span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>    bitmap_image img(x, y); </span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a>    img.clear();</span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{generate random demonstrations}</span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{draw the image}</span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{draw circles over demonstrated points}</span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a>    img.save_image(<span class="st">&quot;interpolated_colors.bmp&quot;</span>);</span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span>;</span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>    img.save_image(<span class="st">&quot;interpolated_colors.bmp&quot;</span>);</span>
-<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-38"><a href="#cb8-38" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span>;</span>
-<span id="cb8-39"><a href="#cb8-39" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb8-40"><a href="#cb8-40" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-41"><a href="#cb8-41" aria-hidden="true" tabindex="-1"></a>FIRE(fired_main)</span>
-<span id="cb8-42"><a href="#cb8-42" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
-<p>We assume that the source dimensions range from 0 to 1 and that the color channels in the RGBVec do the same. Randomly generating vectors is then trivial.</p>
+<span id="cb8-36"><a href="#cb8-36" aria-hidden="true" tabindex="-1"></a>FIRE(fired_main)</span>
+<span id="cb8-37"><a href="#cb8-37" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<p>We assume that the source dimensions range from 0 to 1 and that the colour channels in an RGB colour vector do the same. Randomly generating vectors is then trivial. The RGB colour vector is then converted to J_zA_zB_z colour space. It is more convenient to generate the colour vectors in RGB space since doing so guarantees that the demonstrated colors are possible to display, which may not be the case when randomly generating colors in J_zA_zB_z space.</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;generate random demonstrations&#39;</span></span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">unsigned</span> <span class="dt">int</span> seed = <span class="bu">std::</span>chrono<span class="bu">::</span>system_clock<span class="bu">::</span>now().time_since_epoch().count();</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="bu">std::</span>default_random_engine generator (seed);</span>
@@ -460,26 +457,35 @@ A(r) = \pi r^2
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="cf">while</span>(n-- &gt; <span class="dv">0</span>)</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>{</span>
 <span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> v = Vec2{random(generator), random(generator)};</span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> c = RGBVec{random(generator), random(generator), random(generator)};</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});</span>
 <span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    Demo d{n, v, c};</span>
 <span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    demos.push_back(d);</span>
 <span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
-<p>Drawing the image is also quite simple; simply iterate over the dimensions of the image and query the interpolator at each coordinate. We record how long this takes so that the program also serves as a simplistic benchmark.</p>
+<p>Drawing the image is also quite simple; simply iterate over the dimensions of the image and query the interpolator at each coordinate, convert the resulting colour to RGB, and then write the colour to the pixel at that coordinate. We record how long this takes so that the program also serves as a simple benchmark.</p>
 <div class="sourceCode" id="cb10"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;draw the image&#39;</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> xpix = <span class="dv">0</span>; xpix &lt; x; ++xpix)</span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> ypix = <span class="dv">0</span>; ypix &lt; y; ++ypix)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};</span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> out = interpolator.query(q, demos);</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        img.set_pixel(xpix, ypix,</span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>                (<span class="dt">unsigned</span> <span class="dt">char</span>)<span class="bu">std::</span>round(out.x() * <span class="dv">255</span>),</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>                (<span class="dt">unsigned</span> <span class="dt">char</span>)<span class="bu">std::</span>round(out.y() * <span class="dv">255</span>),</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>                (<span class="dt">unsigned</span> <span class="dt">char</span>)<span class="bu">std::</span>round(out.z() * <span class="dv">255</span>)); </span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">auto</span> start = <span class="bu">std::</span>chrono<span class="bu">::</span>high_resolution_clock<span class="bu">::</span>now();</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> xpix = <span class="dv">0</span>; xpix &lt; x; ++xpix)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> ypix = <span class="dv">0</span>; ypix &lt; y; ++ypix)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>        JzAzBzVec interpolated_jab{<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>};</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        RGBVec out = JzAzBz_to_RGB(interpolator.query(q, demos, interpolated_jab));</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        img.set_pixel(xpix, ypix,</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>                (<span class="dt">unsigned</span> <span class="dt">char</span>)<span class="bu">std::</span>round(out.x() * <span class="dv">255</span>),</span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>                (<span class="dt">unsigned</span> <span class="dt">char</span>)<span class="bu">std::</span>round(out.y() * <span class="dv">255</span>),</span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>                (<span class="dt">unsigned</span> <span class="dt">char</span>)<span class="bu">std::</span>round(out.z() * <span class="dv">255</span>)); </span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a><span class="kw">auto</span> stop = <span class="bu">std::</span>chrono<span class="bu">::</span>high_resolution_clock<span class="bu">::</span>now();</span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="kw">auto</span> usec = <span class="bu">std::</span>chrono<span class="bu">::</span>duration_cast&lt;<span class="bu">std::</span>chrono<span class="bu">::</span>microseconds&gt;(stop - start).count();</span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="bu">std::</span>cout &lt;&lt; <span class="st">&quot;Generated &quot;</span> &lt;&lt; x * y &lt;&lt; <span class="st">&quot; interpolations in &quot;</span> &lt;&lt; usec &lt;&lt; <span class="st">&quot; microseconds</span><span class="sc">\n</span><span class="st">&quot;</span> </span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>        &lt;&lt; <span class="st">&quot;About &quot;</span> &lt;&lt; <span class="dv">1000000</span> * x * y / usec &lt;&lt; <span class="st">&quot; interpolations per second&quot;</span> </span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>        &lt;&lt; <span class="bu">std::</span>endl;</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
 <p>After drawing the overall image, we also take a moment to draw a circle around each demonstration point; this helps to better understand how the image relates to the topology of the interpolator.</p>
 <div class="sourceCode" id="cb11"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;draw circles over demonstrated points&#39;</span></span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>image_drawer draw(img);</span>
@@ -499,8 +505,8 @@ A(r) = \pi r^2
 <span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
 <h2 id="opengl-interactive-example">OpenGL Interactive Example</h2>
-<p>This example offers some insight into the inner workings of the interpolator. A handful of demonstrations associating random 2D positions with random colors are generated. The position and color of each point is visualized by drawing a dot of the appropriate color at that position. In addition, a circle is drawn around each dot with the radius associated to that demonstration by the interpolator; notice how each demonstrated point’s radial circle always intersects at least one other dot, which is the nearest neighbour of that demonstrated point. Finally, a grey region is drawn beneath each dot whose size and brightness reflect the contribution of that dot to the weighted sum.</p>
-<p>The position of the query point is based on the position of the cursor within the screen. Its color is based on the result of the interpolation. A radial circle is also drawn for this point.</p>
+<p>This example offers some insight into the inner workings of the interpolator. A handful of demonstrations associating random 2D positions with random colors are generated. The position and colour of each point is visualized by drawing a dot of the appropriate colour at that position. In addition, a circle is drawn around each dot with the radius associated to that demonstration by the interpolator; notice how each demonstrated point’s radial circle always intersects at least one other dot, which is the nearest neighbour of that demonstrated point. Finally, a grey region is drawn beneath each dot whose size and brightness reflect the contribution of that dot to the weighted sum.</p>
+<p>The position of the query point is based on the position of the cursor within the screen. Its colour is based on the result of the interpolation. A radial circle is also drawn for this point.</p>
 <p>The bulk of this happens in the display callback. For some reason, it appears to be necessary to draw in depth order (back to front) so that the dots and radial lines dont become obscured by the weight disk in the back. If anyone can explain why this is, please contact me. The z-coordinate doesn’t appear to have any influence, even with depth testing enabled.</p>
 <div class="sourceCode" id="cb12"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;display callback&#39;</span></span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> drawCircle(<span class="at">const</span> Vec2&amp; position, <span class="at">const</span> Scalar&amp; radius, <span class="at">const</span> Scalar&amp; depth = <span class="dv">0</span>)</span>
@@ -532,45 +538,46 @@ A(r) = \pi r^2
 <span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> display()</span>
 <span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>{</span>
 <span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">constexpr</span> <span class="dt">float</span> dot_radius = <span class="fl">0.01</span>;</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> q_color = interpolator.query(q, demos);</span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="at">const</span> <span class="kw">auto</span>&amp; d : demos)</span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; v = d.s;</span>
-<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>        <span class="co">// draw disk for weight</span></span>
-<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>        glColor4f(d.w, d.w, d.w, d.w);</span>
-<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>        drawCircleFilled(v, d.w/<span class="dv">3</span>, -<span class="dv">1</span>);</span>
-<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="at">const</span> <span class="kw">auto</span>&amp; d : demos)</span>
-<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; v = d.s;</span>
-<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; c = d.p;</span>
-<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>        <span class="co">// draw radial circle</span></span>
-<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>        glColor3f(c.x(), c.y(), c.z());</span>
-<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>        drawCircleWire(v, d.r, <span class="dv">1</span>);</span>
-<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>        drawCircleWire(v, d.r - <span class="fl">0.001</span>, <span class="dv">1</span>);</span>
-<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="at">const</span> <span class="kw">auto</span>&amp; d : demos)</span>
-<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a>    {</span>
-<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; v = d.s;</span>
-<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; c = d.p;</span>
-<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>        <span class="co">// draw colored dots</span></span>
-<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>        glColor3f(c.x(), c.y(), c.z());</span>
-<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>        drawCircleFilled(v, dot_radius, <span class="dv">1</span>);</span>
-<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a>    glColor3f(q_color.x(), q_color.y(), q_color.z());</span>
-<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a>    drawCircleWire(q, interpolator.q_radius);</span>
-<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>    drawCircleWire(q, interpolator.q_radius - <span class="fl">0.001</span>);</span>
-<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>    drawCircleFilled(q, dot_radius, <span class="dv">1</span>);</span>
-<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a>    glutSwapBuffers();</span>
-<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>    JzAzBzVec interpolated_jab{<span class="dv">0</span>, <span class="dv">0</span>, <span class="dv">0</span>};</span>
+<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>    RGBVec q_color = JzAzBz_to_RGB(interpolator.query(q, demos, interpolated_jab));</span>
+<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a>    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);</span>
+<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="at">const</span> <span class="kw">auto</span>&amp; d : demos)</span>
+<span id="cb12-37"><a href="#cb12-37" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb12-38"><a href="#cb12-38" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; v = d.s;</span>
+<span id="cb12-39"><a href="#cb12-39" aria-hidden="true" tabindex="-1"></a>        <span class="co">// draw disk for weight</span></span>
+<span id="cb12-40"><a href="#cb12-40" aria-hidden="true" tabindex="-1"></a>        glColor4f(d.w, d.w, d.w, d.w);</span>
+<span id="cb12-41"><a href="#cb12-41" aria-hidden="true" tabindex="-1"></a>        drawCircleFilled(v, d.w/<span class="dv">3</span>, -<span class="dv">1</span>);</span>
+<span id="cb12-42"><a href="#cb12-42" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-43"><a href="#cb12-43" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-44"><a href="#cb12-44" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="at">const</span> <span class="kw">auto</span>&amp; d : demos)</span>
+<span id="cb12-45"><a href="#cb12-45" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb12-46"><a href="#cb12-46" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; v = d.s;</span>
+<span id="cb12-47"><a href="#cb12-47" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span> c = JzAzBz_to_RGB(d.p);</span>
+<span id="cb12-48"><a href="#cb12-48" aria-hidden="true" tabindex="-1"></a>        <span class="co">// draw radial circle</span></span>
+<span id="cb12-49"><a href="#cb12-49" aria-hidden="true" tabindex="-1"></a>        glColor3f(c.x(), c.y(), c.z());</span>
+<span id="cb12-50"><a href="#cb12-50" aria-hidden="true" tabindex="-1"></a>        drawCircleWire(v, d.r, <span class="dv">1</span>);</span>
+<span id="cb12-51"><a href="#cb12-51" aria-hidden="true" tabindex="-1"></a>        drawCircleWire(v, d.r - <span class="fl">0.001</span>, <span class="dv">1</span>);</span>
+<span id="cb12-52"><a href="#cb12-52" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-53"><a href="#cb12-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-54"><a href="#cb12-54" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="at">const</span> <span class="kw">auto</span>&amp; d : demos)</span>
+<span id="cb12-55"><a href="#cb12-55" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb12-56"><a href="#cb12-56" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span>&amp; v = d.s;</span>
+<span id="cb12-57"><a href="#cb12-57" aria-hidden="true" tabindex="-1"></a>        <span class="at">const</span> <span class="kw">auto</span> c = JzAzBz_to_RGB(d.p);</span>
+<span id="cb12-58"><a href="#cb12-58" aria-hidden="true" tabindex="-1"></a>        <span class="co">// draw colored dots</span></span>
+<span id="cb12-59"><a href="#cb12-59" aria-hidden="true" tabindex="-1"></a>        glColor3f(c.x(), c.y(), c.z());</span>
+<span id="cb12-60"><a href="#cb12-60" aria-hidden="true" tabindex="-1"></a>        drawCircleFilled(v, dot_radius, <span class="dv">1</span>);</span>
+<span id="cb12-61"><a href="#cb12-61" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb12-62"><a href="#cb12-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-63"><a href="#cb12-63" aria-hidden="true" tabindex="-1"></a>    glColor3f(q_color.x(), q_color.y(), q_color.z());</span>
+<span id="cb12-64"><a href="#cb12-64" aria-hidden="true" tabindex="-1"></a>    drawCircleWire(q, interpolator.q_radius);</span>
+<span id="cb12-65"><a href="#cb12-65" aria-hidden="true" tabindex="-1"></a>    drawCircleWire(q, interpolator.q_radius - <span class="fl">0.001</span>);</span>
+<span id="cb12-66"><a href="#cb12-66" aria-hidden="true" tabindex="-1"></a>    drawCircleFilled(q, dot_radius, <span class="dv">1</span>);</span>
+<span id="cb12-67"><a href="#cb12-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-68"><a href="#cb12-68" aria-hidden="true" tabindex="-1"></a>    glutSwapBuffers();</span>
+<span id="cb12-69"><a href="#cb12-69" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb12-70"><a href="#cb12-70" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
 <p>All of the points in the scene in world coordinates are in the square region ([0 - 1], [0 - 1]). The reshape callback appropriately sets the viewport and projection matrices to ensure this region is visible and undistorted. In case the window is wider than it is tall, padding is added on the sides so that the scene is centered. Otherwise, when the window is taller than it is wide, the padding is added above and below the scene.</p>
 <div class="sourceCode" id="cb13"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;reshape callback&#39;</span></span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="dt">void</span> reshape(<span class="dt">int</span> w, <span class="dt">int</span> h)</span>
@@ -625,7 +632,7 @@ A(r) = \pi r^2
 <span id="cb16-19"><a href="#cb16-19" aria-hidden="true" tabindex="-1"></a>    glutPostRedisplay();</span>
 <span id="cb16-20"><a href="#cb16-20" aria-hidden="true" tabindex="-1"></a>}</span>
 <span id="cb16-21"><a href="#cb16-21" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
-<p>The rest of the program is basically boilerplate for setting up openGL.</p>
+<p>The rest of the program is basically boilerplate for setting up openGL. The global <code>using</code> declarations are the same as in the drawing example.</p>
 <div class="sourceCode" id="cb17"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;setup display and callbacks&#39;</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="co">// fake argv and argc since we can&#39;t access the real ones behind fire-hpp</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="dt">char</span> * fake_argv[<span class="dv">1</span>];</span>
@@ -656,38 +663,189 @@ A(r) = \pi r^2
 <span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;GL/gl.h&gt;</span></span>
 <span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;GL/glut.h&gt;</span></span>
 <span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;Eigen/Core&gt;</span></span>
-<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;include/fire-hpp/fire.hpp&quot;</span></span>
-<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;../interpolator/marier_spheres.h&quot;</span></span>
-<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{basic globals}</span>
-<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a>Vec2 q = {<span class="dv">0</span>,<span class="dv">0</span>};</span>
-<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{display callback}</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&lt;Eigen/LU&gt;</span></span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;include/fire-hpp/fire.hpp&quot;</span></span>
+<span id="cb18-12"><a href="#cb18-12" aria-hidden="true" tabindex="-1"></a><span class="pp">#include </span><span class="im">&quot;../interpolator/marier_spheres.h&quot;</span></span>
+<span id="cb18-13"><a href="#cb18-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-14"><a href="#cb18-14" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{basic globals}</span>
+<span id="cb18-15"><a href="#cb18-15" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{colour conversions}</span>
+<span id="cb18-16"><a href="#cb18-16" aria-hidden="true" tabindex="-1"></a>Vec2 q = {<span class="dv">0</span>,<span class="dv">0</span>};</span>
 <span id="cb18-17"><a href="#cb18-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{reshape callback}</span>
+<span id="cb18-18"><a href="#cb18-18" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{display callback}</span>
 <span id="cb18-19"><a href="#cb18-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{motion callback}</span>
+<span id="cb18-20"><a href="#cb18-20" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{reshape callback}</span>
 <span id="cb18-21"><a href="#cb18-21" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> fired_main(<span class="dt">unsigned</span> <span class="dt">int</span> n = fire::arg(<span class="st">&quot;n&quot;</span>, <span class="st">&quot;The number of demonstrations&quot;</span>, <span class="dv">5</span>))</span>
-<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a>{</span>
-<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{generate random demonstrations}</span>
-<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{setup display <span class="kw">and</span> callbacks}</span>
+<span id="cb18-22"><a href="#cb18-22" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{motion callback}</span>
+<span id="cb18-23"><a href="#cb18-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-24"><a href="#cb18-24" aria-hidden="true" tabindex="-1"></a><span class="dt">int</span> fired_main(<span class="dt">unsigned</span> <span class="dt">int</span> n = fire::arg(<span class="st">&quot;n&quot;</span>, <span class="st">&quot;The number of demonstrations&quot;</span>, <span class="dv">5</span>))</span>
+<span id="cb18-25"><a href="#cb18-25" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb18-26"><a href="#cb18-26" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{generate random demonstrations}</span>
 <span id="cb18-27"><a href="#cb18-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    glutMainLoop();</span>
+<span id="cb18-28"><a href="#cb18-28" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{setup display <span class="kw">and</span> callbacks}</span>
 <span id="cb18-29"><a href="#cb18-29" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span>;</span>
-<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>FIRE(fired_main)</span>
-<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<span id="cb18-30"><a href="#cb18-30" aria-hidden="true" tabindex="-1"></a>    glutMainLoop();</span>
+<span id="cb18-31"><a href="#cb18-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-32"><a href="#cb18-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="dv">0</span>;</span>
+<span id="cb18-33"><a href="#cb18-33" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb18-34"><a href="#cb18-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb18-35"><a href="#cb18-35" aria-hidden="true" tabindex="-1"></a>FIRE(fired_main)</span>
+<span id="cb18-36"><a href="#cb18-36" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<h2 id="converting-rgb-to-perceptually-uniform-colour-space">Converting RGB to perceptually uniform colour space</h2>
+<p>As mentioned above, the interpolator in the drawing example uses a perceptually uniform colour space called J_zA_zB_z to ensure that the topology of the interpolator is well represented by the image without distortion by the non-linear relationship of the colour representation to typical human colour vision. Since the colours are rendered in RGB, it is necessary to convert RGB to and from J_zA_zB_z It is assumed that the RGB colour values will be interpreted and displayed by the system as <a href="https://en.wikipedia.org/wiki/SRGB">sRGB</a>, a reasonable default assumption due to the ubiquitous use of this standard colour space on the web, OpenGL, and other standards and consumer optical equipment. Both sRGB and J_zA_zB_z colour spaces are defined relative to <a href="https://en.wikipedia.org/wiki/CIE_1931_color_space">CIE XYZ</a> colour space, a standard colour space defined by the International Commission on Illumination in 1931 that defines a quantitative representation of the physiological response of the eye as it relates to the perception of a certain colour. Given this shared root, converting to or from sRGB to J_zA_zB_z requires first converting to or from CIE XYZ. We assume that the sRGB values are normalized between 0.0 and 1.0, that the CIE XYZ Y value ranges between 0.0 and 1.0.</p>
+<p>The conversion between sRGB and CIE XYZ is given in <a href="https://en.wikipedia.org/wiki/SRGB">the wikipedia page on sRGB</a>. Since the example programs make use of Eigen for their colour data, the conversion can be succinctly implemented with matrix multiplication and other Eigen features.</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;RGB - XYZ colour conversions&#39;</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>RGBVec XYZ_to_RGB(<span class="at">const</span> CIEXYZVec&amp; xyz)</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>    RGBVec rgb;</span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    Eigen::Matrix3f a;</span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a>    a &lt;&lt;  <span class="fl">3.24096994</span>, -<span class="fl">1.53738318</span>, -<span class="fl">0.49861076</span>,</span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a>         -<span class="fl">0.96924364</span>,  <span class="fl">1.8759675</span>,   <span class="fl">0.04155506</span>,</span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a>          <span class="fl">0.05563008</span>, -<span class="fl">0.20397696</span>,  <span class="fl">1.05697151</span>;</span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a>    rgb = a * xyz; <span class="co">// apply linear transformation</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> i = <span class="dv">0</span>; i &lt; <span class="dv">3</span>; i++) <span class="co">// apply gamme correction</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> u = rgb[i];</span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a>        u = u &gt; <span class="fl">0.0031308</span> ? (<span class="fl">1.055</span> * pow(u, <span class="dv">1</span> / <span class="fl">2.4</span>) - <span class="fl">0.055</span>) : <span class="fl">12.92</span> * u;</span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a>        u = u &lt; <span class="fl">0.0</span> ? <span class="fl">0.0</span> : u;</span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a>        u = u &gt; <span class="fl">1.0</span> ? <span class="fl">1.0</span> : u;</span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a>        rgb[i] = u;</span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> rgb;</span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a>CIEXYZVec RGB_to_XYZ(<span class="at">const</span> RGBVec&amp; rgb)</span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a>    CIEXYZVec xyz = rgb;</span>
+<span id="cb19-27"><a href="#cb19-27" aria-hidden="true" tabindex="-1"></a>    Eigen::Matrix3f a;</span>
+<span id="cb19-28"><a href="#cb19-28" aria-hidden="true" tabindex="-1"></a>    a &lt;&lt;  <span class="fl">0.41239080</span>,  <span class="fl">0.35758434</span>,  <span class="fl">0.18048079</span>,</span>
+<span id="cb19-29"><a href="#cb19-29" aria-hidden="true" tabindex="-1"></a>          <span class="fl">0.21263901</span>,  <span class="fl">0.71516868</span>,  <span class="fl">0.07219232</span>,</span>
+<span id="cb19-30"><a href="#cb19-30" aria-hidden="true" tabindex="-1"></a>          <span class="fl">0.01933082</span>,  <span class="fl">0.11919478</span>,  <span class="fl">0.95053215</span>;</span>
+<span id="cb19-31"><a href="#cb19-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-32"><a href="#cb19-32" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> i = <span class="dv">0</span>; i &lt; <span class="dv">3</span>; i++) <span class="co">// reverse gamme correction</span></span>
+<span id="cb19-33"><a href="#cb19-33" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb19-34"><a href="#cb19-34" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> u = xyz[i];</span>
+<span id="cb19-35"><a href="#cb19-35" aria-hidden="true" tabindex="-1"></a>        u = u &gt; <span class="fl">0.04045</span> ? pow((u + <span class="fl">0.055</span>) / <span class="fl">1.055</span>, <span class="fl">2.4</span>) : u / <span class="fl">12.92</span>;</span>
+<span id="cb19-36"><a href="#cb19-36" aria-hidden="true" tabindex="-1"></a>        xyz[i] = u;</span>
+<span id="cb19-37"><a href="#cb19-37" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb19-38"><a href="#cb19-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-39"><a href="#cb19-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> a * xyz; <span class="co">// reverse linear transformation</span></span>
+<span id="cb19-40"><a href="#cb19-40" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb19-41"><a href="#cb19-41" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<p>The conversion between J_zA_zB_z and CIE XYZ is given in <a href="https://doi.org/10.1364/OE.25.015131">the 2017 paper by Safdar et al. introducing J_zA_zB_z published by the Optical Society of America in Volume 25 Issue 13 pages 15131-15151 of the journal Optics Express</a>.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;JzAzBz consts&#39;</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="at">static</span> <span class="at">const</span> Eigen::Matrix3f M1 = (Eigen::Matrix3f() &lt;&lt;</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.41478972</span>,  <span class="fl">0.579999</span>,  <span class="fl">0.0146480</span>,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    -<span class="fl">0.2015100</span>,  <span class="fl">1.120649</span>,  <span class="fl">0.0531008</span>,</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>    -<span class="fl">0.0166008</span>,  <span class="fl">0.264800</span>,  <span class="fl">0.6684799</span>).finished();</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="at">static</span> <span class="at">const</span> Eigen::Matrix3f M2 = (Eigen::Matrix3f() &lt;&lt;  </span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.5</span>,         <span class="fl">0.5</span>,       <span class="fl">0.0</span>,</span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a>    <span class="fl">3.524000</span>,   -<span class="fl">4.066708</span>,  <span class="fl">0.542708</span>,</span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>    <span class="fl">0.199076</span>,    <span class="fl">1.096799</span>, -<span class="fl">1.295875</span>).finished();</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> two5 = <span class="dv">1</span> &lt;&lt; <span class="dv">5</span>;</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> two7 = <span class="dv">1</span> &lt;&lt; <span class="dv">7</span>;</span>
+<span id="cb20-12"><a href="#cb20-12" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> two12 = <span class="dv">1</span> &lt;&lt; <span class="dv">12</span>;</span>
+<span id="cb20-13"><a href="#cb20-13" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> two14 = <span class="dv">1</span> &lt;&lt; <span class="dv">14</span>;</span>
+<span id="cb20-14"><a href="#cb20-14" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> b = <span class="fl">1.15</span>;</span>
+<span id="cb20-15"><a href="#cb20-15" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> g = <span class="fl">0.66</span>;</span>
+<span id="cb20-16"><a href="#cb20-16" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> c1 = <span class="fl">3424.0</span> / two12;</span>
+<span id="cb20-17"><a href="#cb20-17" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> c2 = <span class="fl">2413.0</span> / two7;</span>
+<span id="cb20-18"><a href="#cb20-18" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> c3 = <span class="fl">2392.0</span> / two7;</span>
+<span id="cb20-19"><a href="#cb20-19" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> n = <span class="fl">2610.0</span> / two14;</span>
+<span id="cb20-20"><a href="#cb20-20" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> p = <span class="fl">1.7</span> * <span class="fl">2523.0</span> / two5;</span>
+<span id="cb20-21"><a href="#cb20-21" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> d = -<span class="fl">0.56</span>;</span>
+<span id="cb20-22"><a href="#cb20-22" aria-hidden="true" tabindex="-1"></a><span class="kw">constexpr</span> <span class="dt">float</span> d_0 = <span class="fl">1.6295499532821566e-11</span>;</span>
+<span id="cb20-23"><a href="#cb20-23" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span>
+<span id="cb20-24"><a href="#cb20-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-25"><a href="#cb20-25" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;JzAzBz - XYZ colour conversions&#39;</span></span>
+<span id="cb20-26"><a href="#cb20-26" aria-hidden="true" tabindex="-1"></a>JzAzBzVec XYZ_to_JzAzBz(<span class="at">const</span> CIEXYZVec&amp; xyz)</span>
+<span id="cb20-27"><a href="#cb20-27" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb20-28"><a href="#cb20-28" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{JzAzBz consts}</span>
+<span id="cb20-29"><a href="#cb20-29" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> x = xyz.x();</span>
+<span id="cb20-30"><a href="#cb20-30" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> y = xyz.y();</span>
+<span id="cb20-31"><a href="#cb20-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> z = xyz.z();</span>
+<span id="cb20-32"><a href="#cb20-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-33"><a href="#cb20-33" aria-hidden="true" tabindex="-1"></a>    <span class="co">// pre-adjust to improve iso-hue linearity (Safdar et al. eqn. 8</span></span>
+<span id="cb20-34"><a href="#cb20-34" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> <span class="va">x_</span> = b * x - (b - <span class="fl">1.0</span>) * z;</span>
+<span id="cb20-35"><a href="#cb20-35" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> <span class="va">y_</span> = g * y - (g - <span class="fl">1.0</span>) * x;</span>
+<span id="cb20-36"><a href="#cb20-36" aria-hidden="true" tabindex="-1"></a>    CIEXYZVec <span class="va">xyz_</span>(<span class="va">x_</span>, <span class="va">y_</span>, z);</span>
+<span id="cb20-37"><a href="#cb20-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-38"><a href="#cb20-38" aria-hidden="true" tabindex="-1"></a>    <span class="co">// transform xyz to cone primaries (Safdar et al. eqn. 9)</span></span>
+<span id="cb20-39"><a href="#cb20-39" aria-hidden="true" tabindex="-1"></a>    Eigen::Vector3f lms = M1 * <span class="va">xyz_</span>;</span>
+<span id="cb20-40"><a href="#cb20-40" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-41"><a href="#cb20-41" aria-hidden="true" tabindex="-1"></a>    <span class="co">// perceptual quantizer (Safdar et al. eqn. 10</span></span>
+<span id="cb20-42"><a href="#cb20-42" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> i = <span class="dv">0</span>; i &lt; <span class="dv">3</span>; ++i)</span>
+<span id="cb20-43"><a href="#cb20-43" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb20-44"><a href="#cb20-44" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> u = pow(lms[i] / <span class="fl">10000.0</span>, n);</span>
+<span id="cb20-45"><a href="#cb20-45" aria-hidden="true" tabindex="-1"></a>        lms[i] = pow( (c1 + c2 * u) / (<span class="fl">1.0</span> + c3 * u), p );</span>
+<span id="cb20-46"><a href="#cb20-46" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb20-47"><a href="#cb20-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-48"><a href="#cb20-48" aria-hidden="true" tabindex="-1"></a>    <span class="co">// transform to correlates of opponent colour space (Safdar et al. eqn. 11)</span></span>
+<span id="cb20-49"><a href="#cb20-49" aria-hidden="true" tabindex="-1"></a>    Eigen::Vector3f jab = M2 * lms;</span>
+<span id="cb20-50"><a href="#cb20-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-51"><a href="#cb20-51" aria-hidden="true" tabindex="-1"></a>    <span class="co">// improve wide-range lightness prediction (Safdar et al. eqn. 12)</span></span>
+<span id="cb20-52"><a href="#cb20-52" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> i = jab[<span class="dv">0</span>];</span>
+<span id="cb20-53"><a href="#cb20-53" aria-hidden="true" tabindex="-1"></a>    jab[<span class="dv">0</span>] = ((<span class="fl">1.0</span> + d) * i) / (<span class="fl">1.0</span> + d * i) - d_0;</span>
+<span id="cb20-54"><a href="#cb20-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-55"><a href="#cb20-55" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> jab;</span>
+<span id="cb20-56"><a href="#cb20-56" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-57"><a href="#cb20-57" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-58"><a href="#cb20-58" aria-hidden="true" tabindex="-1"></a>CIEXYZVec JzAzBz_to_XYZ(<span class="at">const</span> JzAzBzVec&amp; jab)</span>
+<span id="cb20-59"><a href="#cb20-59" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb20-60"><a href="#cb20-60" aria-hidden="true" tabindex="-1"></a>    <span class="er">@</span>{JzAzBz consts}</span>
+<span id="cb20-61"><a href="#cb20-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">static</span> <span class="at">const</span> Eigen::Matrix3f M1inv = M1.inverse();</span>
+<span id="cb20-62"><a href="#cb20-62" aria-hidden="true" tabindex="-1"></a>    <span class="at">static</span> <span class="at">const</span> Eigen::Matrix3f M2inv = M2.inverse();</span>
+<span id="cb20-63"><a href="#cb20-63" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-64"><a href="#cb20-64" aria-hidden="true" tabindex="-1"></a>    <span class="co">// eqn. 17</span></span>
+<span id="cb20-65"><a href="#cb20-65" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> iab = jab;</span>
+<span id="cb20-66"><a href="#cb20-66" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> j = jab[<span class="dv">0</span>] + d_0;</span>
+<span id="cb20-67"><a href="#cb20-67" aria-hidden="true" tabindex="-1"></a>    iab[<span class="dv">0</span>] = j / (<span class="fl">1.0</span> + d - d * j);</span>
+<span id="cb20-68"><a href="#cb20-68" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-69"><a href="#cb20-69" aria-hidden="true" tabindex="-1"></a>    <span class="co">// eqn. 18</span></span>
+<span id="cb20-70"><a href="#cb20-70" aria-hidden="true" tabindex="-1"></a>    Eigen::Vector3f lms = M2inv * iab;</span>
+<span id="cb20-71"><a href="#cb20-71" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-72"><a href="#cb20-72" aria-hidden="true" tabindex="-1"></a>    <span class="co">// eqn. 19</span></span>
+<span id="cb20-73"><a href="#cb20-73" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (<span class="dt">unsigned</span> <span class="dt">int</span> i = <span class="dv">0</span>; i &lt; <span class="dv">3</span>; ++i)</span>
+<span id="cb20-74"><a href="#cb20-74" aria-hidden="true" tabindex="-1"></a>    {</span>
+<span id="cb20-75"><a href="#cb20-75" aria-hidden="true" tabindex="-1"></a>        <span class="kw">auto</span> u = pow(lms[i], <span class="fl">1.0</span>/p);</span>
+<span id="cb20-76"><a href="#cb20-76" aria-hidden="true" tabindex="-1"></a>        lms[i] = <span class="fl">10000.0</span> * pow( (c1 - u) / (c3 * u - c2), <span class="fl">1.0</span>/n );</span>
+<span id="cb20-77"><a href="#cb20-77" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb20-78"><a href="#cb20-78" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-79"><a href="#cb20-79" aria-hidden="true" tabindex="-1"></a>    <span class="co">// eqn. 20</span></span>
+<span id="cb20-80"><a href="#cb20-80" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> <span class="va">xyz_</span> = M1inv * lms;</span>
+<span id="cb20-81"><a href="#cb20-81" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-82"><a href="#cb20-82" aria-hidden="true" tabindex="-1"></a>    <span class="co">// eqn. 21 - 23</span></span>
+<span id="cb20-83"><a href="#cb20-83" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> <span class="va">x_</span> = <span class="va">xyz_</span>[<span class="dv">0</span>];</span>
+<span id="cb20-84"><a href="#cb20-84" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> <span class="va">y_</span> = <span class="va">xyz_</span>[<span class="dv">1</span>];</span>
+<span id="cb20-85"><a href="#cb20-85" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> <span class="va">z_</span> = <span class="va">xyz_</span>[<span class="dv">2</span>];</span>
+<span id="cb20-86"><a href="#cb20-86" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> x = (<span class="va">x_</span> + (b - <span class="fl">1.0</span>) * <span class="va">z_</span>) / b;</span>
+<span id="cb20-87"><a href="#cb20-87" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> y = (<span class="va">y_</span> + (g - <span class="fl">1.0</span>) * x) / g;</span>
+<span id="cb20-88"><a href="#cb20-88" aria-hidden="true" tabindex="-1"></a>    <span class="kw">auto</span> z = <span class="va">z_</span>;</span>
+<span id="cb20-89"><a href="#cb20-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-90"><a href="#cb20-90" aria-hidden="true" tabindex="-1"></a>    CIEXYZVec xyz{x, y, z};</span>
+<span id="cb20-91"><a href="#cb20-91" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> xyz;</span>
+<span id="cb20-92"><a href="#cb20-92" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb20-93"><a href="#cb20-93" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
+<p>The conversion between sRGB and J_zA_zB_z is then easily implemented in terms of the above conversions to and from CIE XYZ colour space:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode cpp"><code class="sourceCode cpp"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co">// @=&#39;colour conversions&#39;</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{RGB - XYZ colour conversions}</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="er">@</span>{JzAzBz - XYZ colour conversions}</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>JzAzBzVec RGB_to_JzAzBz(<span class="at">const</span> RGBVec&amp; rgb)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> XYZ_to_JzAzBz(RGB_to_XYZ(rgb));</span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb21-10"><a href="#cb21-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-11"><a href="#cb21-11" aria-hidden="true" tabindex="-1"></a>RGBVec JzAzBz_to_RGB(<span class="at">const</span> JzAzBzVec&amp; jab)</span>
+<span id="cb21-12"><a href="#cb21-12" aria-hidden="true" tabindex="-1"></a>{</span>
+<span id="cb21-13"><a href="#cb21-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> XYZ_to_RGB(JzAzBz_to_XYZ(jab));</span>
+<span id="cb21-14"><a href="#cb21-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb21-15"><a href="#cb21-15" aria-hidden="true" tabindex="-1"></a><span class="co">// @</span></span></code></pre></div>
 <h2 id="compiling-examples">Compiling Examples</h2>
 <p>Both examples are relatively simple with just a few dependencies. Both rely on Eigen, and the interactive example additionally requires OpenGL. Make sure that these libraries are installed on your system. The other dependencies (fire-hpp and bitmap) are both included as subtrees in this repository, so you should not have to do anything to install them.</p>
-<p>The image example can be compiled with this command:</p>
-<p><code>g++ -std=c++17 -I/usr/include/eigen3/ -O3 examples/color_image.cpp</code></p>
-<p>The interactive example can be compiled with this command:</p>
-<p><code>g++ -std=c++17 -I/usr/include/eigen3/ -lGL -lglut -O3 examples/interactive_colors.cpp</code></p>
-<p>In both cases, you may need to update the path to Eigen based on the particularities of your system. The above commands, possibly with slight modifications, should work on most Linux distributions and MacOS.</p>
-<p>If you are a Windows user, it should be relatively straightforward to adapt the above commands to use Windows development tools. Please let me know how it goes and I would be happy to include more detailed instructions here.</p>
+<p>A simple Makefile is included in this repository with rules for building the examples, as well as for generating the machine source code and pretty-printed source code from this literate source code document using <a href="https://github.com/DocSunset/lilit"><code>lilit</code></a>. The Makefile is tested and working on the author’s Arch Linux system. As usual, I am open to recommendations and pull requests to improve the compatibility of the Makefile.</p>
 </body>
 </html>

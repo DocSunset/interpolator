@@ -57,10 +57,9 @@ public:
     Scalar q_radius;
 
     template<typename DemoList>
-    PVector query(const SVector& q, DemoList& demos)
+    PVector query(const SVector& q, DemoList& demos, PVector& weighted_sum)
     {
         Scalar sum_of_weights = 0;
-        PVector weighted_sum = PVector() * 0; // hack to initialize weighted_sum to zero
         if (demos.size() < 1) return weighted_sum;
 
         q_radius = std::numeric_limits<Scalar>::max();

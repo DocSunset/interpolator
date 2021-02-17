@@ -268,10 +268,9 @@ public:
     Scalar q_radius;
 
     template<typename DemoList>
-    PVector query(const SVector& q, DemoList& demos)
+    PVector query(const SVector& q, DemoList& demos, PVector& weighted_sum)
     {
         Scalar sum_of_weights = 0;
-        PVector weighted_sum = PVector() * 0; // hack to initialize weighted_sum to zero
         if (demos.size() < 1) return weighted_sum;
 
         @{find q_radius}
@@ -299,15 +298,16 @@ public:
 // @
 ```
 
-One quirk of the above implementation is the line which initializes the
-`PVector` for the weighted sum that is returned by the query function.
-Initialization is achieved by multiplying the default constructed PVector by
-zero.  This is done in order to avoid imposing any calling semantic for
-zero-initializing a `PVector`, such as a static member function
-`PVector::Zero()`, fill function `weighted_sum.fill(0)' or constructor
-accepting a number `PVector(0)`.  The chosen method only relies on the
-aforementioned assumption that `PVector` defines an operator for multiplication
-by a scalar.
+One quirk of the above implementation is that the output (`weighted_sum`) is
+passed by variable. This is necessary to avoid having to initialize `weighted_sum`
+to zero. By leaving this responsibility to the caller, the implementation
+of the interpolator is more generic, only imposing the need for operators
+for addition and multiplication by a scalar. In other words, the interpolator
+doesn't know how to initialize a `PVector`, which could be a raw float array,
+a complicated linear algebra library vector, or anything else, as long as it
+has addition and multiplication by a scalar. Since `PVector` is so generic,
+the implementation of the interpolator can't make assumptions about how to
+construct or initialize it.
 
 The radius associated with the query point (and indeed every point) is searched
 for by brute force. Although far from optimal, this implementation seems good
@@ -412,6 +412,14 @@ As per the quadratic time complexity of this implementation, the number of
 queries processed per second decreases by a multiplicative factor as the number
 of demonstrations increases linearly.
 
+The colour interpolations are performed in [J_zA_zB_z colour
+space](https://doi.org/10.1364/OE.25.015131), a colour representation that is
+designed to provide the best balance of perceptual uniformity and iso-hue
+linearity.  This is meant to ensure that the image produced reflects the
+topology of the interpolation rather than the non-linearity of sRGB colour
+space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
+J_zA_zB_z colour space and back are given below.
+
 Here's the overview of the example source code:
 
 ```c++ 
@@ -420,7 +428,9 @@ using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
-using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, RGBVec>;
+using CIEXYZVec = Eigen::Vector3f;
+using JzAzBzVec = Eigen::Vector3f;
+using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, JzAzBzVec>;
 using Demo = typename Interpolator::Demo;
 
 Interpolator interpolator;
@@ -439,8 +449,11 @@ std::vector<Demo> demos;
 #include "include/bitmap/bitmap_image.hpp"
 #include "../interpolator/marier_spheres.h"
 #include <Eigen/Core>
+#include <Eigen/LU>
 
 @{basic globals}
+
+@{colour conversions}
 
 int fired_main(
         unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
@@ -452,15 +465,7 @@ int fired_main(
 
     @{generate random demonstrations}
 
-    auto start = std::chrono::high_resolution_clock::now();
-
     @{draw the image}
-
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-    std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
-            << "About " << 1000000 * x * y / usec << " interpolations per second" 
-            << std::endl;
 
     @{draw circles over demonstrated points}
 
@@ -473,9 +478,12 @@ FIRE(fired_main)
 // @
 ```
 
-We assume that the source dimensions range from 0 to 1 and that the 
-color channels in the RGBVec do the same. Randomly generating vectors is then
-trivial.
+We assume that the source dimensions range from 0 to 1 and that the colour
+channels in an RGB colour vector do the same. Randomly generating vectors is
+then trivial. The RGB colour vector is then converted to J_zA_zB_z colour space.
+It is more convenient to generate the colour vectors in RGB space since doing
+so guarantees that the demonstrated colors are possible to display, which may
+not be the case when randomly generating colors in J_zA_zB_z space.
 
 ```c++ 
 // @='generate random demonstrations'
@@ -485,7 +493,7 @@ std::uniform_real_distribution<Scalar> random(0, 1);
 while(n-- > 0)
 {
     auto v = Vec2{random(generator), random(generator)};
-    auto c = RGBVec{random(generator), random(generator), random(generator)};
+    auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
     Demo d{n, v, c};
     demos.push_back(d);
 }
@@ -493,23 +501,34 @@ while(n-- > 0)
 ```
 
 Drawing the image is also quite simple; simply iterate over the dimensions of
-the image and query the interpolator at each coordinate. We record how long
-this takes so that the program also serves as a simplistic benchmark.
+the image and query the interpolator at each coordinate, convert the resulting
+colour to RGB, and then write the colour to the pixel at that coordinate. We
+record how long this takes so that the program also serves as a simple
+benchmark.
 
 ```c++ 
 // @='draw the image'
+auto start = std::chrono::high_resolution_clock::now();
+
 for (unsigned int xpix = 0; xpix < x; ++xpix)
 {
     for (unsigned int ypix = 0; ypix < y; ++ypix)
     {
         auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-        auto out = interpolator.query(q, demos);
+        JzAzBzVec interpolated_jab{0, 0, 0};
+        RGBVec out = JzAzBz_to_RGB(interpolator.query(q, demos, interpolated_jab));
         img.set_pixel(xpix, ypix,
                 (unsigned char)std::round(out.x() * 255),
                 (unsigned char)std::round(out.y() * 255),
                 (unsigned char)std::round(out.z() * 255)); 
     }
 }
+
+auto stop = std::chrono::high_resolution_clock::now();
+auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
+        << "About " << 1000000 * x * y / usec << " interpolations per second" 
+        << std::endl;
 // @
 ```
 
@@ -541,8 +560,8 @@ for (const auto& demo : demos)
 
 This example offers some insight into the inner workings of the interpolator.
 A handful of demonstrations associating random 2D positions with random colors
-are generated. The position and color of each point is visualized by drawing a
-dot of the appropriate color at that position. In addition, a circle is drawn
+are generated. The position and colour of each point is visualized by drawing a
+dot of the appropriate colour at that position. In addition, a circle is drawn
 around each dot with the radius associated to that demonstration by the
 interpolator; notice how each demonstrated point's radial circle always
 intersects at least one other dot, which is the nearest neighbour of that
@@ -550,7 +569,7 @@ demonstrated point. Finally, a grey region is drawn beneath each dot whose size
 and brightness reflect the contribution of that dot to the weighted sum. 
 
 The position of the query point is based on the position of the cursor within
-the screen. Its color is based on the result of the interpolation. A radial
+the screen. Its colour is based on the result of the interpolation. A radial
 circle is also drawn for this point.
 
 The bulk of this happens in the display callback. For some reason, it appears
@@ -590,7 +609,8 @@ void drawCircleWire(const Vec2& position, const Scalar& radius, const Scalar& de
 void display()
 {
     constexpr float dot_radius = 0.01;
-    auto q_color = interpolator.query(q, demos);
+    JzAzBzVec interpolated_jab{0, 0, 0};
+    RGBVec q_color = JzAzBz_to_RGB(interpolator.query(q, demos, interpolated_jab));
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -605,7 +625,7 @@ void display()
     for (const auto& d : demos)
     {
         const auto& v = d.s;
-        const auto& c = d.p;
+        const auto c = JzAzBz_to_RGB(d.p);
         // draw radial circle
         glColor3f(c.x(), c.y(), c.z());
         drawCircleWire(v, d.r, 1);
@@ -615,7 +635,7 @@ void display()
     for (const auto& d : demos)
     {
         const auto& v = d.s;
-        const auto& c = d.p;
+        const auto c = JzAzBz_to_RGB(d.p);
         // draw colored dots
         glColor3f(c.x(), c.y(), c.z());
         drawCircleFilled(v, dot_radius, 1);
@@ -708,7 +728,8 @@ void mouse_move(int x, int y)
 // @
 ```
 
-The rest of the program is basically boilerplate for setting up openGL.
+The rest of the program is basically boilerplate for setting up openGL. The
+global `using` declarations are the same as in the drawing example.
 
 ```c++ 
 // @='setup display and callbacks'
@@ -744,10 +765,12 @@ glutSwapBuffers();
 #include <GL/gl.h>
 #include <GL/glut.h>
 #include <Eigen/Core>
+#include <Eigen/LU>
 #include "include/fire-hpp/fire.hpp"
 #include "../interpolator/marier_spheres.h"
 
 @{basic globals}
+@{colour conversions}
 Vec2 q = {0,0};
 
 @{display callback}
@@ -771,6 +794,198 @@ FIRE(fired_main)
 // @
 ```
 
+## Converting RGB to perceptually uniform colour space
+
+As mentioned above, the interpolator in the drawing example uses a perceptually
+uniform colour space called J_zA_zB_z to ensure that the topology of the
+interpolator is well represented by the image without distortion by the
+non-linear relationship of the colour representation to typical human colour
+vision. Since the colours are rendered in RGB, it is necessary to convert RGB
+to and from J_zA_zB_z It is assumed that the RGB colour values will be
+interpreted and displayed by the system as
+[sRGB](https://en.wikipedia.org/wiki/SRGB), a reasonable default assumption due
+to the ubiquitous use of this standard colour space on the web, OpenGL, and
+other standards and consumer optical equipment.  Both sRGB and J_zA_zB_z colour
+spaces are defined relative to [CIE
+XYZ](https://en.wikipedia.org/wiki/CIE_1931_color_space) colour space, a
+standard colour space defined by the International Commission on Illumination
+in 1931 that defines a quantitative representation of the physiological
+response of the eye as it relates to the perception of a certain colour. Given
+this shared root, converting to or from sRGB to J_zA_zB_z requires first
+converting to or from CIE XYZ.  We assume that the sRGB values are normalized
+between 0.0 and 1.0, that the CIE XYZ Y value ranges between 0.0 and 1.0.
+
+The conversion between sRGB and CIE XYZ is given in [the wikipedia page on
+sRGB](https://en.wikipedia.org/wiki/SRGB). Since the example programs make use
+of Eigen for their colour data, the conversion can be succinctly implemented
+with matrix multiplication and other Eigen features.
+
+```c++
+// @='RGB - XYZ colour conversions'
+RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
+{
+    RGBVec rgb;
+    Eigen::Matrix3f a;
+    a <<  3.24096994, -1.53738318, -0.49861076,
+         -0.96924364,  1.8759675,   0.04155506,
+          0.05563008, -0.20397696,  1.05697151;
+
+    rgb = a * xyz; // apply linear transformation
+
+    for (unsigned int i = 0; i < 3; i++) // apply gamme correction
+    {
+        auto u = rgb[i];
+        u = u > 0.0031308 ? (1.055 * pow(u, 1 / 2.4) - 0.055) : 12.92 * u;
+        u = u < 0.0 ? 0.0 : u;
+        u = u > 1.0 ? 1.0 : u;
+        rgb[i] = u;
+    }
+
+    return rgb;
+}
+
+CIEXYZVec RGB_to_XYZ(const RGBVec& rgb)
+{
+    CIEXYZVec xyz = rgb;
+    Eigen::Matrix3f a;
+    a <<  0.41239080,  0.35758434,  0.18048079,
+          0.21263901,  0.71516868,  0.07219232,
+          0.01933082,  0.11919478,  0.95053215;
+
+    for (unsigned int i = 0; i < 3; i++) // reverse gamme correction
+    {
+        auto u = xyz[i];
+        u = u > 0.04045 ? pow((u + 0.055) / 1.055, 2.4) : u / 12.92;
+        xyz[i] = u;
+    }
+
+    return a * xyz; // reverse linear transformation
+}
+// @
+```
+
+The conversion between J_zA_zB_z and CIE XYZ is given in [the 2017 paper by Safdar
+et al. introducing J_zA_zB_z published by the Optical Society of America in Volume
+25 Issue 13 pages 15131-15151 of the journal Optics
+Express](https://doi.org/10.1364/OE.25.015131).
+
+```c++
+// @='JzAzBz consts'
+static const Eigen::Matrix3f M1 = (Eigen::Matrix3f() <<
+    0.41478972,  0.579999,  0.0146480,
+    -0.2015100,  1.120649,  0.0531008,
+    -0.0166008,  0.264800,  0.6684799).finished();
+static const Eigen::Matrix3f M2 = (Eigen::Matrix3f() <<  
+    0.5,         0.5,       0.0,
+    3.524000,   -4.066708,  0.542708,
+    0.199076,    1.096799, -1.295875).finished();
+constexpr float two5 = 1 << 5;
+constexpr float two7 = 1 << 7;
+constexpr float two12 = 1 << 12;
+constexpr float two14 = 1 << 14;
+constexpr float b = 1.15;
+constexpr float g = 0.66;
+constexpr float c1 = 3424.0 / two12;
+constexpr float c2 = 2413.0 / two7;
+constexpr float c3 = 2392.0 / two7;
+constexpr float n = 2610.0 / two14;
+constexpr float p = 1.7 * 2523.0 / two5;
+constexpr float d = -0.56;
+constexpr float d_0 = 1.6295499532821566e-11;
+// @
+
+// @='JzAzBz - XYZ colour conversions'
+JzAzBzVec XYZ_to_JzAzBz(const CIEXYZVec& xyz)
+{
+    @{JzAzBz consts}
+    auto x = xyz.x();
+    auto y = xyz.y();
+    auto z = xyz.z();
+
+    // pre-adjust to improve iso-hue linearity (Safdar et al. eqn. 8
+    auto x_ = b * x - (b - 1.0) * z;
+    auto y_ = g * y - (g - 1.0) * x;
+    CIEXYZVec xyz_(x_, y_, z);
+
+    // transform xyz to cone primaries (Safdar et al. eqn. 9)
+    Eigen::Vector3f lms = M1 * xyz_;
+
+    // perceptual quantizer (Safdar et al. eqn. 10
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        auto u = pow(lms[i] / 10000.0, n);
+        lms[i] = pow( (c1 + c2 * u) / (1.0 + c3 * u), p );
+    }
+
+    // transform to correlates of opponent colour space (Safdar et al. eqn. 11)
+    Eigen::Vector3f jab = M2 * lms;
+
+    // improve wide-range lightness prediction (Safdar et al. eqn. 12)
+    auto i = jab[0];
+    jab[0] = ((1.0 + d) * i) / (1.0 + d * i) - d_0;
+
+    return jab;
+}
+
+CIEXYZVec JzAzBz_to_XYZ(const JzAzBzVec& jab)
+{
+    @{JzAzBz consts}
+    static const Eigen::Matrix3f M1inv = M1.inverse();
+    static const Eigen::Matrix3f M2inv = M2.inverse();
+
+    // eqn. 17
+    auto iab = jab;
+    auto j = jab[0] + d_0;
+    iab[0] = j / (1.0 + d - d * j);
+
+    // eqn. 18
+    Eigen::Vector3f lms = M2inv * iab;
+
+    // eqn. 19
+    for (unsigned int i = 0; i < 3; ++i)
+    {
+        auto u = pow(lms[i], 1.0/p);
+        lms[i] = 10000.0 * pow( (c1 - u) / (c3 * u - c2), 1.0/n );
+    }
+
+    // eqn. 20
+    auto xyz_ = M1inv * lms;
+
+    // eqn. 21 - 23
+    auto x_ = xyz_[0];
+    auto y_ = xyz_[1];
+    auto z_ = xyz_[2];
+    auto x = (x_ + (b - 1.0) * z_) / b;
+    auto y = (y_ + (g - 1.0) * x) / g;
+    auto z = z_;
+
+    CIEXYZVec xyz{x, y, z};
+    return xyz;
+}
+// @
+```
+
+The conversion between sRGB and J_zA_zB_z is then easily implemented in terms
+of the above conversions to and from CIE XYZ colour space:
+
+```c++
+// @='colour conversions'
+@{RGB - XYZ colour conversions}
+
+@{JzAzBz - XYZ colour conversions}
+
+JzAzBzVec RGB_to_JzAzBz(const RGBVec& rgb)
+{
+    return XYZ_to_JzAzBz(RGB_to_XYZ(rgb));
+}
+
+RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
+{
+    return XYZ_to_RGB(JzAzBz_to_XYZ(jab));
+}
+// @
+```
+
 ## Compiling Examples
 
 Both examples are relatively simple with just a few dependencies. Both rely
@@ -779,18 +994,9 @@ that these libraries are installed on your system. The other dependencies
 (fire-hpp and bitmap) are both included as subtrees in this repository, so you
 should not have to do anything to install them.
 
-The image example can be compiled with this command:
-
-`g++ -std=c++17 -I/usr/include/eigen3/ -O3 examples/color_image.cpp`
-
-The interactive example can be compiled with this command:
-
-`g++ -std=c++17 -I/usr/include/eigen3/ -lGL -lglut -O3 examples/interactive_colors.cpp`
-
-In both cases, you may need to update the path to Eigen based on the
-particularities of your system. The above commands, possibly with slight
-modifications, should work on most Linux distributions and MacOS. 
-
-If you are a Windows user, it should be relatively straightforward to adapt
-the above commands to use Windows development tools. Please let me know how it
-goes and I would be happy to include more detailed instructions here.
+A simple Makefile is included in this repository with rules for building the
+examples, as well as for generating the machine source code and pretty-printed
+source code from this literate source code document using
+[`lilit`](https://github.com/DocSunset/lilit). The Makefile is tested and
+working on the author's Arch Linux system. As usual, I am open to
+recommendations and pull requests to improve the compatibility of the Makefile.
