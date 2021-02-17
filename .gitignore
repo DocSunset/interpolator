@@ -1,2 +1,4 @@
 *.bmp
+examples/color_image
+examples/interactive_colors
 todo.*
