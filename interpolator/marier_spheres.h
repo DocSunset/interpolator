@@ -62,268 +62,77 @@ struct Interpolators
         struct Meta { Scalar r = 0, d = 0, w = 0; };
 
         template<typename DemoList, typename Metalist>
-        PVector query(const SVector& q, const DemoList& demos,
+        PVector query(const SVector& q, const DemoList& demo,
                 Metalist& meta, PVector& weighted_sum, Scalar& r_q,
                 bool dynamic_demos = true)
         {
             Scalar sum_of_weights = 0;
-            if (demos.size() < 1) return weighted_sum;
-            if (demos.size() != meta.size()) return weighted_sum;
+            size_t j, i, N = demo.size();
+            if (N < 1) return weighted_sum;
+            if (N != meta.size()) return weighted_sum;
 
-            // step 1
             r_q = std::numeric_limits<Scalar>::max();
-            for (size_t i = 0; i < demos.size(); ++i)
+
+            for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
+
+            constexpr Scalar an_arbitrary_slop_factor =
+                    std::numeric_limits<Scalar>::epsilon() * 5;
+            for (i=0; i<N; ++i) if (meta[i].d <= an_arbitrary_slop_factor)
+                return weighted_sum = demo[i].p;
+
+            for (Meta& m : meta) { r_q = std::min(r_q, m.d); }
+
+            if (dynamic_demos) 
             {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                d_n = (s_n - q).norm();
-                if (d_n < r_q) r_q = d_n;
-
-                constexpr Scalar an_arbitrary_slop_factor =
-                        std::numeric_limits<Scalar>::epsilon() * 5;
-
-                if (d_n <= an_arbitrary_slop_factor)
+                for (i = 0; i < N; ++i) 
                 {
-                    w_n = 1;
-                    weighted_sum = p_n;
-                    return weighted_sum;
-                }
-            }
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& r_n = meta[i].r;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                if (dynamic_demos)
-                {
-                    // step 2
-                    r_n = std::numeric_limits<Scalar>::max();
-                    for (const Demo& demo2 : demos)
+                    meta[i].r = std::numeric_limits<Scalar>::max();
+                    for (j = 0; j < N; ++j)
                     {
-                        if (demos[i].id == demo2.id) continue; // demo cannot be its own nearest neighbour
-                        Scalar r = (s_n - demo2.s).norm();
-                        if (r < r_n) r_n = r;
+                        if (demo[i].id == demo[j].id) continue; // demo cannot be its own nearest neighbour
+                        meta[i].r = std::min(meta[i].r, (demo[i].s - demo[j].s).norm());
                     }
                 }
-            
-                if ((r_q + r_n) < d_n)
-                {
-                    w_n = 0;
-                    continue; // the circles are non-intersecting
-                }
-
-                // step 3
-                w_n = marier_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
-
-                // step 4
-                weighted_sum = weighted_sum + w_n * p_n;
-                sum_of_weights = sum_of_weights + w_n;
             }
 
-            // step 5
-            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-            weighted_sum = (1 / sum_of_weights) * weighted_sum;
-
-            return weighted_sum;
-        }
-    };
-    template<int exponent = 1>
-    class FastNonspheresInterpolator
-    {
-    public:
-        struct Meta { Scalar d = 0, w = 0; };
-
-        template<typename DemoList, typename Metalist>
-        PVector query(const SVector& q, DemoList& demos,
-                Metalist& meta, PVector& weighted_sum, Scalar& r_q,
-                bool dynamic_demos = true)
-        {
-            Scalar sum_of_weights = 0;
-            if (demos.size() < 1) return weighted_sum;
-
-            r_q = std::numeric_limits<Scalar>::max();
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                d_n = (s_n - q).norm();
-                if (d_n < r_q) r_q = d_n;
-
-                constexpr Scalar an_arbitrary_slop_factor =
-                        std::numeric_limits<Scalar>::epsilon() * 5;
-
-                if (d_n <= an_arbitrary_slop_factor)
+            for (i=0; i<N; ++i) 
+            { 
+                if ((r_q + meta[i].r) < meta[i].d) meta[i].w = 0;
+                else 
                 {
-                    w_n = 1;
-                    weighted_sum = p_n;
-                    return weighted_sum;
+                    meta[i].w = marier_spheres_weight(r_q, std::min(meta[i].r, meta[i].d), meta[i].d); 
+                    weighted_sum = weighted_sum + meta[i].w * demo[i].p; 
+                    sum_of_weights = sum_of_weights + meta[i].w;
                 }
             }
 
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
 
-                w_n = r_q / pow(d_n, exponent);
-
-                weighted_sum = weighted_sum + w_n * p_n;
-                sum_of_weights = sum_of_weights + w_n;
-            }
-
-            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-            weighted_sum = (1 / sum_of_weights) * weighted_sum;
-
-            return weighted_sum;
+            return weighted_sum = (1 / sum_of_weights) * weighted_sum;
         }
     };
-    template<int exponent = 1>
-    class InverseDistanceInterpolator1
+    template</*int d_min, int r_min,*/ int power = 1>
+    class InverseDistanceInterpolator /* after e.g. Todoroff 2009 ICMC */
     {
     public:
         struct Meta { Scalar d = 0, w = 0; };
 
         template<typename DemoList, typename Metalist>
-        PVector query(const SVector& q, DemoList& demos,
+        PVector query(const SVector& q, DemoList& demo,
                 Metalist& meta, PVector& weighted_sum, Scalar& r_q,
                 bool dynamic_demos = true)
         {
             Scalar sum_of_weights = 0;
-            if (demos.size() < 1) return weighted_sum;
+            size_t i, N = demo.size();
+            if (N < 1) return weighted_sum;
+            if (N != meta.size()) return weighted_sum;
 
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                d_n = (s_n - q).norm();
-                w_n = 1 / pow(d_n, exponent);
-
-                weighted_sum = weighted_sum + w_n * p_n;
-                sum_of_weights = sum_of_weights + w_n;
-            }
-
-            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-            weighted_sum = (1 / sum_of_weights) * weighted_sum;
-
-            return weighted_sum;
-        }
-    };
-    template<int exponent = 1>
-    class InverseDistanceInterpolator2
-    {
-    public:
-        struct Meta { Scalar d = 0, w = 0; };
-
-        template<typename DemoList, typename Metalist>
-        PVector query(const SVector& q, DemoList& demos,
-                Metalist& meta, PVector& weighted_sum, Scalar& r_q,
-                bool dynamic_demos = true)
-        {
-            Scalar sum_of_weights = 0;
-            if (demos.size() < 1) return weighted_sum;
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                d_n = (s_n - q).norm();
-            }
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                w_n = 1 / pow(d_n, exponent);
-
-                weighted_sum = weighted_sum + w_n * p_n;
-                sum_of_weights = sum_of_weights + w_n;
-            }
-
-            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-            weighted_sum = (1 / sum_of_weights) * weighted_sum;
-
-            return weighted_sum;
-        }
-    };
-    template<int exponent = 1>
-    class InverseDistanceInterpolator3
-    {
-    public:
-        struct Meta { Scalar d = 0, w = 0; };
-
-        template<typename DemoList, typename Metalist>
-        PVector query(const SVector& q, DemoList& demos,
-                Metalist& meta, PVector& weighted_sum, Scalar& r_q,
-                bool dynamic_demos = true)
-        {
-            Scalar sum_of_weights = 0;
-            if (demos.size() < 1) return weighted_sum;
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                d_n = (s_n - q).norm();
-            }
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                w_n = 1 / pow(d_n, exponent);
-            }
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                weighted_sum = weighted_sum + w_n * p_n;
-            }
-
-            for (size_t i = 0; i < demos.size(); ++i)
-            {
-                const SVector& s_n = demos[i].s;
-                const PVector& p_n = demos[i].p;
-                Scalar& d_n = meta[i].d;
-                Scalar& w_n = meta[i].w;
-
-                sum_of_weights = sum_of_weights + w_n;
-            }
-
+            for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
+            for (Meta& m : meta) { m.w = 1 / pow(m.d, power); }
+            for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
+            for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
             for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
 
-            weighted_sum = (1 / sum_of_weights) * weighted_sum;
-
-            return weighted_sum;
+            return weighted_sum = (1 / sum_of_weights) * weighted_sum;
         }
     };
 };

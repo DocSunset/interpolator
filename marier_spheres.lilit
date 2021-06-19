@@ -293,50 +293,41 @@ public:
     struct Meta { Scalar r = 0, d = 0, w = 0; };
 
     template<typename DemoList, typename Metalist>
-    PVector query(const SVector& q, const DemoList& demos,
+    PVector query(const SVector& q, const DemoList& demo,
             Metalist& meta, PVector& weighted_sum, Scalar& r_q,
             bool dynamic_demos = true)
     {
         Scalar sum_of_weights = 0;
-        if (demos.size() < 1) return weighted_sum;
-        if (demos.size() != meta.size()) return weighted_sum;
+        size_t j, i, N = demo.size();
+        if (N < 1) return weighted_sum;
+        if (N != meta.size()) return weighted_sum;
 
-        // step 1
-        @{calculate radius r_q and distances d_n}
+        r_q = std::numeric_limits<Scalar>::max();
 
-        for (size_t i = 0; i < demos.size(); ++i)
+        for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
+
+        @{avoid numerical imprecision issues}
+
+        for (Meta& m : meta) { r_q = std::min(r_q, m.d); }
+
+        if (dynamic_demos) 
         {
-            const SVector& s_n = demos[i].s;
-            const PVector& p_n = demos[i].p;
-            Scalar& r_n = meta[i].r;
-            Scalar& d_n = meta[i].d;
-            Scalar& w_n = meta[i].w;
-
-            if (dynamic_demos)
-            {
-                // step 2
-                @{calculate the radius r_n}
-            }
-        
-            if ((r_q + r_n) < d_n)
-            {
-                w_n = 0;
-                continue; // the circles are non-intersecting
-            }
-
-            // step 3
-            w_n = marier_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
-
-            // step 4
-            weighted_sum = weighted_sum + w_n * p_n;
-            sum_of_weights = sum_of_weights + w_n;
+            @{solve all nearest neighbours}
         }
 
-        // step 5
-        for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-        weighted_sum = (1 / sum_of_weights) * weighted_sum;
+        for (i=0; i<N; ++i) 
+        { 
+            if ((r_q + meta[i].r) < meta[i].d) meta[i].w = 0;
+            else 
+            {
+                meta[i].w = marier_spheres_weight(r_q, std::min(meta[i].r, meta[i].d), meta[i].d); 
+                weighted_sum = weighted_sum + meta[i].w * demo[i].p; 
+                sum_of_weights = sum_of_weights + meta[i].w;
+            }
+        }
 
-        return weighted_sum;
+
+        return weighted_sum = (1 / sum_of_weights) * weighted_sum;
     }
 };
 // @/
@@ -365,10 +356,10 @@ distance from the query point to every demonstration.
 ```c++ 
 // @='calculate radius r_q and distances d_n'
 r_q = std::numeric_limits<Scalar>::max();
-for (size_t i = 0; i < demos.size(); ++i)
+for (size_t i = 0; i < demo.size(); ++i)
 {
-    const SVector& s_n = demos[i].s;
-    const PVector& p_n = demos[i].p;
+    const SVector& s_n = demo[i].s;
+    const PVector& p_n = demo[i].p;
     Scalar& d_n = meta[i].d;
     Scalar& w_n = meta[i].w;
 
@@ -400,13 +391,8 @@ close enough for practical purposes.
 // @='avoid numerical imprecision issues'
 constexpr Scalar an_arbitrary_slop_factor =
         std::numeric_limits<Scalar>::epsilon() * 5;
-
-if (d_n <= an_arbitrary_slop_factor)
-{
-    w_n = 1;
-    weighted_sum = p_n;
-    return weighted_sum;
-}
+for (i=0; i<N; ++i) if (meta[i].d <= an_arbitrary_slop_factor)
+    return weighted_sum = demo[i].p;
 // @/
 ```
 
@@ -418,80 +404,42 @@ used if it is less than the distance from the demonstration to the nearest
 other demonstration.
 
 ```c++ 
-// @='calculate the radius r_n'
-r_n = std::numeric_limits<Scalar>::max();
-for (const Demo& demo2 : demos)
+// @='solve all nearest neighbours'
+for (i = 0; i < N; ++i) 
 {
-    if (demos[i].id == demo2.id) continue; // demo cannot be its own nearest neighbour
-    Scalar r = (s_n - demo2.s).norm();
-    if (r < r_n) r_n = r;
+    meta[i].r = std::numeric_limits<Scalar>::max();
+    for (j = 0; j < N; ++j)
+    {
+        if (demo[i].id == demo[j].id) continue; // demo cannot be its own nearest neighbour
+        meta[i].r = std::min(meta[i].r, (demo[i].s - demo[j].s).norm());
+    }
 }
 // @/
 ```
 
-## Fast Non-spheres Interpolator
-
-```c++ 
-// @+'interpolators'
-template<int exponent = 1>
-class FastNonspheresInterpolator
-{
-public:
-    struct Meta { Scalar d = 0, w = 0; };
-
-    template<typename DemoList, typename Metalist>
-    PVector query(const SVector& q, DemoList& demos,
-            Metalist& meta, PVector& weighted_sum, Scalar& r_q,
-            bool dynamic_demos = true)
-    {
-        Scalar sum_of_weights = 0;
-        if (demos.size() < 1) return weighted_sum;
-
-        @{calculate radius r_q and distances d_n}
-
-        for (size_t i = 0; i < demos.size(); ++i)
-        {
-            const PVector& p_n = demos[i].p;
-            Scalar& d_n = meta[i].d;
-            Scalar& w_n = meta[i].w;
-
-            w_n = r_q / pow(d_n, exponent);
-
-            weighted_sum = weighted_sum + w_n * p_n;
-            sum_of_weights = sum_of_weights + w_n;
-        }
-
-        for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-        weighted_sum = (1 / sum_of_weights) * weighted_sum;
-
-        return weighted_sum;
-    }
-};
-// @/
-```
-
-## Fast Non-spheres Interpolator
+## Inverse Distance Interpolator
 
 ```c++
 // @+'interpolators'
-template<int exponent = 1>
-class InverseDistanceInterpolator
+template</*int d_min, int r_min,*/ int power = 1>
+class InverseDistanceInterpolator /* after e.g. Todoroff 2009 ICMC */
 {
 public:
     struct Meta { Scalar d = 0, w = 0; };
 
     template<typename DemoList, typename Metalist>
-    PVector query(const SVector& q, DemoList& demos,
+    PVector query(const SVector& q, DemoList& demo,
             Metalist& meta, PVector& weighted_sum, Scalar& r_q,
             bool dynamic_demos = true)
     {
         Scalar sum_of_weights = 0;
-        size_t i, N = demos.size();
+        size_t i, N = demo.size();
         if (N < 1) return weighted_sum;
+        if (N != meta.size()) return weighted_sum;
 
-        for (i=0; i<N; ++i)  { meta[i].d = (demos[i].s - q).norm(); }
-        for (Meta& m : meta) { m.w = 1 / pow(m.d, exponent); }
-        for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demos[i].p; }
+        for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
+        for (Meta& m : meta) { m.w = 1 / pow(m.d, power); }
+        for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
         for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
         for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
 
@@ -581,8 +529,9 @@ using std::make_tuple;
 #define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
 auto interpolators = make_tuple
         ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
-        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<8>)
-        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<16>)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<3>)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<9>)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<18>)
         );
 // @/
 ```
@@ -615,14 +564,14 @@ int fired_main(
     int i = 0;
     bool dynamic_demos = not fast;
 
-    std::vector<Interp::Demo> demos;
+    std::vector<Interp::Demo> demo;
     @{generate random demonstrations}
 
     auto interpolate_and_draw = [&](auto& tup)
     {
         auto& interpolator = std::get<0>(tup);
         auto& meta = std::get<1>(tup);
-        meta.resize(demos.size());
+        meta.resize(demo.size());
         auto& img = std::get<2>(tup);
 
         img = bitmap_image{x, y};
@@ -662,7 +611,7 @@ while(n-- > 0)
 {
     auto v = Vec2{random(generator), random(generator)};
     auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-    demos.push_back({n, v, c});
+    demo.push_back({n, v, c});
 }
 // @/
 ```
@@ -686,10 +635,10 @@ benchmark.
             JzAzBzVec interpolated_jab{0, 0, 0};
             if (not dynamic_demos && not ran)
             {
-                interpolator.query(q, demos, meta, interpolated_jab, _, true);
+                interpolator.query(q, demo, meta, interpolated_jab, _, true);
                 ran = true;
             }
-            else interpolator.query(q, demos, meta, interpolated_jab, _, dynamic_demos);
+            else interpolator.query(q, demo, meta, interpolated_jab, _, dynamic_demos);
             RGBVec out = JzAzBz_to_RGB(interpolated_jab);
             img.set_pixel(xpix, ypix,
                     (unsigned char)std::round(out.x() * 255),
@@ -715,10 +664,10 @@ to the topology of the interpolator.
 image_drawer draw(img);
 draw.pen_width(1);
 
-for (const auto& demo : demos)
+for (const auto& d : demo)
 {
-    const Vec2& v = demo.s;
-    const RGBVec& c = demo.p;
+    const Vec2& v = d.s;
+    const RGBVec& c = d.p;
     draw.pen_color(0,0,0);
     draw.pen_width(1);
     draw.circle(v.x() * x, v.y() * y, 7);
@@ -789,15 +738,15 @@ void display()
     JzAzBzVec interpolated_jab{0, 0, 0};
     if (first_run) 
     {
-        interpolator.query(q, demos, interpolated_jab, r_q, true);
+        interpolator.query(q, demo, interpolated_jab, r_q, true);
         first_run = false;
     }
-    interpolator.query(q, demos, interpolated_jab, r_q, false);
+    interpolator.query(q, demo, interpolated_jab, r_q, false);
     RGBVec q_color = JzAzBz_to_RGB(interpolated_jab);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (const auto& d : demos)
+    for (const auto& d : demo)
     {
         const auto& v = d.s;
         // draw disk for weight
@@ -805,7 +754,7 @@ void display()
         drawCircleFilled(v, d.w/3, -1);
     }
 
-    for (const auto& d : demos)
+    for (const auto& d : demo)
     {
         const auto& v = d.s;
         const auto c = JzAzBz_to_RGB(d.p);
@@ -816,7 +765,7 @@ void display()
         drawCircleWire(v, r - 0.001, 1);
     }
 
-    for (const auto& d : demos)
+    for (const auto& d : demo)
     {
         const auto& v = d.s;
         const auto c = JzAzBz_to_RGB(d.p);

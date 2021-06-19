@@ -23,8 +23,9 @@ using std::make_tuple;
 #define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
 auto interpolators = make_tuple
         ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
-        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<8>)
-        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<16>)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<3>)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<9>)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<18>)
         );
 
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
@@ -194,7 +195,7 @@ int fired_main(
     int i = 0;
     bool dynamic_demos = not fast;
 
-    std::vector<Interp::Demo> demos;
+    std::vector<Interp::Demo> demo;
     unsigned int n = N;
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
@@ -203,14 +204,14 @@ int fired_main(
     {
         auto v = Vec2{random(generator), random(generator)};
         auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-        demos.push_back({n, v, c});
+        demo.push_back({n, v, c});
     }
 
     auto interpolate_and_draw = [&](auto& tup)
     {
         auto& interpolator = std::get<0>(tup);
         auto& meta = std::get<1>(tup);
-        meta.resize(demos.size());
+        meta.resize(demo.size());
         auto& img = std::get<2>(tup);
 
         img = bitmap_image{x, y};
@@ -227,10 +228,10 @@ int fired_main(
                     JzAzBzVec interpolated_jab{0, 0, 0};
                     if (not dynamic_demos && not ran)
                     {
-                        interpolator.query(q, demos, meta, interpolated_jab, _, true);
+                        interpolator.query(q, demo, meta, interpolated_jab, _, true);
                         ran = true;
                     }
-                    else interpolator.query(q, demos, meta, interpolated_jab, _, dynamic_demos);
+                    else interpolator.query(q, demo, meta, interpolated_jab, _, dynamic_demos);
                     RGBVec out = JzAzBz_to_RGB(interpolated_jab);
                     img.set_pixel(xpix, ypix,
                             (unsigned char)std::round(out.x() * 255),
@@ -248,10 +249,10 @@ int fired_main(
         image_drawer draw(img);
         draw.pen_width(1);
 
-        for (const auto& demo : demos)
+        for (const auto& d : demo)
         {
-            const Vec2& v = demo.s;
-            const RGBVec& c = demo.p;
+            const Vec2& v = d.s;
+            const RGBVec& c = d.p;
             draw.pen_color(0,0,0);
             draw.pen_width(1);
             draw.circle(v.x() * x, v.y() * y, 7);
