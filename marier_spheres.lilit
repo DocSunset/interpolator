@@ -286,7 +286,7 @@ meta-data returned by the interpolator in addition to the primary output of the
 interpolated weighted sum.
 
 ```c++ 
-// @='intersecting n-spheres'
+// @+'interpolators'
 class IntersectingNSpheresInterpolator
 {
 public:
@@ -432,7 +432,8 @@ for (const Demo& demo2 : demos)
 ## Fast Non-spheres Interpolator
 
 ```c++ 
-// @='fast non-spheres'
+// @+'interpolators'
+template<int exponent = 1>
 class FastNonspheresInterpolator
 {
 public:
@@ -454,7 +455,7 @@ public:
             Scalar& d_n = meta[i].d;
             Scalar& w_n = meta[i].w;
 
-            w_n = r_q / (d_n * d_n);
+            w_n = r_q / pow(d_n, exponent);
 
             weighted_sum = weighted_sum + w_n * p_n;
             sum_of_weights = sum_of_weights + w_n;
@@ -464,6 +465,37 @@ public:
         weighted_sum = (1 / sum_of_weights) * weighted_sum;
 
         return weighted_sum;
+    }
+};
+// @/
+```
+
+## Fast Non-spheres Interpolator
+
+```c++
+// @+'interpolators'
+template<int exponent = 1>
+class InverseDistanceInterpolator
+{
+public:
+    struct Meta { Scalar d = 0, w = 0; };
+
+    template<typename DemoList, typename Metalist>
+    PVector query(const SVector& q, DemoList& demos,
+            Metalist& meta, PVector& weighted_sum, Scalar& r_q,
+            bool dynamic_demos = true)
+    {
+        Scalar sum_of_weights = 0;
+        size_t i, N = demos.size();
+        if (N < 1) return weighted_sum;
+
+        for (i=0; i<N; ++i)  { meta[i].d = (demos[i].s - q).norm(); }
+        for (Meta& m : meta) { m.w = 1 / pow(m.d, exponent); }
+        for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demos[i].p; }
+        for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
+        for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
+
+        return weighted_sum = (1 / sum_of_weights) * weighted_sum;
     }
 };
 // @/
@@ -490,10 +522,7 @@ template<typename Scalar, typename ID, typename SVector, typename PVector>
 struct Interpolators
 {
     struct Demo { ID id; SVector s; PVector p; };
-
-    @{intersecting n-spheres}
-    
-    @{fast non-spheres}
+    @{interpolators}
 };
 #endif
 // @/
@@ -552,7 +581,8 @@ using std::make_tuple;
 #define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
 auto interpolators = make_tuple
         ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
-        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator)
+        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<8>)
+        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<16>)
         );
 // @/
 ```

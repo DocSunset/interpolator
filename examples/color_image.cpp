@@ -23,7 +23,8 @@ using std::make_tuple;
 #define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
 auto interpolators = make_tuple
         ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
-        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator)
+        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<8>)
+        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator<16>)
         );
 
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
