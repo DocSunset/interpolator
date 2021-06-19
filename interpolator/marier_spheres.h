@@ -3,6 +3,9 @@
 #include<limits>
 #include<cmath>
 #include<iostream>
+#include<cstddef>
+
+using std::size_t;
 
 template<typename Scalar>
 Scalar circle_circle_intersection_area(
@@ -54,48 +57,77 @@ class MarierSpheresInterpolator
 {
 public:
     struct Demo { ID id; SVector s; PVector p; Scalar r, d, w;};
-    Scalar q_radius;
 
     template<typename DemoList>
-    PVector query(const SVector& q, DemoList& demos, PVector& weighted_sum)
+    PVector query(const SVector& q, DemoList& demos,
+            PVector& weighted_sum, Scalar& r_q,
+            bool dynamic_demos = true)
     {
         Scalar sum_of_weights = 0;
         if (demos.size() < 1) return weighted_sum;
 
-        q_radius = std::numeric_limits<Scalar>::max();
-        for (const auto& demo : demos)
+        // step 1
+        r_q = std::numeric_limits<Scalar>::max();
+        for (Demo& demo : demos)
         {
-            Scalar d = (demo.s - q).norm();
-            if (d < q_radius) q_radius = d;
+            const SVector& s_n = demo.s;
+            Scalar& d_n = demo.d;
+
+            d_n = (s_n - q).norm();
+            if (d_n < r_q) r_q = d_n;
+
+            const PVector& p_n = demo.p;
+            Scalar& w_n = demo.w;
+
+            constexpr Scalar an_arbitrary_slop_factor =
+                    std::numeric_limits<Scalar>::epsilon() * 5;
+
+            if (d_n <= an_arbitrary_slop_factor)
+            {
+                w_n = 1;
+                weighted_sum = p_n;
+                return weighted_sum;
+            }
         }
 
-        for (auto& demo : demos)
+        for (Demo& demo : demos)
         {
-            demo.d = (demo.s - q).norm();
-            constexpr Scalar an_arbitrary_slop_factor = 
-                std::numeric_limits<Scalar>::epsilon() * 5;
-            if (demo.d <= an_arbitrary_slop_factor) return demo.p;
-        
-            demo.r = std::numeric_limits<Scalar>::max();
-            for (const auto& demo2 : demos)
+            const SVector& s_n = demo.s;
+            const PVector& p_n = demo.p;
+            Scalar& r_n = demo.r;
+            Scalar& d_n = demo.d;
+            Scalar& w_n = demo.w;
+
+            if (dynamic_demos)
             {
-                if (demo.id == demo2.id) continue; // demo cannot be its own nearest neighbour
-                Scalar r = (demo.s - demo2.s).norm();
-                if (r < demo.r) demo.r = r;
+                // step 2
+                demo.r = std::numeric_limits<Scalar>::max();
+                for (const Demo& demo2 : demos)
+                {
+                    if (demo.id == demo2.id) continue; // demo cannot be its own nearest neighbour
+                    Scalar r = (s_n - demo2.s).norm();
+                    if (r < r_n) r_n = r;
+                }
             }
-            if (demo.d < demo.r) demo.r = demo.d; // check if query point is closer
         
-            if ((q_radius + demo.r) < demo.d) 
+            if ((r_q + r_n) < d_n)
             {
-                demo.w = 0;
+                w_n = 0;
                 continue; // the circles are non-intersecting
             }
-            demo.w = marier_spheres_weight(q_radius, demo.r, demo.d);
-            sum_of_weights = sum_of_weights + demo.w;
-            weighted_sum = weighted_sum + demo.w * demo.p;
+
+            // step 3
+            w_n = marier_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
+
+            // step 4
+            weighted_sum = weighted_sum + w_n * p_n;
+            sum_of_weights = sum_of_weights + w_n;
         }
+
+        // step 5
+        for (Demo& demo : demos) { demo.w = demo.w / sum_of_weights; }
         weighted_sum = (1 / sum_of_weights) * weighted_sum;
-        for (auto& demo : demos) { demo.w = demo.w / sum_of_weights; }
+
         return weighted_sum;
     }
 };

@@ -182,8 +182,10 @@ RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
 int fired_main(
         unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
         unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
+        bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode."), 
         unsigned int n = fire::arg("n", "The number of demonstrations", 5))
 {
+    bool dynamic_demos = not fast;
     bitmap_image img(x, y); 
     img.clear();
 
@@ -200,13 +202,21 @@ int fired_main(
 
     auto start = std::chrono::high_resolution_clock::now();
 
+    bool ran = false;
     for (unsigned int xpix = 0; xpix < x; ++xpix)
     {
         for (unsigned int ypix = 0; ypix < y; ++ypix)
         {
             auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
+            Scalar r_q = 0;
             JzAzBzVec interpolated_jab{0, 0, 0};
-            RGBVec out = JzAzBz_to_RGB(interpolator.query(q, demos, interpolated_jab));
+            if (not dynamic_demos && not ran) 
+            {
+                interpolator.query(q, demos, interpolated_jab, r_q, true);
+                ran = true;
+            }
+            else interpolator.query(q, demos, interpolated_jab, r_q, dynamic_demos);
+            RGBVec out = JzAzBz_to_RGB(interpolated_jab);
             img.set_pixel(xpix, ypix,
                     (unsigned char)std::round(out.x() * 255),
                     (unsigned char)std::round(out.y() * 255),

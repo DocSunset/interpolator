@@ -208,9 +208,17 @@ void drawCircleWire(const Vec2& position, const Scalar& radius, const Scalar& de
 
 void display()
 {
+    static bool first_run = true;
     constexpr float dot_radius = 0.01;
+    Scalar r_q = 0;
     JzAzBzVec interpolated_jab{0, 0, 0};
-    RGBVec q_color = JzAzBz_to_RGB(interpolator.query(q, demos, interpolated_jab));
+    if (first_run) 
+    {
+        interpolator.query(q, demos, interpolated_jab, r_q, true);
+        first_run = false;
+    }
+    interpolator.query(q, demos, interpolated_jab, r_q, false);
+    RGBVec q_color = JzAzBz_to_RGB(interpolated_jab);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -226,10 +234,11 @@ void display()
     {
         const auto& v = d.s;
         const auto c = JzAzBz_to_RGB(d.p);
+        const auto r = d.r < d.d ? d.r : d.d;
         // draw radial circle
         glColor3f(c.x(), c.y(), c.z());
-        drawCircleWire(v, d.r, 1);
-        drawCircleWire(v, d.r - 0.001, 1);
+        drawCircleWire(v, r, 1);
+        drawCircleWire(v, r - 0.001, 1);
     }
 
     for (const auto& d : demos)
@@ -242,8 +251,8 @@ void display()
     }
 
     glColor3f(q_color.x(), q_color.y(), q_color.z());
-    drawCircleWire(q, interpolator.q_radius);
-    drawCircleWire(q, interpolator.q_radius - 0.001);
+    drawCircleWire(q, r_q);
+    drawCircleWire(q, r_q - 0.001);
     drawCircleFilled(q, dot_radius, 1);
 
     glutSwapBuffers();
