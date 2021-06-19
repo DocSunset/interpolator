@@ -53,82 +53,141 @@ Scalar marier_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d)
 }
 
 template<typename Scalar, typename ID, typename SVector, typename PVector>
-class MarierSpheresInterpolator
+struct Interpolators
 {
-public:
-    struct Demo { ID id; SVector s; PVector p; Scalar r, d, w;};
+    struct Demo { ID id; SVector s; PVector p; };
 
-    template<typename DemoList>
-    PVector query(const SVector& q, DemoList& demos,
-            PVector& weighted_sum, Scalar& r_q,
-            bool dynamic_demos = true)
+    class IntersectingNSpheresInterpolator
     {
-        Scalar sum_of_weights = 0;
-        if (demos.size() < 1) return weighted_sum;
+    public:
+        struct Meta { Scalar r = 0, d = 0, w = 0; };
 
-        // step 1
-        r_q = std::numeric_limits<Scalar>::max();
-        for (Demo& demo : demos)
+        template<typename DemoList, typename Metalist>
+        PVector query(const SVector& q, const DemoList& demos,
+                Metalist& meta, PVector& weighted_sum, Scalar& r_q,
+                bool dynamic_demos = true)
         {
-            const SVector& s_n = demo.s;
-            Scalar& d_n = demo.d;
+            Scalar sum_of_weights = 0;
+            if (demos.size() < 1) return weighted_sum;
+            if (demos.size() != meta.size()) return weighted_sum;
 
-            d_n = (s_n - q).norm();
-            if (d_n < r_q) r_q = d_n;
-
-            const PVector& p_n = demo.p;
-            Scalar& w_n = demo.w;
-
-            constexpr Scalar an_arbitrary_slop_factor =
-                    std::numeric_limits<Scalar>::epsilon() * 5;
-
-            if (d_n <= an_arbitrary_slop_factor)
+            // step 1
+            r_q = std::numeric_limits<Scalar>::max();
+            for (size_t i = 0; i < demos.size(); ++i)
             {
-                w_n = 1;
-                weighted_sum = p_n;
-                return weighted_sum;
-            }
-        }
+                const SVector& s_n = demos[i].s;
+                const PVector& p_n = demos[i].p;
+                Scalar& d_n = meta[i].d;
+                Scalar& w_n = meta[i].w;
 
-        for (Demo& demo : demos)
-        {
-            const SVector& s_n = demo.s;
-            const PVector& p_n = demo.p;
-            Scalar& r_n = demo.r;
-            Scalar& d_n = demo.d;
-            Scalar& w_n = demo.w;
+                d_n = (s_n - q).norm();
+                if (d_n < r_q) r_q = d_n;
 
-            if (dynamic_demos)
-            {
-                // step 2
-                demo.r = std::numeric_limits<Scalar>::max();
-                for (const Demo& demo2 : demos)
+                constexpr Scalar an_arbitrary_slop_factor =
+                        std::numeric_limits<Scalar>::epsilon() * 5;
+
+                if (d_n <= an_arbitrary_slop_factor)
                 {
-                    if (demo.id == demo2.id) continue; // demo cannot be its own nearest neighbour
-                    Scalar r = (s_n - demo2.s).norm();
-                    if (r < r_n) r_n = r;
+                    w_n = 1;
+                    weighted_sum = p_n;
+                    return weighted_sum;
                 }
             }
-        
-            if ((r_q + r_n) < d_n)
+
+            for (size_t i = 0; i < demos.size(); ++i)
             {
-                w_n = 0;
-                continue; // the circles are non-intersecting
+                const SVector& s_n = demos[i].s;
+                const PVector& p_n = demos[i].p;
+                Scalar& r_n = meta[i].r;
+                Scalar& d_n = meta[i].d;
+                Scalar& w_n = meta[i].w;
+
+                if (dynamic_demos)
+                {
+                    // step 2
+                    r_n = std::numeric_limits<Scalar>::max();
+                    for (const Demo& demo2 : demos)
+                    {
+                        if (demos[i].id == demo2.id) continue; // demo cannot be its own nearest neighbour
+                        Scalar r = (s_n - demo2.s).norm();
+                        if (r < r_n) r_n = r;
+                    }
+                }
+            
+                if ((r_q + r_n) < d_n)
+                {
+                    w_n = 0;
+                    continue; // the circles are non-intersecting
+                }
+
+                // step 3
+                w_n = marier_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
+
+                // step 4
+                weighted_sum = weighted_sum + w_n * p_n;
+                sum_of_weights = sum_of_weights + w_n;
             }
 
-            // step 3
-            w_n = marier_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
+            // step 5
+            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
+            weighted_sum = (1 / sum_of_weights) * weighted_sum;
 
-            // step 4
-            weighted_sum = weighted_sum + w_n * p_n;
-            sum_of_weights = sum_of_weights + w_n;
+            return weighted_sum;
         }
+    };
+    
+    class FastNonspheresInterpolator
+    {
+    public:
+        struct Meta { Scalar d = 0, w = 0; };
 
-        // step 5
-        for (Demo& demo : demos) { demo.w = demo.w / sum_of_weights; }
-        weighted_sum = (1 / sum_of_weights) * weighted_sum;
+        template<typename DemoList, typename Metalist>
+        PVector query(const SVector& q, DemoList& demos,
+                Metalist& meta, PVector& weighted_sum, Scalar& r_q,
+                bool dynamic_demos = true)
+        {
+            Scalar sum_of_weights = 0;
+            if (demos.size() < 1) return weighted_sum;
 
-        return weighted_sum;
-    }
+            r_q = std::numeric_limits<Scalar>::max();
+            for (size_t i = 0; i < demos.size(); ++i)
+            {
+                const SVector& s_n = demos[i].s;
+                const PVector& p_n = demos[i].p;
+                Scalar& d_n = meta[i].d;
+                Scalar& w_n = meta[i].w;
+
+                d_n = (s_n - q).norm();
+                if (d_n < r_q) r_q = d_n;
+
+                constexpr Scalar an_arbitrary_slop_factor =
+                        std::numeric_limits<Scalar>::epsilon() * 5;
+
+                if (d_n <= an_arbitrary_slop_factor)
+                {
+                    w_n = 1;
+                    weighted_sum = p_n;
+                    return weighted_sum;
+                }
+            }
+
+            for (size_t i = 0; i < demos.size(); ++i)
+            {
+                const PVector& p_n = demos[i].p;
+                Scalar& d_n = meta[i].d;
+                Scalar& w_n = meta[i].w;
+
+                w_n = r_q / (d_n * d_n);
+
+                weighted_sum = weighted_sum + w_n * p_n;
+                sum_of_weights = sum_of_weights + w_n;
+            }
+
+            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
+            weighted_sum = (1 / sum_of_weights) * weighted_sum;
+
+            return weighted_sum;
+        }
+    };
 };
 #endif

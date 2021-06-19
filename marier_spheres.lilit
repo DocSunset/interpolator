@@ -287,30 +287,30 @@ interpolated weighted sum.
 
 ```c++ 
 // @='intersecting n-spheres'
-template<typename Scalar, typename ID, typename SVector, typename PVector>
-class MarierSpheresInterpolator
+class IntersectingNSpheresInterpolator
 {
 public:
-    struct Demo { ID id; SVector s; PVector p; Scalar r, d, w;};
+    struct Meta { Scalar r = 0, d = 0, w = 0; };
 
-    template<typename DemoList>
-    PVector query(const SVector& q, DemoList& demos,
-            PVector& weighted_sum, Scalar& r_q,
+    template<typename DemoList, typename Metalist>
+    PVector query(const SVector& q, const DemoList& demos,
+            Metalist& meta, PVector& weighted_sum, Scalar& r_q,
             bool dynamic_demos = true)
     {
         Scalar sum_of_weights = 0;
         if (demos.size() < 1) return weighted_sum;
+        if (demos.size() != meta.size()) return weighted_sum;
 
         // step 1
         @{calculate radius r_q and distances d_n}
 
-        for (Demo& demo : demos)
+        for (size_t i = 0; i < demos.size(); ++i)
         {
-            const SVector& s_n = demo.s;
-            const PVector& p_n = demo.p;
-            Scalar& r_n = demo.r;
-            Scalar& d_n = demo.d;
-            Scalar& w_n = demo.w;
+            const SVector& s_n = demos[i].s;
+            const PVector& p_n = demos[i].p;
+            Scalar& r_n = meta[i].r;
+            Scalar& d_n = meta[i].d;
+            Scalar& w_n = meta[i].w;
 
             if (dynamic_demos)
             {
@@ -333,7 +333,7 @@ public:
         }
 
         // step 5
-        for (Demo& demo : demos) { demo.w = demo.w / sum_of_weights; }
+        for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
         weighted_sum = (1 / sum_of_weights) * weighted_sum;
 
         return weighted_sum;
@@ -365,10 +365,12 @@ distance from the query point to every demonstration.
 ```c++ 
 // @='calculate radius r_q and distances d_n'
 r_q = std::numeric_limits<Scalar>::max();
-for (Demo& demo : demos)
+for (size_t i = 0; i < demos.size(); ++i)
 {
-    const SVector& s_n = demo.s;
-    Scalar& d_n = demo.d;
+    const SVector& s_n = demos[i].s;
+    const PVector& p_n = demos[i].p;
+    Scalar& d_n = meta[i].d;
+    Scalar& w_n = meta[i].w;
 
     d_n = (s_n - q).norm();
     if (d_n < r_q) r_q = d_n;
@@ -396,9 +398,6 @@ close enough for practical purposes.
 
 ```c++
 // @='avoid numerical imprecision issues'
-const PVector& p_n = demo.p;
-Scalar& w_n = demo.w;
-
 constexpr Scalar an_arbitrary_slop_factor =
         std::numeric_limits<Scalar>::epsilon() * 5;
 
@@ -420,18 +419,59 @@ other demonstration.
 
 ```c++ 
 // @='calculate the radius r_n'
-demo.r = std::numeric_limits<Scalar>::max();
+r_n = std::numeric_limits<Scalar>::max();
 for (const Demo& demo2 : demos)
 {
-    if (demo.id == demo2.id) continue; // demo cannot be its own nearest neighbour
+    if (demos[i].id == demo2.id) continue; // demo cannot be its own nearest neighbour
     Scalar r = (s_n - demo2.s).norm();
     if (r < r_n) r_n = r;
 }
 // @/
 ```
 
+## Fast Non-spheres Interpolator
+
+```c++ 
+// @='fast non-spheres'
+class FastNonspheresInterpolator
+{
+public:
+    struct Meta { Scalar d = 0, w = 0; };
+
+    template<typename DemoList, typename Metalist>
+    PVector query(const SVector& q, DemoList& demos,
+            Metalist& meta, PVector& weighted_sum, Scalar& r_q,
+            bool dynamic_demos = true)
+    {
+        Scalar sum_of_weights = 0;
+        if (demos.size() < 1) return weighted_sum;
+
+        @{calculate radius r_q and distances d_n}
+
+        for (size_t i = 0; i < demos.size(); ++i)
+        {
+            const PVector& p_n = demos[i].p;
+            Scalar& d_n = meta[i].d;
+            Scalar& w_n = meta[i].w;
+
+            w_n = r_q / (d_n * d_n);
+
+            weighted_sum = weighted_sum + w_n * p_n;
+            sum_of_weights = sum_of_weights + w_n;
+        }
+
+        for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
+        weighted_sum = (1 / sum_of_weights) * weighted_sum;
+
+        return weighted_sum;
+    }
+};
+// @/
+```
+
 Putting it all together, we get a reasonably generic header-only library
-implementing Marier's algorithm.
+implementing Marier's algorithm, as well as the non-spheres algorithm inspired
+by it.
 
 ```c++ 
 // @#'interpolator/marier_spheres.h'
@@ -446,7 +486,15 @@ using std::size_t;
 
 @{weight functions}
 
-@{intersecting n-spheres}
+template<typename Scalar, typename ID, typename SVector, typename PVector>
+struct Interpolators
+{
+    struct Demo { ID id; SVector s; PVector p; };
+
+    @{intersecting n-spheres}
+    
+    @{fast non-spheres}
+};
 #endif
 // @/
 ```
@@ -498,21 +546,26 @@ using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
-using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, JzAzBzVec>;
-using Demo = typename Interpolator::Demo;
+using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 
-Interpolator interpolator;
-std::vector<Demo> demos;
+using std::make_tuple;
+#define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
+auto interpolators = make_tuple
+        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
+        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator)
+        );
 // @/
 ```
 
 ```c++ 
 // @#'examples/color_image.cpp'
 #include <cmath>
+#include <cstdio>
 #include <random>
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <tuple>
 #include "include/fire-hpp/fire.hpp"
 #include "include/bitmap/bitmap_image.hpp"
 #include "../interpolator/marier_spheres.h"
@@ -527,19 +580,33 @@ int fired_main(
         unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
         unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
         bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode."), 
-        unsigned int n = fire::arg("n", "The number of demonstrations", 5))
+        unsigned int N = fire::arg("n", "The number of demonstrations", 5))
 {
+    int i = 0;
     bool dynamic_demos = not fast;
-    bitmap_image img(x, y); 
-    img.clear();
 
+    std::vector<Interp::Demo> demos;
     @{generate random demonstrations}
 
-    @{draw the image}
+    auto interpolate_and_draw = [&](auto& tup)
+    {
+        auto& interpolator = std::get<0>(tup);
+        auto& meta = std::get<1>(tup);
+        meta.resize(demos.size());
+        auto& img = std::get<2>(tup);
 
-    @{draw circles over demonstrated points}
+        img = bitmap_image{x, y};
+        img.clear();
 
-    img.save_image("interpolated_colors.bmp");
+        @{draw the image}
+    
+        @{draw circles over demonstrated points}
+    
+        img.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
+
+        ++i;
+    };
+    std::apply([&](auto& ... tup) { (( interpolate_and_draw(tup) ), ... ); }, interpolators);
 
     return 0;
 }
@@ -557,6 +624,7 @@ not be the case when randomly generating colors in J_zA_zB_z space.
 
 ```c++ 
 // @='generate random demonstrations'
+unsigned int n = N;
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
@@ -564,8 +632,7 @@ while(n-- > 0)
 {
     auto v = Vec2{random(generator), random(generator)};
     auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-    Demo d{n, v, c};
-    demos.push_back(d);
+    demos.push_back({n, v, c});
 }
 // @/
 ```
@@ -578,35 +645,34 @@ benchmark.
 
 ```c++ 
 // @='draw the image'
-auto start = std::chrono::high_resolution_clock::now();
-
-bool ran = false;
-for (unsigned int xpix = 0; xpix < x; ++xpix)
-{
-    for (unsigned int ypix = 0; ypix < y; ++ypix)
+    bool ran = false;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (unsigned int xpix = 0; xpix < x; ++xpix)
     {
-        auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-        Scalar r_q = 0;
-        JzAzBzVec interpolated_jab{0, 0, 0};
-        if (not dynamic_demos && not ran) 
+        for (unsigned int ypix = 0; ypix < y; ++ypix)
         {
-            interpolator.query(q, demos, interpolated_jab, r_q, true);
-            ran = true;
+            auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
+            Scalar _ = 0;
+            JzAzBzVec interpolated_jab{0, 0, 0};
+            if (not dynamic_demos && not ran)
+            {
+                interpolator.query(q, demos, meta, interpolated_jab, _, true);
+                ran = true;
+            }
+            else interpolator.query(q, demos, meta, interpolated_jab, _, dynamic_demos);
+            RGBVec out = JzAzBz_to_RGB(interpolated_jab);
+            img.set_pixel(xpix, ypix,
+                    (unsigned char)std::round(out.x() * 255),
+                    (unsigned char)std::round(out.y() * 255),
+                    (unsigned char)std::round(out.z() * 255));
         }
-        else interpolator.query(q, demos, interpolated_jab, r_q, dynamic_demos);
-        RGBVec out = JzAzBz_to_RGB(interpolated_jab);
-        img.set_pixel(xpix, ypix,
-                (unsigned char)std::round(out.x() * 255),
-                (unsigned char)std::round(out.y() * 255),
-                (unsigned char)std::round(out.z() * 255)); 
     }
-}
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+    std::cout << i << ": Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
+            << "About " << 1000000 * x * y / usec << " interpolations per second" 
+            << std::endl;
 
-auto stop = std::chrono::high_resolution_clock::now();
-auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
-        << "About " << 1000000 * x * y / usec << " interpolations per second" 
-        << std::endl;
 // @/
 ```
 
@@ -618,6 +684,7 @@ to the topology of the interpolator.
 // @='draw circles over demonstrated points'
 image_drawer draw(img);
 draw.pen_width(1);
+
 for (const auto& demo : demos)
 {
     const Vec2& v = demo.s;

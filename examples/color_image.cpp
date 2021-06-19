@@ -1,8 +1,10 @@
 #include <cmath>
+#include <cstdio>
 #include <random>
 #include <chrono>
 #include <iostream>
 #include <vector>
+#include <tuple>
 #include "include/fire-hpp/fire.hpp"
 #include "include/bitmap/bitmap_image.hpp"
 #include "../interpolator/marier_spheres.h"
@@ -15,11 +17,14 @@ using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
-using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, JzAzBzVec>;
-using Demo = typename Interpolator::Demo;
+using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 
-Interpolator interpolator;
-std::vector<Demo> demos;
+using std::make_tuple;
+#define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
+auto interpolators = make_tuple
+        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
+        , ANOTHER_INTERPOLATOR(Interp::FastNonspheresInterpolator)
+        );
 
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
 {
@@ -183,12 +188,13 @@ int fired_main(
         unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
         unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
         bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode."), 
-        unsigned int n = fire::arg("n", "The number of demonstrations", 5))
+        unsigned int N = fire::arg("n", "The number of demonstrations", 5))
 {
+    int i = 0;
     bool dynamic_demos = not fast;
-    bitmap_image img(x, y); 
-    img.clear();
 
+    std::vector<Interp::Demo> demos;
+    unsigned int n = N;
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
     std::uniform_real_distribution<Scalar> random(0, 1);
@@ -196,57 +202,70 @@ int fired_main(
     {
         auto v = Vec2{random(generator), random(generator)};
         auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-        Demo d{n, v, c};
-        demos.push_back(d);
+        demos.push_back({n, v, c});
     }
 
-    auto start = std::chrono::high_resolution_clock::now();
-
-    bool ran = false;
-    for (unsigned int xpix = 0; xpix < x; ++xpix)
+    auto interpolate_and_draw = [&](auto& tup)
     {
-        for (unsigned int ypix = 0; ypix < y; ++ypix)
-        {
-            auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-            Scalar r_q = 0;
-            JzAzBzVec interpolated_jab{0, 0, 0};
-            if (not dynamic_demos && not ran) 
+        auto& interpolator = std::get<0>(tup);
+        auto& meta = std::get<1>(tup);
+        meta.resize(demos.size());
+        auto& img = std::get<2>(tup);
+
+        img = bitmap_image{x, y};
+        img.clear();
+
+            bool ran = false;
+            auto start = std::chrono::high_resolution_clock::now();
+            for (unsigned int xpix = 0; xpix < x; ++xpix)
             {
-                interpolator.query(q, demos, interpolated_jab, r_q, true);
-                ran = true;
+                for (unsigned int ypix = 0; ypix < y; ++ypix)
+                {
+                    auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
+                    Scalar _ = 0;
+                    JzAzBzVec interpolated_jab{0, 0, 0};
+                    if (not dynamic_demos && not ran)
+                    {
+                        interpolator.query(q, demos, meta, interpolated_jab, _, true);
+                        ran = true;
+                    }
+                    else interpolator.query(q, demos, meta, interpolated_jab, _, dynamic_demos);
+                    RGBVec out = JzAzBz_to_RGB(interpolated_jab);
+                    img.set_pixel(xpix, ypix,
+                            (unsigned char)std::round(out.x() * 255),
+                            (unsigned char)std::round(out.y() * 255),
+                            (unsigned char)std::round(out.z() * 255));
+                }
             }
-            else interpolator.query(q, demos, interpolated_jab, r_q, dynamic_demos);
-            RGBVec out = JzAzBz_to_RGB(interpolated_jab);
-            img.set_pixel(xpix, ypix,
-                    (unsigned char)std::round(out.x() * 255),
-                    (unsigned char)std::round(out.y() * 255),
-                    (unsigned char)std::round(out.z() * 255)); 
-        }
-    }
+            auto stop = std::chrono::high_resolution_clock::now();
+            auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+            std::cout << i << ": Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
+                    << "About " << 1000000 * x * y / usec << " interpolations per second" 
+                    << std::endl;
 
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-    std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
-            << "About " << 1000000 * x * y / usec << " interpolations per second" 
-            << std::endl;
-
-    image_drawer draw(img);
-    draw.pen_width(1);
-    for (const auto& demo : demos)
-    {
-        const Vec2& v = demo.s;
-        const RGBVec& c = demo.p;
-        draw.pen_color(0,0,0);
+    
+        image_drawer draw(img);
         draw.pen_width(1);
-        draw.circle(v.x() * x, v.y() * y, 7);
-        draw.pen_color(255,255,255);
-        draw.circle(v.x() * x, v.y() * y, 5);
-        draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
-        draw.pen_width(3);
-        draw.circle(v.x() * x, v.y() * y, 2);
-    }
 
-    img.save_image("interpolated_colors.bmp");
+        for (const auto& demo : demos)
+        {
+            const Vec2& v = demo.s;
+            const RGBVec& c = demo.p;
+            draw.pen_color(0,0,0);
+            draw.pen_width(1);
+            draw.circle(v.x() * x, v.y() * y, 7);
+            draw.pen_color(255,255,255);
+            draw.circle(v.x() * x, v.y() * y, 5);
+            draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
+            draw.pen_width(3);
+            draw.circle(v.x() * x, v.y() * y, 2);
+        }
+    
+        img.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
+
+        ++i;
+    };
+    std::apply([&](auto& ... tup) { (( interpolate_and_draw(tup) ), ... ); }, interpolators);
 
     return 0;
 }
