@@ -316,7 +316,7 @@ int fired_main(unsigned int n = fire::arg("n", "The number of demonstrations", 5
     std::string prog_name = "interactive_colors";
     fake_argv[0] = &*prog_name.begin();
     int fake_argc = 1;
-    
+
     glutInit(&fake_argc, fake_argv);
     glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
     glutInitWindowPosition(0,0);

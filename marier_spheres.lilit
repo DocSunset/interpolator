@@ -223,7 +223,7 @@ Scalar marier_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d)
 {
     return circle_circle_intersection_area(R, r, d) / circle_area(r);
 }
-// @
+// @/
 ```
 
 Step 1 above is an instance of the "all nearest neighbours" problem. We are
@@ -295,7 +295,7 @@ public:
         return weighted_sum;
     }
 };
-// @
+// @/
 ```
 
 One quirk of the above implementation is that the output (`weighted_sum`) is
@@ -325,7 +325,7 @@ for (const auto& demo : demos)
     Scalar d = (demo.s - q).norm();
     if (d < q_radius) q_radius = d;
 }
-// @
+// @/
 ```
 
 As the query point approaches the position of a demonstrated point, the size of
@@ -346,7 +346,7 @@ demo.d = (demo.s - q).norm();
 constexpr Scalar an_arbitrary_slop_factor = 
     std::numeric_limits<Scalar>::epsilon() * 5;
 if (demo.d <= an_arbitrary_slop_factor) return demo.p;
-// @
+// @/
 ```
 
 Finding the radius of the circle centered on the demonstration `demo` is done
@@ -366,7 +366,7 @@ for (const auto& demo2 : demos)
     if (r < demo.r) demo.r = r;
 }
 if (demo.d < demo.r) demo.r = demo.d; // check if query point is closer
-// @
+// @/
 ```
 
 Putting it all together, we get a reasonably generic header-only library
@@ -384,7 +384,7 @@ implementing Marier's algorithm.
 
 @{intersecting n-spheres}
 #endif
-// @
+// @/
 ```
 
 # Usage
@@ -435,7 +435,7 @@ using Demo = typename Interpolator::Demo;
 
 Interpolator interpolator;
 std::vector<Demo> demos;
-// @
+// @/
 ```
 
 ```c++ 
@@ -475,7 +475,7 @@ int fired_main(
 }
 
 FIRE(fired_main)
-// @
+// @/
 ```
 
 We assume that the source dimensions range from 0 to 1 and that the colour
@@ -497,7 +497,7 @@ while(n-- > 0)
     Demo d{n, v, c};
     demos.push_back(d);
 }
-// @
+// @/
 ```
 
 Drawing the image is also quite simple; simply iterate over the dimensions of
@@ -529,7 +529,7 @@ auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).
 std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
         << "About " << 1000000 * x * y / usec << " interpolations per second" 
         << std::endl;
-// @
+// @/
 ```
 
 After drawing the overall image, we also take a moment to draw a circle around
@@ -553,7 +553,7 @@ for (const auto& demo : demos)
     draw.pen_width(3);
     draw.circle(v.x() * x, v.y() * y, 2);
 }
-// @
+// @/
 ```
 
 ## OpenGL Interactive Example
@@ -648,7 +648,7 @@ void display()
 
     glutSwapBuffers();
 }
-// @
+// @/
 ```
 
 All of the points in the scene in world coordinates are in the square region
@@ -676,7 +676,7 @@ void reshape(int w, int h)
         glOrtho(0,       1,          -offset, 1 + offset, -1, 1);
     }
 }
-// @
+// @/
 ```
 
 ```c++ 
@@ -685,7 +685,7 @@ Scalar padding = (w - h)/2; // there is `padding` space on either size of the sc
 Scalar pixels_per_unit = h; // this many pixels per unit in world coordinates
 Scalar units_per_pixel = 1/pixels_per_unit;
 Scalar offset = padding * units_per_pixel;
-// @
+// @/
 ```
 
 ```c++ 
@@ -694,7 +694,7 @@ Scalar padding = (h - w)/2; // there is `padding` space above and below the scen
 Scalar pixels_per_unit = w; // this many pixels per unit in world coordinates
 Scalar units_per_pixel = 1/pixels_per_unit;
 Scalar offset = padding * units_per_pixel;
-// @
+// @/
 ```
 
 The position of the query vector `q` is updated in the mouse move callback.
@@ -725,7 +725,7 @@ void mouse_move(int x, int y)
     }
     glutPostRedisplay();
 }
-// @
+// @/
 ```
 
 The rest of the program is basically boilerplate for setting up openGL. The
@@ -752,7 +752,7 @@ glEnable(GL_DEPTH_TEST);
 glClearColor(0,0,0,0);
 glClear(GL_COLOR_BUFFER_BIT);
 glutSwapBuffers();
-// @
+// @/
 ```
 
 ```c++ 
@@ -791,7 +791,7 @@ int fired_main(unsigned int n = fire::arg("n", "The number of demonstrations", 5
 }
 
 FIRE(fired_main)
-// @
+// @/
 ```
 
 ## Converting RGB to perceptually uniform colour space
@@ -861,7 +861,7 @@ CIEXYZVec RGB_to_XYZ(const RGBVec& rgb)
 
     return a * xyz; // reverse linear transformation
 }
-// @
+// @/
 ```
 
 The conversion between J_zA_zB_z and CIE XYZ is given in [the 2017 paper by Safdar
@@ -892,7 +892,7 @@ constexpr float n = 2610.0 / two14;
 constexpr float p = 1.7 * 2523.0 / two5;
 constexpr float d = -0.56;
 constexpr float d_0 = 1.6295499532821566e-11;
-// @
+// @/
 
 // @='JzAzBz - XYZ colour conversions'
 JzAzBzVec XYZ_to_JzAzBz(const CIEXYZVec& xyz)
@@ -962,7 +962,7 @@ CIEXYZVec JzAzBz_to_XYZ(const JzAzBzVec& jab)
     CIEXYZVec xyz{x, y, z};
     return xyz;
 }
-// @
+// @/
 ```
 
 The conversion between sRGB and J_zA_zB_z is then easily implemented in terms
@@ -983,7 +983,7 @@ RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
 {
     return XYZ_to_RGB(JzAzBz_to_XYZ(jab));
 }
-// @
+// @/
 ```
 
 ## Compiling Examples

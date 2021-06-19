@@ -199,7 +199,7 @@ int fired_main(
     }
 
     auto start = std::chrono::high_resolution_clock::now();
-    
+
     for (unsigned int xpix = 0; xpix < x; ++xpix)
     {
         for (unsigned int ypix = 0; ypix < y; ++ypix)
@@ -213,7 +213,7 @@ int fired_main(
                     (unsigned char)std::round(out.z() * 255)); 
         }
     }
-    
+
     auto stop = std::chrono::high_resolution_clock::now();
     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
     std::cout << "Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
