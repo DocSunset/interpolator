@@ -88,15 +88,17 @@ $$
 
 # Intersecting N-Spheres Interpolation
 
+## Description
+
 Martin Marier introduced the *intersecting n-spheres interpolation* algorithm
 as part of his work with The Sponge, a deformable digital musical instrument
 which Marier has been developing for over a decade. This algorithm produces an
 interpolated output that is smooth (i.e. continuously differentiable),
 continuous, maps from any number of source dimensions to any number of
-destination dimensions, exactly passes through the demonstrated destination points,
-and locally depends only on nearby demonstrations. The algorithm also
-imposes no constraints on the placement of source and destination presets, unlike
-other algorithms which might require points to be evenly distributed or
+destination dimensions, exactly passes through the demonstrated destination
+points, and locally depends only on nearby demonstrations. The algorithm also
+imposes no constraints on the placement of source and destination presets,
+unlike other algorithms which might require points to be evenly distributed or
 quantized to a grid. Furthermore, the algorithm allows for the position of
 presets to be dynamically varied in real-time, allowing the possibility for
 higher-level mappings such as navigating destination presets for the preset
@@ -112,33 +114,37 @@ source space (which may again be either the query point or a source vector in
 a demonstration). The weight for each demonstration is given by the ratio of
 the area of the circle centered on the demonstration's source vector, and the
 area of the intersection of that circle with the circle centered on the query
-point. The procedure if full proceeds in this way:
+point. The procedure in full proceeds in this way:
 
-1. For every point in source space including the cursor point, determine the
-distance from that point to its nearest neighbour in source space. Consider the
-distances as the radii of circles centered on their respective points, $r_q$ for
-the cursor point $q$, $r_n$ for the $N$ demonstrated source points $s_n$.
+1. For every point demonstrated point in source space $s_n$ and the query point
+$q$ (also in source space), determine the distance from that point to its
+nearest neighbour in source space. Consider the distances as the radii of
+circles centered on their respective points, $r_q$ for the cursor point $q$,
+$r_n$ for the $N$ demonstrated source points $s_n$.
 
 2. Determine the distance $d_n$ from each demonstrated source point $s_n$ to
-the cursor point $q$.
+the cursor point $q$. This can be done at the same time as the search for the
+nearest neighbour of $q$.
 
 3. The weight $w_n$ associated with the destination vector $p_n$ of the $n$th
 demonstration is given by $A_x(r_q, r_n, d_n) / A(r_n)$ where $A$ is the area
-of the circle centered on $s_n$ with radius $r_n$, and
+of the circle centered on $s_n$ with radius $r_n$, and where $A_x$ is the area
+of the intersection of two circles:
 
-    - where $A_x$ is the area
-        - of the intersection 
-        - of the circle centered on $s_n$ with radius $r_n$
-        - and the circle centered on $q$ with radius $r_q$,
-        - whose center points are seperated by the distance $d_n$,
-        - with the circles defined to lay on any plane passing through both points.
+- the circle centered on $s_n$ with radius $r_n$
+- and the circle centered on $q$ with radius $r_q$,
+- with the circles defined to lay on the same plane, which may be any plane
+  passing through both $s_n$ and $q$.
+
+Note that the area of the intersection of these two circles depends only on
+the radii of the two circles $r_q$ and $r_n$, and the distance $d_n$ between
+them.
 
 4. Normalize the weights so that their sum is equal to one by dividing each
-weight $w_n$ by the mean of all the weights $\mu = \frac{1}{N}\sum_{n = 0}^{N -
-1} w_n$
+weight $w_n$ by the mean of all the weights 
+$\mu = \frac{1}{N}\sum_{n = 0}^{N - 1} w_n$
 
-$A_x$ is given by the following function, which depends only on the radii of
-the two circles and the distance between them:
+$A_x$ is given by the following function:
 
 $$
 \begin{aligned}
@@ -157,7 +163,7 @@ The algorithm, despite its name, actually doesn't involve any n-spheres.
 Intead, 2D circles are used, simplifying the algorithm while producing results
 that "are predictable and feel natural to the user" according to Marier.
 
-# Implementation
+## Implementation
 
 The weighted sum in Marier's algorithm implies that the destination space is
 some kind of vector space, while the requirement for a notion of distance
@@ -232,23 +238,27 @@ cursor point) and for each point $p$ we need to determine the nearest other
 point in the space $p_{\text{nearest}}$, which will be used to determine the
 radius of the circle associated with $p$.
 
-Efficient algorithms exist which solve the all nearest neighbours problem in
-$O(n\log n)$ time, or even in $O(n)$ time if certain constraints are met, which
-is most likely the case for this application. Unfortunately, comprehending (let
-alone implementing) the linear time algorithms for this problem is non-trivial,
-so we opt to use a simpler algorithm until such time as it becomes clear that
-optimization is necessary.
+Based on a cursory and incomplete review of the literature, efficient
+algorithms appear to exist which solve the all nearest neighbours problem in
+$O(n\log n)$ time, or even in $O(n)$ time if certain constraints are met.
+Unfortunately, comprehending (let alone implementing) the linear time
+algorithms for this problem is non-trivial, so we opt to use a simpler
+algorithm until such time as it becomes clear that optimization is necessary.
 
-Updating any of the points in source space including the cursor point always
-requires the nearest neighbour problem to be solved anew, because the nearest
-neighbour of the updated point and any point that it was previously the nearest
-neighbour of it all have to be updated. Because the position of the cursor
-point is assumed to change whenever the interpolator is queried, this means
-that the nearest neighbour problem must be solved for every query. The trivial
-implementation used here (as well as in Marier's original Supercollider
-implementation of the algorithm) solves this problem with $O(n^2)$ time
-complexity. In Marier's practice this hasn't been reported as an issue,
-presumably because the number of data points has always been reasonably low.
+If we assume that the demonstrations may change at any time, then updating any
+of the points in source space including the cursor point always requires the
+nearest neighbour problem to be solved anew, because the nearest neighbour of
+the updated point and any point that it was previously the nearest neighbour of
+it all have to be updated. Because the position of the cursor point is assumed
+to change whenever the interpolator is queried, this means that the nearest
+neighbour problem must be solved for every query. The trivial implementation
+used here (as well as in Marier's original Supercollider implementation of the
+algorithm) solves this problem with $O(n^2)$ time complexity using plain old
+brute force; the distance from every point to every other point is calculated,
+and the nearest neighbour is found as the point with the least calculated
+distance value. In Marier's practice this $O(n^2)$ time complexity hasn't been
+reported as an issue, presumably because the number of data points has always
+been reasonably low.
 
 Because the all nearest neighbours problem has to be solved for every query,
 there is no need for a special data structure to hold the demonstrations. The
