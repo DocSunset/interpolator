@@ -191,11 +191,10 @@ is the only condition which is addressed by the boundary check for these args.
 
 ```c++ 
 // @='weight functions'
-template<typename Scalar>
 Scalar circle_circle_intersection_area(
         const Scalar& R, 
         const Scalar& r, 
-        const Scalar& d)
+        const Scalar& d) const
 {
     Scalar d2 = d * d;
     Scalar r2 = r * r;
@@ -223,15 +222,13 @@ Scalar circle_circle_intersection_area(
     return a + b - c;
 }
 
-template<typename Scalar>
-Scalar circle_area(const Scalar& r)
+Scalar circle_area(const Scalar& r) const
 {
     constexpr Scalar pi = 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863;
     return pi * r * r;
 }
 
-template<typename Scalar>
-Scalar marier_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d)
+Scalar intersecting_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d) const
 {
     return circle_circle_intersection_area(R, r, d) / circle_area(r);
 }
@@ -278,24 +275,32 @@ latter values are useful for interactive applications such as the OpenGL demo
 presented later, since they allow the inner workings of the algorithm to be
 rendered to the user.
 
-Below, these functions are grouped into a class only to conveniently propagate
-template parameters such as the types of source and destination points. The
-query functions are written as conceptually pure functions, and the class has
-no data members. Sub-types are provided for demonstrations and for the
-meta-data returned by the interpolator in addition to the primary output of the
-interpolated weighted sum.
+The interpolation function is implemented as a class for a few reasons. This
+allows the metadata and parameter structures unique to this interpolator to be
+accessible through the type system whenever you have an instance of this
+interpolator. The Intersecting N-Spheres algorithm doesn't have any parameters,
+but other algorithms will require these, so a `Para` structure is declared to
+provide a consistent interface.  The class is also used as the interface to set
+interpolator-specific global parameters, such as the flag `dynamic_demos` that
+is used to decide whether to skip the nearest-neighbours problem.  Finally, the
+class is used to store interpolator-specific global outputs, such as the `r_q`
+radius calculated in the N-Spheres algorithm.
 
 ```c++ 
 // @+'interpolators'
-class IntersectingNSpheresInterpolator
+struct IntersectingNSpheres
 {
-public:
     struct Meta { Scalar r = 0, d = 0, w = 0; };
+    struct Para { /* none */ };
 
-    template<typename DemoList, typename Metalist>
-    PVector query(const SVector& q, const DemoList& demo,
-            Metalist& meta, PVector& weighted_sum, Scalar& r_q,
-            bool dynamic_demos = true)
+    bool dynamic_demos = true;
+    mutable Scalar r_q;
+
+    @{weight functions}
+
+    template<typename DemoList, typename MetaList, typename ParaList>
+    PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
+            MetaList& meta, PVector& weighted_sum) const
     {
         Scalar sum_of_weights = 0;
         if (demo.size() < 1) return weighted_sum;
@@ -304,7 +309,7 @@ public:
         // step 1
         @{calculate radius r_q and distances d_n}
 
-        for (size_t i = 0; i < demo.size(); ++i)
+        for (std::size_t i = 0; i < demo.size(); ++i)
         {
             const SVector& s_n = demo[i].s;
             const PVector& p_n = demo[i].p;
@@ -325,7 +330,7 @@ public:
             }
 
             // step 3
-            w_n = marier_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
+            w_n = intersecting_spheres_weight(r_q, r_n < d_n ? r_n : d_n, d_n);
 
             // step 4
             weighted_sum = weighted_sum + w_n * p_n;
@@ -365,7 +370,7 @@ distance from the query point to every demonstration.
 ```c++ 
 // @='calculate radius r_q and distances d_n'
 r_q = std::numeric_limits<Scalar>::max();
-for (size_t i = 0; i < demo.size(); ++i)
+for (std::size_t i = 0; i < demo.size(); ++i)
 {
     const SVector& s_n = demo[i].s;
     const PVector& p_n = demo[i].p;
@@ -431,26 +436,43 @@ for (const Demo& demo2 : demo)
 
 ## Inverse Distance Interpolator
 
+Another simple interpolation algorithm is presented here. This algorithm is one
+of the earliest proposed in the literature, with roots in the early 1980s with
+the SYTER system developed at GRM. The implementation below follows the presentation
+by Todoroff and colleagues in their 2009 paper at the International Computer
+Music Conference, "1-d, 2-d and 3-d interpolation tools for max/msp/jitter."
+Despite the name of their paper, the algorithm naturally extends to arbitrary
+source and destination spatial dimensions.
+
 ```c++
 // @+'interpolators'
-template</*int d_min, int r_min,*/ int power = 1>
-class InverseDistanceInterpolator /* after e.g. Todoroff 2009 ICMC */
+struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
 {
-public:
     struct Meta { Scalar d = 0, w = 0; };
+    struct Para 
+    { 
+        Scalar power = 8
+        ,      d_min = std::numeric_limits<Scalar>::min()
+        ,      r_min = 0
+        ,      r = 1
+        ;
+    };
 
-    template<typename DemoList, typename Metalist>
-    PVector query(const SVector& q, DemoList& demo,
-            Metalist& meta, PVector& weighted_sum, Scalar& r_q,
-            bool dynamic_demos = true)
+    template<typename DemoList, typename MetaList, typename ParaList>
+    PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
+            MetaList& meta, PVector& weighted_sum)
     {
         Scalar sum_of_weights = 0;
-        size_t i, N = demo.size();
+        std::size_t i, N = demo.size();
         if (N < 1) return weighted_sum;
         if (N != meta.size()) return weighted_sum;
 
         for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
-        for (Meta& m : meta) { m.w = 1 / pow(m.d, power); }
+        for (i=0; i<N; ++i)  
+        { 
+            auto base = std::max(meta[i].d - para[i].r_min, para[i].d_min);
+            meta[i].w = para[i].r / pow( base, para[i].power); 
+        }
         for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
         for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
         for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
@@ -461,9 +483,14 @@ public:
 // @/
 ```
 
-Putting it all together, we get a reasonably generic header-only library
-implementing Marier's algorithm, as well as the non-spheres algorithm inspired
-by it.
+## Summary
+
+The interpolators are all gathered inside of a shared `struct`. This is done in
+order to propagate the template parameters for the `Scalar, ID, SVector,` and
+`PVector` types to all the interpolators so that in case the calling program
+wants to use the same types for all interpolators they only need to declare
+them once. The demonstration type, `struct Demo`, is also declared at this
+level.
 
 ```c++ 
 // @#'interpolator/marier_spheres.h'
@@ -474,9 +501,6 @@ by it.
 #include<iostream>
 #include<cstddef>
 
-using std::size_t;
-
-@{weight functions}
 
 template<typename Scalar, typename ID, typename SVector, typename PVector>
 struct Interpolators
@@ -525,7 +549,11 @@ topology of the interpolation rather than the non-linearity of sRGB colour
 space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
 J_zA_zB_z colour space and back are given below.
 
-Here's the overview of the example source code:
+The program is relatively simple, so here's an overview.
+
+First, the datatypes used are declared, along with a tuple of interpolators
+with their default parameters and containers to hold their metadata and
+parameter lists:
 
 ```c++ 
 // @='basic globals'
@@ -536,17 +564,21 @@ using RGBVec = Eigen::Vector3f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
 using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
+// @/
 
-using std::make_tuple;
-#define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
-auto interpolators = make_tuple
-        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<3>)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<9>)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<18>)
+// @='drawing interpolators'
+#define ANOTHER_INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, bitmap_image{}, bitmap_image{})
+auto interpolators = std::make_tuple
+        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheres)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistance, 4, 0.001, 0.0)
         );
 // @/
 ```
+
+Then the program itself is as follows. Notice that most of the program logic
+is contained in a generic lambda function that is applied to the tuple of
+interpolators. Each time the function is invoked, it is given a new tuple
+containing an interpolator and the data associated with it.
 
 ```c++ 
 // @#'examples/color_image.cpp'
@@ -565,13 +597,17 @@ auto interpolators = make_tuple
 
 @{basic globals}
 
+@{drawing interpolators}
+
 @{colour conversions}
 
-int fired_main(
-        unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
-        unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
-        bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode."), 
-        unsigned int N = fire::arg("n", "The number of demonstrations", 5))
+int fired_main
+    ( unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500)
+    , unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500)
+    , bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode.")
+    , unsigned int N = fire::arg("n", "The number of demonstrations", 5)
+    , unsigned int C = fire::arg("c", "The number of contour lines for each preset in the contour map. Set to zero to disable the contour map", 10)
+    )
 {
     int i = 0;
     bool dynamic_demos = not fast;
@@ -581,19 +617,36 @@ int fired_main(
 
     auto interpolate_and_draw = [&](auto& tup)
     {
+        // unpack the tuple
         auto& interpolator = std::get<0>(tup);
         auto& meta = std::get<1>(tup);
+        auto& para = std::get<2>(tup);
+        auto& default_para = std::get<3>(tup);
+        auto& colours_map = std::get<4>(tup);
+        auto& contour_map = std::get<5>(tup);
+
+        // resize the interpolator's lists to match the number of demonstrations
         meta.resize(demo.size());
-        auto& img = std::get<2>(tup);
+        for (auto& m : meta) m = {};
+        para.resize(demo.size());
+        for (auto& p : para) p = default_para;
 
-        img = bitmap_image{x, y};
-        img.clear();
+        // clear the bitmap images
+        colours_map = bitmap_image{x, y};
+        colours_map.clear();
+        if (C)
+        {
+            contour_map = bitmap_image{x, y};
+            contour_map.clear();
+        }
 
-        @{draw the image}
+        @{draw the images}
     
         @{draw circles over demonstrated points}
     
-        img.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
+        // save the images
+        colours_map.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
+        if (C) contour_map.save_image(std::string("interpolated_colors_weight_contours") + std::to_string(i) + std::string(".bmp"));
 
         ++i;
     };
@@ -628,14 +681,14 @@ while(n-- > 0)
 // @/
 ```
 
-Drawing the image is also quite simple; simply iterate over the dimensions of
-the image and query the interpolator at each coordinate, convert the resulting
-colour to RGB, and then write the colour to the pixel at that coordinate. We
-record how long this takes so that the program also serves as a simple
-benchmark.
+Drawing the basic interpolated-colours image is quite simple; simply iterate
+over the dimensions of the image and query the interpolator at each coordinate,
+convert the resulting colour to RGB, and then write the colour to the pixel at
+that coordinate. We record how long this takes so that the program also serves
+as a simple benchmark.
 
 ```c++ 
-// @='draw the image'
+// @='draw the images'
     bool ran = false;
     auto start = std::chrono::high_resolution_clock::now();
     for (unsigned int xpix = 0; xpix < x; ++xpix)
@@ -643,19 +696,27 @@ benchmark.
         for (unsigned int ypix = 0; ypix < y; ++ypix)
         {
             auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-            Scalar _ = 0;
             JzAzBzVec interpolated_jab{0, 0, 0};
-            if (not dynamic_demos && not ran)
+            if constexpr (std::is_same_v<decltype(interpolator), Interp::IntersectingNSpheres>)
             {
-                interpolator.query(q, demo, meta, interpolated_jab, _, true);
-                ran = true;
+                if (not dynamic_demos && not ran)
+                {
+                    interpolator.dynamic_demos = true;
+                    interpolator.query(q, demo, para, meta, interpolated_jab);
+                    interpolator.dynamic_demos = false;
+                    ran = true;
+                }
+                else interpolator.query(q, demo, para, meta, interpolated_jab);
             }
-            else interpolator.query(q, demo, meta, interpolated_jab, _, dynamic_demos);
+            else interpolator.query(q, demo, para, meta, interpolated_jab);
             RGBVec out = JzAzBz_to_RGB(interpolated_jab);
-            img.set_pixel(xpix, ypix,
+            colours_map.set_pixel(xpix, ypix,
                     (unsigned char)std::round(out.x() * 255),
                     (unsigned char)std::round(out.y() * 255),
                     (unsigned char)std::round(out.z() * 255));
+
+            @{draw the contour image}
+
         }
     }
     auto stop = std::chrono::high_resolution_clock::now();
@@ -667,28 +728,76 @@ benchmark.
 // @/
 ```
 
+Additionally, a contour map is drawn which aims to directly illustrate the
+topology of the weights used to interpolate between presets. This kind of
+visualization is akin to a terrain map where instead of illustrating elevation
+of the terrain, the contours illustrate the weight of a preset. For guidance
+in reading the contour map, consider the following:
+
+- lines of the same color refer to the weight of the same preset
+- points on the sharp edge of a certain contour line all have the same weight
+- the change in weight from one line to the next is always the same, given by
+  `1/C` where `C` is the number of lines requested by the command line argument 
+  (10 by default)
+- lines spaced close together represent a rapid change in weight
+- lines spaced far apart represent a gradual change
+- when a preset maxes out so that no other presets are involved in the output,
+  a grid of dots is drawn on top of the contour peak
+- it's usually best to focus on contour lines of one colour at a time
+
+```c++
+// @='draw the contour image'
+if (C) 
+{
+    out = {0, 0, 0};
+    for (unsigned int n = 0; n < demo.size(); ++n)
+    {
+        auto rgb = JzAzBz_to_RGB(demo[n].p); 
+        if (meta[n].w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
+        {
+            // visualize maximum elevation with inverted colour dots
+            out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
+        }
+        else
+        {
+            Scalar brightness = std::pow(std::fmod(meta[n].w * C, 1.0f), 8);
+            out += rgb * brightness;
+        }
+    }
+    contour_map.set_pixel(xpix, ypix,
+            (unsigned char)std::round(std::min(out.x(), 1.0f) * 255),
+            (unsigned char)std::round(std::min(out.y(), 1.0f) * 255),
+            (unsigned char)std::round(std::min(out.z(), 1.0f) * 255));
+}
+// @/
+
 After drawing the overall image, we also take a moment to draw a circle around
 each demonstration point; this helps to better understand how the image relates
 to the topology of the interpolator.
 
 ```c++ 
 // @='draw circles over demonstrated points'
-image_drawer draw(img);
-draw.pen_width(1);
-
-for (const auto& d : demo)
+auto draw_circles = [&](auto& img)
 {
-    const Vec2& v = d.s;
-    const RGBVec& c = d.p;
-    draw.pen_color(0,0,0);
+    image_drawer draw(img);
     draw.pen_width(1);
-    draw.circle(v.x() * x, v.y() * y, 7);
-    draw.pen_color(255,255,255);
-    draw.circle(v.x() * x, v.y() * y, 5);
-    draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
-    draw.pen_width(3);
-    draw.circle(v.x() * x, v.y() * y, 2);
-}
+    
+    for (const auto& d : demo)
+    {
+        const Vec2& v = d.s;
+        const RGBVec& c = JzAzBz_to_RGB(d.p);
+        draw.pen_color(0,0,0);
+        draw.pen_width(1);
+        draw.circle(v.x() * x, v.y() * y, 7);
+        draw.pen_color(255,255,255);
+        draw.circle(v.x() * x, v.y() * y, 5);
+        draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
+        draw.pen_width(3);
+        draw.circle(v.x() * x, v.y() * y, 2);
+    }
+};
+draw_circles(colours_map);
+draw_circles(contour_map);
 // @/
 ```
 
@@ -750,27 +859,35 @@ void display()
     JzAzBzVec interpolated_jab{0, 0, 0};
     if (first_run) 
     {
-        interpolator.query(q, demo, interpolated_jab, r_q, true);
+        interpolator.dynamic_demos = true;
+        interpolator.query(q, demo, para, meta, interpolated_jab);
+        interpolator.dynamic_demos = false;
         first_run = false;
     }
-    interpolator.query(q, demo, interpolated_jab, r_q, false);
+    interpolator.query(q, demo, para, meta, interpolated_jab);
+    r_q = interpolator.r_q;
     RGBVec q_color = JzAzBz_to_RGB(interpolated_jab);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (const auto& d : demo)
+    std::size_t n;
+    for (n = 0; n < N_; ++n)
     {
+        const auto& d = demo[n];
+        const auto& m = meta[n];
         const auto& v = d.s;
         // draw disk for weight
-        glColor4f(d.w, d.w, d.w, d.w);
-        drawCircleFilled(v, d.w/3, -1);
+        glColor4f(m.w, m.w, m.w, m.w);
+        drawCircleFilled(v, m.w/3, -1);
     }
 
-    for (const auto& d : demo)
+    for (n = 0; n < N_; ++n)
     {
+        const auto& d = demo[n];
+        const auto& m = meta[n];
         const auto& v = d.s;
         const auto c = JzAzBz_to_RGB(d.p);
-        const auto r = d.r < d.d ? d.r : d.d;
+        const auto r = m.r < m.d ? m.r : m.d;
         // draw radial circle
         glColor3f(c.x(), c.y(), c.z());
         drawCircleWire(v, r, 1);
@@ -916,8 +1033,15 @@ glutSwapBuffers();
 #include "../interpolator/marier_spheres.h"
 
 @{basic globals}
-@{colour conversions}
+
+auto interpolator = Interp::IntersectingNSpheres{};
+std::vector<Interp::Demo> demo;
+std::vector<Interp::IntersectingNSpheres::Meta> meta;
+void * para;
 Vec2 q = {0,0};
+std::size_t N_;
+
+@{colour conversions}
 
 @{display callback}
 
@@ -925,9 +1049,13 @@ Vec2 q = {0,0};
 
 @{motion callback}
 
-int fired_main(unsigned int n = fire::arg("n", "The number of demonstrations", 5))
+int fired_main(unsigned int N = fire::arg("n", "The number of demonstrations", 5))
 {
+    N_ = N;
+
     @{generate random demonstrations}
+
+    meta.resize(demo.size());
 
     @{setup display and callbacks}
 

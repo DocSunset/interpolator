@@ -19,13 +19,10 @@ using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
 using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 
-using std::make_tuple;
-#define ANOTHER_INTERPOLATOR(type) make_tuple(type{}, std::vector<type::Meta>{}, bitmap_image{})
-auto interpolators = make_tuple
-        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheresInterpolator)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<3>)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<9>)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistanceInterpolator<18>)
+#define ANOTHER_INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, bitmap_image{}, bitmap_image{})
+auto interpolators = std::make_tuple
+        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheres)
+        , ANOTHER_INTERPOLATOR(Interp::InverseDistance, 4, 0.001, 0.0)
         );
 
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
@@ -186,11 +183,13 @@ RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
     return XYZ_to_RGB(JzAzBz_to_XYZ(jab));
 }
 
-int fired_main(
-        unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500), 
-        unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500), 
-        bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode."), 
-        unsigned int N = fire::arg("n", "The number of demonstrations", 5))
+int fired_main
+    ( unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500)
+    , unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500)
+    , bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode.")
+    , unsigned int N = fire::arg("n", "The number of demonstrations", 5)
+    , unsigned int C = fire::arg("c", "The number of contour lines for each preset in the contour map. Set to zero to disable the contour map", 10)
+    )
 {
     int i = 0;
     bool dynamic_demos = not fast;
@@ -209,13 +208,28 @@ int fired_main(
 
     auto interpolate_and_draw = [&](auto& tup)
     {
+        // unpack the tuple
         auto& interpolator = std::get<0>(tup);
         auto& meta = std::get<1>(tup);
-        meta.resize(demo.size());
-        auto& img = std::get<2>(tup);
+        auto& para = std::get<2>(tup);
+        auto& default_para = std::get<3>(tup);
+        auto& colours_map = std::get<4>(tup);
+        auto& contour_map = std::get<5>(tup);
 
-        img = bitmap_image{x, y};
-        img.clear();
+        // resize the interpolator's lists to match the number of demonstrations
+        meta.resize(demo.size());
+        for (auto& m : meta) m = {};
+        para.resize(demo.size());
+        for (auto& p : para) p = default_para;
+
+        // clear the bitmap images
+        colours_map = bitmap_image{x, y};
+        colours_map.clear();
+        if (C)
+        {
+            contour_map = bitmap_image{x, y};
+            contour_map.clear();
+        }
 
             bool ran = false;
             auto start = std::chrono::high_resolution_clock::now();
@@ -224,19 +238,48 @@ int fired_main(
                 for (unsigned int ypix = 0; ypix < y; ++ypix)
                 {
                     auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-                    Scalar _ = 0;
                     JzAzBzVec interpolated_jab{0, 0, 0};
-                    if (not dynamic_demos && not ran)
+                    if constexpr (std::is_same_v<decltype(interpolator), Interp::IntersectingNSpheres>)
                     {
-                        interpolator.query(q, demo, meta, interpolated_jab, _, true);
-                        ran = true;
+                        if (not dynamic_demos && not ran)
+                        {
+                            interpolator.dynamic_demos = true;
+                            interpolator.query(q, demo, para, meta, interpolated_jab);
+                            interpolator.dynamic_demos = false;
+                            ran = true;
+                        }
+                        else interpolator.query(q, demo, para, meta, interpolated_jab);
                     }
-                    else interpolator.query(q, demo, meta, interpolated_jab, _, dynamic_demos);
+                    else interpolator.query(q, demo, para, meta, interpolated_jab);
                     RGBVec out = JzAzBz_to_RGB(interpolated_jab);
-                    img.set_pixel(xpix, ypix,
+                    colours_map.set_pixel(xpix, ypix,
                             (unsigned char)std::round(out.x() * 255),
                             (unsigned char)std::round(out.y() * 255),
                             (unsigned char)std::round(out.z() * 255));
+
+                    if (C) 
+                    {
+                        out = {0, 0, 0};
+                        for (unsigned int n = 0; n < demo.size(); ++n)
+                        {
+                            auto rgb = JzAzBz_to_RGB(demo[n].p); 
+                            if (meta[n].w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
+                            {
+                                // visualize maximum elevation with inverted colour dots
+                                out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
+                            }
+                            else
+                            {
+                                Scalar brightness = std::pow(std::fmod(meta[n].w * C, 1.0f), 8);
+                                out += rgb * brightness;
+                            }
+                        }
+                        contour_map.set_pixel(xpix, ypix,
+                                (unsigned char)std::round(std::min(out.x(), 1.0f) * 255),
+                                (unsigned char)std::round(std::min(out.y(), 1.0f) * 255),
+                                (unsigned char)std::round(std::min(out.z(), 1.0f) * 255));
+                    }
+
                 }
             }
             auto stop = std::chrono::high_resolution_clock::now();
@@ -246,24 +289,31 @@ int fired_main(
                     << std::endl;
 
     
-        image_drawer draw(img);
-        draw.pen_width(1);
-
-        for (const auto& d : demo)
+        auto draw_circles = [&](auto& img)
         {
-            const Vec2& v = d.s;
-            const RGBVec& c = d.p;
-            draw.pen_color(0,0,0);
+            image_drawer draw(img);
             draw.pen_width(1);
-            draw.circle(v.x() * x, v.y() * y, 7);
-            draw.pen_color(255,255,255);
-            draw.circle(v.x() * x, v.y() * y, 5);
-            draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
-            draw.pen_width(3);
-            draw.circle(v.x() * x, v.y() * y, 2);
-        }
+            
+            for (const auto& d : demo)
+            {
+                const Vec2& v = d.s;
+                const RGBVec& c = JzAzBz_to_RGB(d.p);
+                draw.pen_color(0,0,0);
+                draw.pen_width(1);
+                draw.circle(v.x() * x, v.y() * y, 7);
+                draw.pen_color(255,255,255);
+                draw.circle(v.x() * x, v.y() * y, 5);
+                draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
+                draw.pen_width(3);
+                draw.circle(v.x() * x, v.y() * y, 2);
+            }
+        };
+        draw_circles(colours_map);
+        draw_circles(contour_map);
     
-        img.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
+        // save the images
+        colours_map.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
+        if (C) contour_map.save_image(std::string("interpolated_colors_weight_contours") + std::to_string(i) + std::string(".bmp"));
 
         ++i;
     };

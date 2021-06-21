@@ -16,11 +16,15 @@ using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
-using Interpolator = MarierSpheresInterpolator<Scalar, ID, Vec2, JzAzBzVec>;
-using Demo = typename Interpolator::Demo;
+using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 
-Interpolator interpolator;
-std::vector<Demo> demos;
+auto interpolator = Interp::IntersectingNSpheres{};
+std::vector<Interp::Demo> demo;
+std::vector<Interp::IntersectingNSpheres::Meta> meta;
+void * para;
+Vec2 q = {0,0};
+std::size_t N_;
+
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
 {
     RGBVec rgb;
@@ -178,7 +182,6 @@ RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
 {
     return XYZ_to_RGB(JzAzBz_to_XYZ(jab));
 }
-Vec2 q = {0,0};
 
 void drawCircle(const Vec2& position, const Scalar& radius, const Scalar& depth = 0)
 {
@@ -214,34 +217,42 @@ void display()
     JzAzBzVec interpolated_jab{0, 0, 0};
     if (first_run) 
     {
-        interpolator.query(q, demos, interpolated_jab, r_q, true);
+        interpolator.dynamic_demos = true;
+        interpolator.query(q, demo, para, meta, interpolated_jab);
+        interpolator.dynamic_demos = false;
         first_run = false;
     }
-    interpolator.query(q, demos, interpolated_jab, r_q, false);
+    interpolator.query(q, demo, para, meta, interpolated_jab);
+    r_q = interpolator.r_q;
     RGBVec q_color = JzAzBz_to_RGB(interpolated_jab);
 
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    for (const auto& d : demos)
+    std::size_t n;
+    for (n = 0; n < N_; ++n)
     {
+        const auto& d = demo[n];
+        const auto& m = meta[n];
         const auto& v = d.s;
         // draw disk for weight
-        glColor4f(d.w, d.w, d.w, d.w);
-        drawCircleFilled(v, d.w/3, -1);
+        glColor4f(m.w, m.w, m.w, m.w);
+        drawCircleFilled(v, m.w/3, -1);
     }
 
-    for (const auto& d : demos)
+    for (n = 0; n < N_; ++n)
     {
+        const auto& d = demo[n];
+        const auto& m = meta[n];
         const auto& v = d.s;
         const auto c = JzAzBz_to_RGB(d.p);
-        const auto r = d.r < d.d ? d.r : d.d;
+        const auto r = m.r < m.d ? m.r : m.d;
         // draw radial circle
         glColor3f(c.x(), c.y(), c.z());
         drawCircleWire(v, r, 1);
         drawCircleWire(v, r - 0.001, 1);
     }
 
-    for (const auto& d : demos)
+    for (const auto& d : demo)
     {
         const auto& v = d.s;
         const auto c = JzAzBz_to_RGB(d.p);
@@ -307,8 +318,11 @@ void mouse_move(int x, int y)
     glutPostRedisplay();
 }
 
-int fired_main(unsigned int n = fire::arg("n", "The number of demonstrations", 5))
+int fired_main(unsigned int N = fire::arg("n", "The number of demonstrations", 5))
 {
+    N_ = N;
+
+    unsigned int n = N;
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
     std::default_random_engine generator (seed);
     std::uniform_real_distribution<Scalar> random(0, 1);
@@ -316,9 +330,10 @@ int fired_main(unsigned int n = fire::arg("n", "The number of demonstrations", 5
     {
         auto v = Vec2{random(generator), random(generator)};
         auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-        Demo d{n, v, c};
-        demos.push_back(d);
+        demo.push_back({n, v, c});
     }
+
+    meta.resize(demo.size());
 
     // fake argv and argc since we can't access the real ones behind fire-hpp
     char * fake_argv[1];
