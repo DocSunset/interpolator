@@ -3,9 +3,9 @@ CXXFLAGS = -O3 -Wall -std=c++17
 EIGEN_INCLUDE = -I/usr/include/eigen3
 OPENGL_LIBS = -lGL -lglut
 
-EXAMPLES = examples/color_image examples/interactive_colors
 LITERATE_SOURCES = marier_spheres.lilit
-SOURCES = interpolator/marier_spheres.h examples/color_image.cpp examples/interactive_colors.cpp
+SOURCES = interpolator/marier_spheres.h examples/interactive_colors.cpp examples/interpolators_demo.cpp
+EXAMPLES =                              examples/interactive_colors     examples/interpolators_demo examples/interpolators_demo.html
 DOCS_EXTRAS = docs/marier_spheres.html.header
 DOCS = docs/marier_spheres.html
 
@@ -15,13 +15,17 @@ ${SOURCES}: ${LITERATE_SOURCES}
 	@echo tangling $<
 	@lilit $<
 
-examples/color_image: examples/color_image.cpp interpolator/marier_spheres.h
-	@echo building $@
-	@${CXX} ${CXXFLAGS} ${EIGEN_INCLUDE} -o $@ $@.cpp
-
 examples/interactive_colors: examples/color_image.cpp interpolator/marier_spheres.h
 	@echo building $@
 	@${CXX} ${CXXFLAGS} ${EIGEN_INCLUDE} ${OPENGL_LIBS} -o $@ $@.cpp
+
+examples/interpolators_demo.html: examples/interpolators_demo.cpp interpolator/marier_spheres.h
+	@echo building $@
+	@em++ ${CXXFLAGS} ${EIGEN_INCLUDE} -s USE_SDL=2 -s USE_SDL_TTF=2 -s ALLOW_MEMORY_GROWTH=1 -fsanitize=undefined -o examples/interpolators_demo.html examples/interpolators_demo.cpp
+
+examples/interpolators_demo: examples/interpolators_demo.cpp interpolator/marier_spheres.h
+	@echo building $@
+	@g++ ${CXXFLAGS} ${EIGEN_INCLUDE} -I/usr/include/SDL2 -lSDL2 -o $@ $@.cpp
 
 ${DOCS}: ${LITERATE_SOURCES} ${DOCS_EXTRAS}
 	@echo weaving $@
@@ -35,6 +39,6 @@ examples: ${EXAMPLES}
 
 clean:
 	@echo cleaning up
-	rm -f ${EXAMPLES} ${DOCS} interpolated_colors.bmp
+	rm -f examples/*.wasm examples/*.js examples/*.html ${EXAMPLES} interpolated_colors.bmp
 
 .PHONY: all clean docs sources examples

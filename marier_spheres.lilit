@@ -522,6 +522,350 @@ systematically querying the image the user moves a cursor around it to query
 the interpolated colors, and the graphics are updated in real time to reflect
 the underlying state of the interpolator.
 
+## Demo Program
+
+An demo program is provided in the repository that is helpful in exploring the
+subtleties of the different algorithms presented here. The program randomly
+generates a handful of source-destination demonstrations, and draw an image by
+systematically querying the source space. As well as producing an image that
+might offer some intuition about the topology of the interpolated output, this
+will also serve as a reasonable benchmark for the efficiency of the
+implementation and compilation environment, if the number of pixels in the
+image is large enough.  The initial implementation of the Intersecting
+N-Spheres interpolator, when compiled with optimizations enabled and run on a
+circa 2012 ultrabook processor, could process about 15000 queries per second
+with 5 demonstrations, about 5000 per second with 15 demonstrations, 2200 with
+25 demonstrations, and 1200 with 35 demonstrations.  As per the quadratic time
+complexity of this implementation, the number of queries processed per second
+decreases by a multiplicative factor as the number of demonstrations increases
+linearly.  Performance on larger datasets is improved significantly, as
+expected, if the quadratic-time all nearest neighbours problem is avoided by
+assuming that demonstrations are unchanged between interpolations. 
+
+The demo program requires SDL2, and is designed to be compiled as a native or
+WASM-based web application. 
+
+The colour interpolations are performed in [J_zA_zB_z colour
+space](https://doi.org/10.1364/OE.25.015131), a colour representation that is
+designed to provide the best balance of perceptual uniformity and iso-hue
+linearity.  This is meant to ensure that the image produced reflects the
+topology of the interpolation rather than the non-linearity of sRGB colour
+space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
+J_zA_zB_z colour space and back are given below after the presentation of the
+demo program.
+
+```c++
+// @#'examples/interpolators_demo.cpp'
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+#include <vector>
+#include <tuple>
+#include <random>
+#include <chrono>
+#include <SDL.h>
+#include <SDL_log.h>
+#include <SDL_error.h>
+#include <SDL_video.h>
+#include <SDL_render.h>
+#include <SDL_events.h>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include "../interpolator/marier_spheres.h"
+
+@{basic globals}
+
+@{drawing interpolators}
+
+@{colour conversions}
+
+struct Context
+{
+    std::vector<Interp::Demo> demo;
+    std::size_t N = 3; // number of demonstrations
+    std::size_t active_interpolator = 0;
+    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
+    unsigned int C = 0;
+    unsigned int w = 500;
+    unsigned int h = 500;
+    bool dynamic_demos = false;
+    bool redraw = true;
+    bool quit = false;
+    Scalar grab_dist = 20;
+    Interp::Demo * grabbed = nullptr;
+    std::size_t grabbed_idx = 0;
+    Vec2 mouse = {0, 0};
+    SDL_Window * window;
+    SDL_Surface * surface;
+    SDL_Renderer * renderer;
+} context;
+
+template<typename T>
+void draw(unsigned int& i, T& tup)
+{
+    if (i != context.active_interpolator) 
+    {
+        ++i; 
+        return;
+    }
+
+    auto& interpolator = std::get<0>(tup);
+    auto& meta = std::get<1>(tup);
+    auto& para = std::get<2>(tup);
+
+    bool ran = false;
+    auto start = std::chrono::high_resolution_clock::now();
+    for (unsigned int xpix = 0; xpix < context.w; ++xpix)
+    {
+        for (unsigned int ypix = 0; ypix < context.h; ++ypix)
+        {
+            auto q = Vec2{xpix/(Scalar)context.w, ypix/(Scalar)context.h};
+            RGBVec out = {0, 0, 0};
+            bool skip = false;
+            for (auto& d : context.demo)
+            {
+                auto dist = (q - d.s).norm(); 
+                if (dist < 6/(Scalar)context.w)
+                {
+                    if (dist < 3/(Scalar)context.w)
+                        out = JzAzBz_to_RGB(d.p);
+                    skip = true;
+                }
+            }
+            if (not skip)
+            {
+                JzAzBzVec interpolated_jab{0, 0, 0};
+                if constexpr (std::is_same_v<decltype(interpolator), Interp::IntersectingNSpheres>)
+                {
+                    if (not context.dynamic_demos && not ran)
+                    {
+                        interpolator.dynamic_demos = true;
+                        interpolator.query(q, context.demo, para, meta, interpolated_jab);
+                        interpolator.dynamic_demos = false;
+                        ran = true;
+                    }
+                    else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+                }
+                else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+
+                if (context.C) 
+                {
+                    for (unsigned int n = 0; n < context.N; ++n)
+                    {
+                        RGBVec rgb;
+                        Scalar w;
+                        if (context.grabbed) 
+                        {
+                            rgb = JzAzBz_to_RGB(context.grabbed->p);
+                            w = meta[context.grabbed_idx].w;
+                        }
+                        else 
+                        {
+                            rgb = JzAzBz_to_RGB(context.demo[n].p); 
+                            w = meta[n].w;
+                        }
+                        if (w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
+                        {
+                            // visualize maximum elevation with inverted colour dots
+                            out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
+                        }
+                        else
+                        {
+                            Scalar brightness = std::pow(std::fmod(w * context.C, 1.0f), 8);
+                            brightness = brightness * w;
+                            out += rgb * brightness;
+                        }
+                        if (context.grabbed) break;
+                    }
+                    //contour_map.set_pixel(xpix, ypix,
+                    //        (unsigned char)std::round(std::min(out.x(), 1.0f) * 255),
+                    //        (unsigned char)std::round(std::min(out.y(), 1.0f) * 255),
+                    //        (unsigned char)std::round(std::min(out.z(), 1.0f) * 255));
+                }
+                else out = JzAzBz_to_RGB(interpolated_jab);
+            }
+            SDL_SetRenderDrawColor
+                    ( context.renderer
+                    , (unsigned char)std::round(std::min(out.x(), 1.0f) * 255)
+                    , (unsigned char)std::round(std::min(out.y(), 1.0f) * 255)
+                    , (unsigned char)std::round(std::min(out.z(), 1.0f) * 255)
+                    , 255
+                    );
+            SDL_RenderDrawPoint(context.renderer, xpix, ypix);
+        }
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+    std::cout << i-1 << ": Generated " << context.w * context.h << " interpolations in " << usec << " microseconds\n" 
+            << "About " << 1000000 * context.w * context.h / usec << " interpolations per second" 
+            << std::endl;
+    ++i;
+}
+
+void loop ()
+{
+    static SDL_Event ev;
+    while (SDL_PollEvent(&ev)) switch (ev.type)
+    {
+    case SDL_QUIT:
+    case SDL_APP_TERMINATING:
+    case SDL_APP_LOWMEMORY:
+        context.quit = true;
+        break;
+
+    case SDL_WINDOWEVENT:
+        // TODO
+        break;
+
+    case SDL_KEYDOWN:
+        context.C = 10; 
+        context.redraw = true;
+        break;
+
+    case SDL_KEYUP:
+        context.C = 0; 
+        context.redraw = true;
+        break;
+
+    case SDL_MOUSEMOTION:
+        context.mouse = {ev.button.x / (Scalar)context.w, ev.button.y / (Scalar)context.h};
+        if (context.grabbed)
+        {
+            context.grabbed->s = context.mouse;
+#           ifndef __EMSCRIPTEN__
+            context.redraw = true;
+#           endif
+        }
+        break;
+
+    case SDL_MOUSEBUTTONDOWN:
+        context.mouse = {ev.button.x / (Scalar)context.w, ev.button.y / (Scalar)context.h};
+        {
+            Scalar dist, min_dist;
+            min_dist = std::numeric_limits<Scalar>::max();
+            for (unsigned int n = 0; n < context.N; ++n)
+            {
+                auto& d = context.demo[n];
+                dist = (context.mouse - d.s).norm();
+                if (dist < min_dist) 
+                {
+                    context.grabbed = &d;
+                    context.grabbed_idx = n;
+                    min_dist = dist;
+                }
+            }
+            if (min_dist > context.grab_dist / (Scalar)context.w) context.grabbed = nullptr;
+        }
+        if (context.C) context.redraw = true;
+        break;
+
+    case SDL_MOUSEBUTTONUP:
+        context.grabbed = nullptr;
+        context.redraw = true;
+        break;
+
+    case SDL_MOUSEWHEEL:
+        context.active_interpolator = (context.active_interpolator + 1) % context.num_interpolators;
+        context.redraw = true;
+        break;
+
+    default:
+        break;
+    }
+
+    if (context.redraw)
+    {
+        SDL_RenderClear(context.renderer);
+        unsigned int i = 0;
+        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
+        context.redraw = false;
+        SDL_RenderPresent(context.renderer);
+    }
+
+    //SDL_UpdateWindowSurface(context.window);
+}
+
+int main()
+{
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                "Error initializing SDL:\n    %s\n", 
+                SDL_GetError());
+        return 1;
+    }
+    else SDL_Log("Initialized successfully\n");
+
+    context.window = SDL_CreateWindow
+            ( "Interpolators"
+            , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
+            , context.w , context.h
+            , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI
+            );
+    if (context.window == nullptr)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                "Error creating window:\n    %s\n", 
+                SDL_GetError());
+        return 1;
+    }
+    else SDL_Log("Created window\n");
+
+    context.renderer = SDL_CreateRenderer(context.window, -1, SDL_RENDERER_ACCELERATED);
+    if (context.renderer == nullptr)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                "Error creating renderer:\n    %s\n", 
+                SDL_GetError());
+        return 1;
+    }
+    else SDL_Log("Created renderer\n");
+
+    context.surface = SDL_GetWindowSurface(context.window);
+
+    unsigned int n = context.N;
+    unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+    std::default_random_engine generator (seed);
+    std::uniform_real_distribution<Scalar> random(0, 1);
+    while(n-- > 0)
+    {
+        auto v = Vec2{random(generator), random(generator)};
+        auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
+        context.demo.push_back({n, v, c});
+    }
+
+    auto resize_lists = [&](auto& tup)
+    {
+        auto& meta = std::get<1>(tup);
+        auto& para = std::get<2>(tup);
+        auto& default_para = std::get<3>(tup);
+        meta.resize(context.demo.size());
+        for (auto& m : meta) m = {};
+        para.resize(context.demo.size());
+        for (auto& p : para) p = default_para;
+    };
+    std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
+
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(loop, -1, 1);
+#else
+    while (not context.quit)
+    {
+        loop();
+        SDL_Delay(33);
+    }
+#endif
+
+    SDL_FreeSurface(context.surface);
+    SDL_DestroyRenderer(context.renderer);
+    SDL_DestroyWindow(context.window);
+    SDL_Quit();
+    return 0;
+}
+// @/
+```
+
 ## Drawing example
 
 This simple command line drawing application will randomly generate a handful
@@ -567,7 +911,7 @@ using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 // @/
 
 // @='drawing interpolators'
-#define ANOTHER_INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, bitmap_image{}, bitmap_image{})
+#define ANOTHER_INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
 auto interpolators = std::make_tuple
         ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheres)
         , ANOTHER_INTERPOLATOR(Interp::InverseDistance, 4, 0.001, 0.0)
