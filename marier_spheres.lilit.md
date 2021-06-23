@@ -630,6 +630,33 @@ int main()
 
 ### Drawing
 
+The drawing routine is deeply embedded in several layers of book keeping:
+finding the active interpolator within the tuple, timing the drawing routine,
+and finally the drawing routine itself.
+
+The main loop of the program clears the screen, draws, and then presents the
+drawing. Only one interpolator is drawn at a time (the active interpolator).
+
+```cpp
+// @+'globally visible state'
+unsigned int active_interpolator = 0;
+// @/
+```
+
+In order to find the `active_interpolator`, it is necessary to iterate over the
+tuple of interpolators using a C++17 fold expression in a generic lambda that
+calls the draw function and is applied over the whole tuple; this is the best
+way I could think of to iterate over the tuple, and is necessary as a
+consequence of the decision to use a tuple and avoid runtime polymorphism.
+This is by no means the only way to achieve this (there are probably better
+ways), but it's convenient not to have to write a base class for interpolators
+at the stage of development I'm currently at. 
+
+The iteration happens in the main loop. An index `i` initialized to 0. Each
+call to the draw function is passed this index, and one interpolator. If the
+index doesn't match the `active_interpolator`, then the function returns
+without doing anything. In this way only the active interpolator is drawn.
+
 ```cpp
 // @='draw and refresh screen'
 SDL_RenderClear(context.renderer);
@@ -643,22 +670,21 @@ SDL_RenderPresent(context.renderer);
 template<typename T>
 void draw(unsigned int& i, T& tup)
 {
-    if (i != context.active_interpolator) 
-    {
-        ++i; 
-        return;
-    }
+    if (i++ != context.active_interpolator) return;
 
     auto& interpolator = std::get<0>(tup);
     auto& meta = std::get<1>(tup);
     auto& para = std::get<2>(tup);
 
     @{run the timer and draw}
-
-    ++i;
 }
 // @/
+```
 
+The drawing routine itself is couched in another layer, which simply runs a
+timer while the drawing takes place to provide a simple performance benchmark.
+
+```cpp
 // @='run the timer and draw'
 @{a flag to keep track of static demos optimization}
 auto start = std::chrono::high_resolution_clock::now();
@@ -677,14 +703,18 @@ std::cout << i-1 << ": Generated " << context.w * context.h << " interpolations 
         << "About " << 1000000 * context.w * context.h / usec << " interpolations per second" 
         << std::endl;
 // @/
+```
 
+Finally, the drawing routine itself:
+
+```cpp
 // @='draw one pixel'
 auto q = Vec2{xpix/(Scalar)context.w, ypix/(Scalar)context.h};
-RGBVec out = {0, 0, 0};
+
 JzAzBzVec interpolated_jab{0, 0, 0};
+interpolator.query(q, context.demo, para, meta, interpolated_jab);
 
-@{query the interpolator}
-
+RGBVec out = {0, 0, 0};
 if (context.C) 
 {
     @{draw contour lines}
@@ -693,24 +723,40 @@ else out = JzAzBz_to_RGB(interpolated_jab);
 
 @{output the color}
 // @/
+```
 
-// @='a flag to keep track of static demos optimization'
-bool ran = false;
-// @/
+The default drawing mode simply draws the output of the interpolator (converted
+to RGB). An alternative drawing mode shows contour lines that aim to directly
+illustrate the topology of the weights used to interpolate between presets.
+This kind of visualization is akin to a terrain map where instead of
+illustrating elevation of the terrain, the contours illustrate the weight of a
+preset. For guidance in reading the contour map, consider the following:
 
-// @='query the interpolator'
-if constexpr (std::is_same_v<decltype(interpolator), Interpolator::IntersectingNSpheres>)
-{
-    if (not context.dynamic_demos && not ran)
-    {
-        interpolator.dynamic_demos = true;
-        interpolator.query(q, context.demo, para, meta, interpolated_jab);
-        interpolator.dynamic_demos = false;
-        ran = true;
-    }
-    else interpolator.query(q, context.demo, para, meta, interpolated_jab);
-}
-else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+- lines of the same color refer to the weight of the same preset
+- points on the sharp edge of a certain contour line all have the same weight
+- the change in weight from one line to the next is always the same, given by
+  `1/C` where `C` is the number of lines requested by the command line argument 
+  (10 by default)
+- lines spaced close together represent a rapid change in weight
+- lines spaced far apart represent a gradual change
+- when a preset maxes out so that no other presets are involved in the output,
+  a grid of dots is drawn on top of the contour peak
+- it's usually best to focus on contour lines of one colour at a time
+
+Contour lines are drawn if the number of contour lines requested in the context
+structure is greater than zero. Additionally, if there is a demonstration
+selected (`context.grabbed` is not `nullptr`), contour lines are not drawn for
+other demonstrations; note that in such cases the for loop over demonstrations
+is broken after one pass, which itself doesn't even refer to the iteration
+index.
+
+The brightness calculation for contour lines is empirically set to look good
+and aid clear intuition; there is no special reason the lines are drawn in
+this particular way.
+
+```cpp
+// @='globally visible state'
+unsigned int C = 0;
 // @/
 
 // @='draw contour lines'
@@ -742,7 +788,12 @@ for (unsigned int n = 0; n < context.N; ++n)
     if (context.grabbed) break;
 }
 // @/
+```
 
+The final colour is currently output using SDL's render API, although the
+performance is not very good and this is likely to change.
+
+```cpp
 // @='output the color'
 SDL_SetRenderDrawColor
         ( context.renderer
@@ -841,25 +892,6 @@ default:
         break;
 // @/
 
-//@+'globally visible state'
-    std::vector<Interpolator::Demo> demo;
-    std::size_t N = 3; // number of demonstrations
-    std::size_t active_interpolator = 0;
-    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
-    unsigned int C = 0;
-    unsigned int w = 500;
-    unsigned int h = 500;
-    bool dynamic_demos = false;
-    bool redraw = true;
-    bool quit = false;
-    Scalar grab_dist = 20;
-    Interpolator::Demo * grabbed = nullptr;
-    std::size_t grabbed_idx = 0;
-    Vec2 mouse = {0, 0};
-    SDL_Window * window;
-    SDL_Surface * surface;
-    SDL_Renderer * renderer;
-// @/
 ```
 
 ### Setup
@@ -974,525 +1006,22 @@ void cleanup ()
 #include "../interpolator/marier_spheres.h"
 // @/
 
-## Drawing example
-
-This simple command line drawing application will randomly generate a handful
-of source-destination demonstrations, and draw an image by systematically
-querying the source space. As well as producing an image that might offer some
-intuition about the topology of the interpolated output, this will also serve
-as a reasonable benchmark for the efficiency of the implementation if the
-number of pixels in the image is large enough.  The initial implementation of
-the interpolator, when compiled with optimizations enabled, could process about
-15000 queries per second with 5 demonstrations, about 5000 per second with 15
-demonstrations, 2200 with 25 demonstrations, and 1200 with 35 demonstrations.
-As per the quadratic time complexity of this implementation, the number of
-queries processed per second decreases by a multiplicative factor as the number
-of demonstrations increases linearly. Performance on larger datasets is
-improved significantly, as expected, if the quadratic-time all nearest
-neighbours problem is avoided by assuming that demonstrations are unchanged
-between interpolations. This optimization can be enabled by passing the -f flag
-to this example program when running it. 
-
-The colour interpolations are performed in [J_zA_zB_z colour
-space](https://doi.org/10.1364/OE.25.015131), a colour representation that is
-designed to provide the best balance of perceptual uniformity and iso-hue
-linearity.  This is meant to ensure that the image produced reflects the
-topology of the interpolation rather than the non-linearity of sRGB colour
-space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
-J_zA_zB_z colour space and back are given below.
-
-The program is relatively simple, so here's an overview.
-
-Then the program itself is as follows. Notice that most of the program logic
-is contained in a generic lambda function that is applied to the tuple of
-interpolators. Each time the function is invoked, it is given a new tuple
-containing an interpolator and the data associated with it.
-
-```cpp 
-// @#'examples/color_image.cpp'
-#include <cmath>
-#include <cstdio>
-#include <random>
-#include <chrono>
-#include <iostream>
-#include <vector>
-#include <tuple>
-#include "include/fire-hpp/fire.hpp"
-#include "include/bitmap/bitmap_image.hpp"
-#include "../interpolator/marier_spheres.h"
-#include <Eigen/Core>
-#include <Eigen/LU>
-
-@{basic globals}
-
-@{drawing interpolators}
-
-@{colour conversions}
-
-int fired_main
-    ( unsigned int x = fire::arg("x", "The horizontal dimension in pixels", 500)
-    , unsigned int y = fire::arg("y", "The vertical dimension in pixels", 500)
-    , bool fast = fire::arg("f", "Set whether to calculate as though demonstrations are dynamic or not. Defaults to slow dynamic mode.")
-    , unsigned int N = fire::arg("n", "The number of demonstrations", 5)
-    , unsigned int C = fire::arg("c", "The number of contour lines for each preset in the contour map. Set to zero to disable the contour map", 10)
-    )
-{
-    int i = 0;
-    bool dynamic_demos = not fast;
-
+//@+'globally visible state'
     std::vector<Interpolator::Demo> demo;
-    @{generate random demonstrations}
-
-    auto interpolate_and_draw = [&](auto& tup)
-    {
-        // unpack the tuple
-        auto& interpolator = std::get<0>(tup);
-        auto& meta = std::get<1>(tup);
-        auto& para = std::get<2>(tup);
-        auto& default_para = std::get<3>(tup);
-        auto& colours_map = std::get<4>(tup);
-        auto& contour_map = std::get<5>(tup);
-
-        // resize the interpolator's lists to match the number of demonstrations
-        meta.resize(demo.size());
-        for (auto& m : meta) m = {};
-        para.resize(demo.size());
-        for (auto& p : para) p = default_para;
-
-        // clear the bitmap images
-        colours_map = bitmap_image{x, y};
-        colours_map.clear();
-        if (C)
-        {
-            contour_map = bitmap_image{x, y};
-            contour_map.clear();
-        }
-
-        @{draw the images}
-    
-        @{draw circles over demonstrated points}
-    
-        // save the images
-        colours_map.save_image(std::string("interpolated_colors") + std::to_string(i) + std::string(".bmp"));
-        if (C) contour_map.save_image(std::string("interpolated_colors_weight_contours") + std::to_string(i) + std::string(".bmp"));
-
-        ++i;
-    };
-    std::apply([&](auto& ... tup) { (( interpolate_and_draw(tup) ), ... ); }, interpolators);
-
-    return 0;
-}
-
-FIRE(fired_main)
-// @/
-```
-
-We assume that the source dimensions range from 0 to 1 and that the colour
-channels in an RGB colour vector do the same. Randomly generating vectors is
-then trivial. The RGB colour vector is then converted to J_zA_zB_z colour space.
-It is more convenient to generate the colour vectors in RGB space since doing
-so guarantees that the demonstrated colors are possible to display, which may
-not be the case when randomly generating colors in J_zA_zB_z space.
-
-```cpp 
-// @='generate random demonstrations'
-unsigned int n = N;
-unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
-std::default_random_engine generator (seed);
-std::uniform_real_distribution<Scalar> random(0, 1);
-while(n-- > 0)
-{
-    auto v = Vec2{random(generator), random(generator)};
-    auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-    demo.push_back({n, v, c});
-}
-// @/
-```
-
-Drawing the basic interpolated-colours image is quite simple; simply iterate
-over the dimensions of the image and query the interpolator at each coordinate,
-convert the resulting colour to RGB, and then write the colour to the pixel at
-that coordinate. We record how long this takes so that the program also serves
-as a simple benchmark.
-
-```cpp 
-// @='draw the images'
-    bool ran = false;
-    auto start = std::chrono::high_resolution_clock::now();
-    for (unsigned int xpix = 0; xpix < x; ++xpix)
-    {
-        for (unsigned int ypix = 0; ypix < y; ++ypix)
-        {
-            auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
-            JzAzBzVec interpolated_jab{0, 0, 0};
-            if constexpr (std::is_same_v<decltype(interpolator), Interpolator::IntersectingNSpheres>)
-            {
-                if (not dynamic_demos && not ran)
-                {
-                    interpolator.dynamic_demos = true;
-                    interpolator.query(q, demo, para, meta, interpolated_jab);
-                    interpolator.dynamic_demos = false;
-                    ran = true;
-                }
-                else interpolator.query(q, demo, para, meta, interpolated_jab);
-            }
-            else interpolator.query(q, demo, para, meta, interpolated_jab);
-            RGBVec out = JzAzBz_to_RGB(interpolated_jab);
-            colours_map.set_pixel(xpix, ypix,
-                    (unsigned char)std::round(out.x() * 255),
-                    (unsigned char)std::round(out.y() * 255),
-                    (unsigned char)std::round(out.z() * 255));
-
-            @{draw the contour image}
-
-        }
-    }
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-    std::cout << i << ": Generated " << x * y << " interpolations in " << usec << " microseconds\n" 
-            << "About " << 1000000 * x * y / usec << " interpolations per second" 
-            << std::endl;
-
-// @/
-```
-
-Additionally, a contour map is drawn which aims to directly illustrate the
-topology of the weights used to interpolate between presets. This kind of
-visualization is akin to a terrain map where instead of illustrating elevation
-of the terrain, the contours illustrate the weight of a preset. For guidance
-in reading the contour map, consider the following:
-
-- lines of the same color refer to the weight of the same preset
-- points on the sharp edge of a certain contour line all have the same weight
-- the change in weight from one line to the next is always the same, given by
-  `1/C` where `C` is the number of lines requested by the command line argument 
-  (10 by default)
-- lines spaced close together represent a rapid change in weight
-- lines spaced far apart represent a gradual change
-- when a preset maxes out so that no other presets are involved in the output,
-  a grid of dots is drawn on top of the contour peak
-- it's usually best to focus on contour lines of one colour at a time
-
-```cpp
-// @='draw the contour image'
-if (C) 
-{
-    out = {0, 0, 0};
-    for (unsigned int n = 0; n < demo.size(); ++n)
-    {
-        auto rgb = JzAzBz_to_RGB(demo[n].p); 
-        if (meta[n].w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
-        {
-            // visualize maximum elevation with inverted colour dots
-            out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
-        }
-        else
-        {
-            Scalar brightness = std::pow(std::fmod(meta[n].w * C, 1.0f), 8);
-            out += rgb * brightness;
-        }
-    }
-    contour_map.set_pixel(xpix, ypix,
-            (unsigned char)std::round(std::min(out.x(), 1.0f) * 255),
-            (unsigned char)std::round(std::min(out.y(), 1.0f) * 255),
-            (unsigned char)std::round(std::min(out.z(), 1.0f) * 255));
-}
-// @/
-
-After drawing the overall image, we also take a moment to draw a circle around
-each demonstration point; this helps to better understand how the image relates
-to the topology of the interpolator.
-
-```cpp 
-// @='draw circles over demonstrated points'
-auto draw_circles = [&](auto& img)
-{
-    image_drawer draw(img);
-    draw.pen_width(1);
-    
-    for (const auto& d : demo)
-    {
-        const Vec2& v = d.s;
-        const RGBVec& c = JzAzBz_to_RGB(d.p);
-        draw.pen_color(0,0,0);
-        draw.pen_width(1);
-        draw.circle(v.x() * x, v.y() * y, 7);
-        draw.pen_color(255,255,255);
-        draw.circle(v.x() * x, v.y() * y, 5);
-        draw.pen_color(c.x() * 255, c.y() * 255, c.z() * 255);
-        draw.pen_width(3);
-        draw.circle(v.x() * x, v.y() * y, 2);
-    }
-};
-draw_circles(colours_map);
-draw_circles(contour_map);
-// @/
-```
-
-## OpenGL Interactive Example
-
-This example offers some insight into the inner workings of the interpolator.
-A handful of demonstrations associating random 2D positions with random colors
-are generated. The position and colour of each point is visualized by drawing a
-dot of the appropriate colour at that position. In addition, a circle is drawn
-around each dot with the radius associated to that demonstration by the
-interpolator; notice how each demonstrated point's radial circle always
-intersects at least one other dot, which is the nearest neighbour of that
-demonstrated point. Finally, a grey region is drawn beneath each dot whose size
-and brightness reflect the contribution of that dot to the weighted sum. 
-
-The position of the query point is based on the position of the cursor within
-the screen. Its colour is based on the result of the interpolation. A radial
-circle is also drawn for this point.
-
-The bulk of this happens in the display callback. For some reason, it appears
-to be necessary to draw in depth order (back to front) so that the dots and
-radial lines dont become obscured by the weight disk in the back. If anyone
-can explain why this is, please contact me. The z-coordinate doesn't appear to
-have any influence, even with depth testing enabled.
-
-```cpp 
-// @='display callback'
-void drawCircle(const Vec2& position, const Scalar& radius, const Scalar& depth = 0)
-{
-    constexpr Scalar pi = 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863;
-    for (float w = 0; w <= 2 * pi; w += 0.1)
-    {
-        glVertex3f(
-                position.x() + std::cos(w) * radius, 
-                position.y() + std::sin(w) * radius,
-                depth);
-    }
-}
-
-void drawCircleFilled(const Vec2& position, const Scalar& radius, const Scalar& depth = 0)
-{
-    glBegin(GL_POLYGON);
-    drawCircle(position, radius, depth);
-    glEnd();
-}
-
-void drawCircleWire(const Vec2& position, const Scalar& radius, const Scalar& depth = 0)
-{
-    glBegin(GL_LINE_LOOP);
-    drawCircle(position, radius, depth);
-    glEnd();
-}
-
-void display()
-{
-    static bool first_run = true;
-    constexpr float dot_radius = 0.01;
-    Scalar r_q = 0;
-    JzAzBzVec interpolated_jab{0, 0, 0};
-    if (first_run) 
-    {
-        interpolator.dynamic_demos = true;
-        interpolator.query(q, demo, para, meta, interpolated_jab);
-        interpolator.dynamic_demos = false;
-        first_run = false;
-    }
-    interpolator.query(q, demo, para, meta, interpolated_jab);
-    r_q = interpolator.r_q;
-    RGBVec q_color = JzAzBz_to_RGB(interpolated_jab);
-
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-    std::size_t n;
-    for (n = 0; n < N_; ++n)
-    {
-        const auto& d = demo[n];
-        const auto& m = meta[n];
-        const auto& v = d.s;
-        // draw disk for weight
-        glColor4f(m.w, m.w, m.w, m.w);
-        drawCircleFilled(v, m.w/3, -1);
-    }
-
-    for (n = 0; n < N_; ++n)
-    {
-        const auto& d = demo[n];
-        const auto& m = meta[n];
-        const auto& v = d.s;
-        const auto c = JzAzBz_to_RGB(d.p);
-        const auto r = m.r < m.d ? m.r : m.d;
-        // draw radial circle
-        glColor3f(c.x(), c.y(), c.z());
-        drawCircleWire(v, r, 1);
-        drawCircleWire(v, r - 0.001, 1);
-    }
-
-    for (const auto& d : demo)
-    {
-        const auto& v = d.s;
-        const auto c = JzAzBz_to_RGB(d.p);
-        // draw colored dots
-        glColor3f(c.x(), c.y(), c.z());
-        drawCircleFilled(v, dot_radius, 1);
-    }
-
-    glColor3f(q_color.x(), q_color.y(), q_color.z());
-    drawCircleWire(q, r_q);
-    drawCircleWire(q, r_q - 0.001);
-    drawCircleFilled(q, dot_radius, 1);
-
-    glutSwapBuffers();
-}
-// @/
-```
-
-All of the points in the scene in world coordinates are in the square region
-([0 - 1], [0 - 1]). The reshape callback appropriately sets the viewport and
-projection matrices to ensure this region is visible and undistorted. In case
-the window is wider than it is tall, padding is added on the sides so that the
-scene is centered. Otherwise, when the window is taller than it is wide, the
-padding is added above and below the scene.
-
-```cpp 
-// @='reshape callback'
-void reshape(int w, int h)
-{
-    glViewport(0,0,w,h);
-    glMatrixMode(GL_PROJECTION);
-    glLoadIdentity();
-    if (h < w)
-    {   // the window is a wide rectangle
-        @{h < w: calculate pixels_per_unit and offset}
-        glOrtho(-offset, 1 + offset, 0,       1, -1, 1);
-    }
-    else
-    {   // the window is a tall rectangle (or square)
-        @{w <= h: calculate pixels_per_unit and offset}
-        glOrtho(0,       1,          -offset, 1 + offset, -1, 1);
-    }
-}
-// @/
-```
-
-```cpp 
-// @='h < w: calculate pixels_per_unit and offset'
-Scalar padding = (w - h)/2; // there is `padding` space on either size of the scene square
-Scalar pixels_per_unit = h; // this many pixels per unit in world coordinates
-Scalar units_per_pixel = 1/pixels_per_unit;
-Scalar offset = padding * units_per_pixel;
-// @/
-```
-
-```cpp 
-// @='w <= h: calculate pixels_per_unit and offset'
-Scalar padding = (h - w)/2; // there is `padding` space above and below the scene square
-Scalar pixels_per_unit = w; // this many pixels per unit in world coordinates
-Scalar units_per_pixel = 1/pixels_per_unit;
-Scalar offset = padding * units_per_pixel;
-// @/
-```
-
-The position of the query vector `q` is updated in the mouse move callback.
-This requires a similar calculation as the reshape callback, only going the
-other direction.
-
-This callback also drives updates to the display, since moving the cursor
-will change the state of the interpolator.
-
-```cpp 
-// @='motion callback'
-void mouse_move(int x, int y)
-{
-    y = glutGet(GLUT_WINDOW_HEIGHT) - y; // flip y so it goes from the bottom left
-    int w = glutGet(GLUT_WINDOW_WIDTH);
-    int h = glutGet(GLUT_WINDOW_HEIGHT);
-    if (h < w)
-    {   // the window is a wide rectangle
-        @{h < w: calculate pixels_per_unit and offset}
-        q.x() = (Scalar)x / pixels_per_unit - offset;
-        q.y() = (Scalar)y / pixels_per_unit;
-    }
-    else
-    {   // the window is a tall rectangle (or square)
-        @{w <= h: calculate pixels_per_unit and offset}
-        q.x() = (Scalar)x / pixels_per_unit;
-        q.y() = (Scalar)y / pixels_per_unit - offset;
-    }
-    glutPostRedisplay();
-}
-// @/
-```
-
-The rest of the program is basically boilerplate for setting up openGL. The
-global `using` declarations are the same as in the drawing example, as is the
-subroutine for generating random demonstrations.
-
-```cpp 
-// @='setup display and callbacks'
-// fake argv and argc since we can't access the real ones behind fire-hpp
-char * fake_argv[1];
-std::string prog_name = "interactive_colors";
-fake_argv[0] = &*prog_name.begin();
-int fake_argc = 1;
-
-glutInit(&fake_argc, fake_argv);
-glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGBA);
-glutInitWindowPosition(0,0);
-glutInitWindowSize(500,500);
-glutCreateWindow("Interactive Interpolator Demo");
-glutMotionFunc(mouse_move);
-glutPassiveMotionFunc(mouse_move);
-glutDisplayFunc(display);
-glutReshapeFunc(reshape);
-glEnable(GL_DEPTH_TEST);
-glClearColor(0,0,0,0);
-glClear(GL_COLOR_BUFFER_BIT);
-glutSwapBuffers();
-// @/
-```
-
-```cpp 
-// @#'examples/interactive_colors.cpp'
-#include <string>
-#include <cmath>
-#include <chrono>
-#include <random>
-#include <iostream>
-#include <GL/gl.h>
-#include <GL/glut.h>
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include "include/fire-hpp/fire.hpp"
-#include "../interpolator/marier_spheres.h"
-
-@{basic globals}
-
-auto interpolator = Interpolator::IntersectingNSpheres{};
-std::vector<Interpolator::Demo> demo;
-std::vector<Interpolator::IntersectingNSpheres::Meta> meta;
-void * para;
-Vec2 q = {0,0};
-std::size_t N_;
-
-@{colour conversions}
-
-@{display callback}
-
-@{reshape callback}
-
-@{motion callback}
-
-int fired_main(unsigned int N = fire::arg("n", "The number of demonstrations", 5))
-{
-    N_ = N;
-
-    @{generate random demonstrations}
-
-    meta.resize(demo.size());
-
-    @{setup display and callbacks}
-
-    glutMainLoop();
-
-    return 0;
-}
-
-FIRE(fired_main)
+    std::size_t N = 3; // number of demonstrations
+    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
+    unsigned int w = 500;
+    unsigned int h = 500;
+    bool dynamic_demos = false;
+    bool redraw = true;
+    bool quit = false;
+    Scalar grab_dist = 20;
+    Interpolator::Demo * grabbed = nullptr;
+    std::size_t grabbed_idx = 0;
+    Vec2 mouse = {0, 0};
+    SDL_Window * window;
+    SDL_Surface * surface;
+    SDL_Renderer * renderer;
 // @/
 ```
 
@@ -1690,15 +1219,10 @@ RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
 
 ## Compiling Examples
 
-Both examples are relatively simple with just a few dependencies. Both rely
-on Eigen, and the interactive example additionally requires OpenGL. Make sure
-that these libraries are installed on your system. The other dependencies 
-(fire-hpp and bitmap) are both included as subtrees in this repository, so you
-should not have to do anything to install them.
-
 A simple Makefile is included in this repository with rules for building the
-examples, as well as for generating the machine source code and pretty-printed
+demo app, as well as for generating the machine source code and pretty-printed
 source code from this literate source code document using
 [`lilit`](https://github.com/DocSunset/lilit). The Makefile is tested and
 working on the author's Arch Linux system. As usual, I am open to
-recommendations and pull requests to improve the compatibility of the Makefile.
+recommendations and pull requests to improve the compatibility of the Makefile,
+or on other ways of building for various platforms.
