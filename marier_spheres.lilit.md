@@ -189,7 +189,7 @@ of the functions. Boundary conditions are checked if `Scalar` is `float`: in
 testing, the `acos` args only ever fell at or slightly above `1.0f`, so this
 is the only condition which is addressed by the boundary check for these args.
 
-```c++ 
+```cpp
 // @='weight functions'
 Scalar circle_circle_intersection_area(
         const Scalar& R, 
@@ -286,7 +286,7 @@ is used to decide whether to skip the nearest-neighbours problem.  Finally, the
 class is used to store interpolator-specific global outputs, such as the `r_q`
 radius calculated in the N-Spheres algorithm.
 
-```c++ 
+```cpp
 // @+'interpolators'
 struct IntersectingNSpheres
 {
@@ -367,7 +367,7 @@ calculate the weight associated with each demonstration. While searching for
 the query point's nearest neighbour, it is convenient to also cache the
 distance from the query point to every demonstration.
 
-```c++ 
+```cpp
 // @='calculate radius r_q and distances d_n'
 r_q = std::numeric_limits<Scalar>::max();
 for (std::size_t i = 0; i < demo.size(); ++i)
@@ -401,7 +401,7 @@ during a query, it is presumed that this condition will be approached gradually
 and encountered rarely and briefly, and that the metadata will therefore be
 close enough for practical purposes.
 
-```c++
+```cpp
 // @='avoid numerical imprecision issues'
 constexpr Scalar an_arbitrary_slop_factor =
         std::numeric_limits<Scalar>::epsilon() * 5;
@@ -422,7 +422,7 @@ the distance from the demonstration to the query point is checked, and this is
 used if it is less than the distance from the demonstration to the nearest
 other demonstration.
 
-```c++ 
+```cpp 
 // @='calculate the radius r_n'
 r_n = std::numeric_limits<Scalar>::max();
 for (const Demo& demo2 : demo)
@@ -434,7 +434,7 @@ for (const Demo& demo2 : demo)
 // @/
 ```
 
-## Inverse Distance Interpolator
+# Inverse Distance Interpolator
 
 Another simple interpolation algorithm is presented here. This algorithm is one
 of the earliest proposed in the literature, with roots in the early 1980s with
@@ -444,7 +444,7 @@ Music Conference, "1-d, 2-d and 3-d interpolation tools for max/msp/jitter."
 Despite the name of their paper, the algorithm naturally extends to arbitrary
 source and destination spatial dimensions.
 
-```c++
+```cpp
 // @+'interpolators'
 struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
 {
@@ -483,7 +483,7 @@ struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
 // @/
 ```
 
-## Summary
+# Interpolators Summary and Review
 
 The interpolators are all gathered inside of a shared `struct`. This is done in
 order to propagate the template parameters for the `Scalar, ID, SVector,` and
@@ -492,7 +492,7 @@ wants to use the same types for all interpolators they only need to declare
 them once. The demonstration type, `struct Demo`, is also declared at this
 level.
 
-```c++ 
+```cpp 
 // @#'interpolator/marier_spheres.h'
 #ifndef MARIER_SPHERES_INTERPOLATOR_H
 #define MARIER_SPHERES_INTERPOLATOR_H
@@ -512,40 +512,46 @@ struct Interpolators
 // @/
 ```
 
-# Usage
-
-The remainder of this document elaborates some example programs demonstrating
-the usage of the library. The drawing example renders an image based on
-interpolating randomly generated colors associated with randomly generated 2D
-positions. The interactive example works similarly, only instead of
-systematically querying the image the user moves a cursor around it to query
-the interpolated colors, and the graphics are updated in real time to reflect
-the underlying state of the interpolator.
-
-## Demo Program
+# Demonstration
 
 An demo program is provided in the repository that is helpful in exploring the
 subtleties of the different algorithms presented here. The program randomly
 generates a handful of source-destination demonstrations, and draw an image by
-systematically querying the source space. As well as producing an image that
+systematically querying the source space. As well as producing images that
 might offer some intuition about the topology of the interpolated output, this
 will also serve as a reasonable benchmark for the efficiency of the
 implementation and compilation environment, if the number of pixels in the
-image is large enough.  The initial implementation of the Intersecting
-N-Spheres interpolator, when compiled with optimizations enabled and run on a
-circa 2012 ultrabook processor, could process about 15000 queries per second
-with 5 demonstrations, about 5000 per second with 15 demonstrations, 2200 with
-25 demonstrations, and 1200 with 35 demonstrations.  As per the quadratic time
+image is large enough.  
+
+For example, the initial implementation of the Intersecting N-Spheres
+interpolator, when compiled with optimizations enabled and run on a circa 2012
+ultrabook processor, could process about 15000 queries per second with 5
+demonstrations, about 5000 per second with 15 demonstrations, 2200 with 25
+demonstrations, and 1200 with 35 demonstrations.  As per the quadratic time
 complexity of this implementation, the number of queries processed per second
 decreases by a multiplicative factor as the number of demonstrations increases
 linearly.  Performance on larger datasets is improved significantly, as
 expected, if the quadratic-time all nearest neighbours problem is avoided by
-assuming that demonstrations are unchanged between interpolations. 
+assuming that demonstrations are unchanged between interpolations. Performance
+may have changed significantly since that initial benchmark, due to a
+combination of changes in the overall runtime (the original benchmark didn't
+use SDL or the GPU for instance) and the implementation itself. But the numbers
+given provide some indication of the relative performance of different
+interpolator algorithms.
 
 The demo program requires SDL2, and is designed to be compiled as a native or
 WASM-based web application. 
 
-The colour interpolations are performed in [J_zA_zB_z colour
+## Usage
+
+This section still needs to be written.
+
+## Implementation
+
+The starring roles are played by the interpolation algorithms, declared in a
+tuple alongside the lists of metadata and parameters. The source space is
+normalized 2D screen coordinates. The destination space is color.  The colour
+interpolations are performed in [J_zA_zB_z colour
 space](https://doi.org/10.1364/OE.25.015131), a colour representation that is
 designed to provide the best balance of perceptual uniformity and iso-hue
 linearity.  This is meant to ensure that the image produced reflects the
@@ -554,53 +560,86 @@ space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
 J_zA_zB_z colour space and back are given below after the presentation of the
 demo program.
 
-```c++
+```cpp 
+// @='types'
+using Scalar = float;
+using ID = unsigned int;
+using Vec2 = Eigen::Vector2f;
+using RGBVec = Eigen::Vector3f;
+using CIEXYZVec = Eigen::Vector3f;
+using JzAzBzVec = Eigen::Vector3f;
+using Interpolator = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
+// @/
+
+// @='declare interpolators'
+#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
+auto interpolators = std::make_tuple
+        ( INTERPOLATOR(Interpolator::IntersectingNSpheres)
+        , INTERPOLATOR(Interpolator::InverseDistance, 4, 0.001, 0.0)
+        );
+// @/
+```
+
+An overview of the program shows a typical event-loop driven SDL application.
+In order to accomodate both Emscripten/web and native SDL build targets, the
+loop is placed in a seperate function `void loop()` that can be called by the
+browser's event loop or the main function loop depending on the platform.
+
+```cpp
 // @#'examples/interpolators_demo.cpp'
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
-#include <vector>
-#include <tuple>
-#include <random>
-#include <chrono>
-#include <SDL.h>
-#include <SDL_log.h>
-#include <SDL_error.h>
-#include <SDL_video.h>
-#include <SDL_render.h>
-#include <SDL_events.h>
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include "../interpolator/marier_spheres.h"
-
-@{basic globals}
-
-@{drawing interpolators}
-
+@{includes}
+@{types}
+@{declare interpolators}
 @{colour conversions}
 
 struct Context
 {
-    std::vector<Interp::Demo> demo;
-    std::size_t N = 3; // number of demonstrations
-    std::size_t active_interpolator = 0;
-    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
-    unsigned int C = 0;
-    unsigned int w = 500;
-    unsigned int h = 500;
-    bool dynamic_demos = false;
-    bool redraw = true;
-    bool quit = false;
-    Scalar grab_dist = 20;
-    Interp::Demo * grabbed = nullptr;
-    std::size_t grabbed_idx = 0;
-    Vec2 mouse = {0, 0};
-    SDL_Window * window;
-    SDL_Surface * surface;
-    SDL_Renderer * renderer;
+    @{globally visible state}
 } context;
 
+@{helper functions}
+
+void loop ()
+{
+    @{poll event queue and handle events}
+
+    if (context.redraw)
+    {
+        @{draw and refresh screen}
+    }
+}
+
+int main()
+{
+    @{setup}
+
+#ifdef __EMSCRIPTEN__
+    emscripten_set_main_loop(loop, -1, 1);
+#else
+    while (not context.quit)
+    {
+        loop();
+        SDL_Delay(33);
+    }
+#endif
+
+    return 0;
+}
+// @/
+```
+
+### Drawing
+
+```cpp
+// @='draw and refresh screen'
+SDL_RenderClear(context.renderer);
+unsigned int i = 0;
+std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
+context.redraw = false;
+SDL_RenderPresent(context.renderer);
+// @/
+
+// @+'helper functions'
 template<typename T>
 void draw(unsigned int& i, T& tup)
 {
@@ -614,110 +653,139 @@ void draw(unsigned int& i, T& tup)
     auto& meta = std::get<1>(tup);
     auto& para = std::get<2>(tup);
 
-    bool ran = false;
-    auto start = std::chrono::high_resolution_clock::now();
-    for (unsigned int xpix = 0; xpix < context.w; ++xpix)
-    {
-        for (unsigned int ypix = 0; ypix < context.h; ++ypix)
-        {
-            auto q = Vec2{xpix/(Scalar)context.w, ypix/(Scalar)context.h};
-            RGBVec out = {0, 0, 0};
-            bool skip = false;
-            for (auto& d : context.demo)
-            {
-                auto dist = (q - d.s).norm(); 
-                if (dist < 6/(Scalar)context.w)
-                {
-                    if (dist < 3/(Scalar)context.w)
-                        out = JzAzBz_to_RGB(d.p);
-                    skip = true;
-                }
-            }
-            if (not skip)
-            {
-                JzAzBzVec interpolated_jab{0, 0, 0};
-                if constexpr (std::is_same_v<decltype(interpolator), Interp::IntersectingNSpheres>)
-                {
-                    if (not context.dynamic_demos && not ran)
-                    {
-                        interpolator.dynamic_demos = true;
-                        interpolator.query(q, context.demo, para, meta, interpolated_jab);
-                        interpolator.dynamic_demos = false;
-                        ran = true;
-                    }
-                    else interpolator.query(q, context.demo, para, meta, interpolated_jab);
-                }
-                else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+    @{run the timer and draw}
 
-                if (context.C) 
-                {
-                    for (unsigned int n = 0; n < context.N; ++n)
-                    {
-                        RGBVec rgb;
-                        Scalar w;
-                        if (context.grabbed) 
-                        {
-                            rgb = JzAzBz_to_RGB(context.grabbed->p);
-                            w = meta[context.grabbed_idx].w;
-                        }
-                        else 
-                        {
-                            rgb = JzAzBz_to_RGB(context.demo[n].p); 
-                            w = meta[n].w;
-                        }
-                        if (w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
-                        {
-                            // visualize maximum elevation with inverted colour dots
-                            out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
-                        }
-                        else
-                        {
-                            Scalar brightness = std::pow(std::fmod(w * context.C, 1.0f), 8);
-                            brightness = brightness * w;
-                            out += rgb * brightness;
-                        }
-                        if (context.grabbed) break;
-                    }
-                    //contour_map.set_pixel(xpix, ypix,
-                    //        (unsigned char)std::round(std::min(out.x(), 1.0f) * 255),
-                    //        (unsigned char)std::round(std::min(out.y(), 1.0f) * 255),
-                    //        (unsigned char)std::round(std::min(out.z(), 1.0f) * 255));
-                }
-                else out = JzAzBz_to_RGB(interpolated_jab);
-            }
-            SDL_SetRenderDrawColor
-                    ( context.renderer
-                    , (unsigned char)std::round(std::min(out.x(), 1.0f) * 255)
-                    , (unsigned char)std::round(std::min(out.y(), 1.0f) * 255)
-                    , (unsigned char)std::round(std::min(out.z(), 1.0f) * 255)
-                    , 255
-                    );
-            SDL_RenderDrawPoint(context.renderer, xpix, ypix);
-        }
-    }
-    auto stop = std::chrono::high_resolution_clock::now();
-    auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-    std::cout << i-1 << ": Generated " << context.w * context.h << " interpolations in " << usec << " microseconds\n" 
-            << "About " << 1000000 * context.w * context.h / usec << " interpolations per second" 
-            << std::endl;
     ++i;
 }
+// @/
 
-void loop ()
+// @='run the timer and draw'
+@{a flag to keep track of static demos optimization}
+auto start = std::chrono::high_resolution_clock::now();
+
+for (unsigned int xpix = 0; xpix < context.w; ++xpix)
 {
-    static SDL_Event ev;
-    while (SDL_PollEvent(&ev)) switch (ev.type)
+    for (unsigned int ypix = 0; ypix < context.h; ++ypix)
     {
-    case SDL_QUIT:
-    case SDL_APP_TERMINATING:
-    case SDL_APP_LOWMEMORY:
-        context.quit = true;
-        break;
+        @{draw one pixel}
+    }
+}
 
+auto stop = std::chrono::high_resolution_clock::now();
+auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
+std::cout << i-1 << ": Generated " << context.w * context.h << " interpolations in " << usec << " microseconds\n" 
+        << "About " << 1000000 * context.w * context.h / usec << " interpolations per second" 
+        << std::endl;
+// @/
+
+// @='draw one pixel'
+auto q = Vec2{xpix/(Scalar)context.w, ypix/(Scalar)context.h};
+RGBVec out = {0, 0, 0};
+JzAzBzVec interpolated_jab{0, 0, 0};
+
+@{query the interpolator}
+
+if (context.C) 
+{
+    @{draw contour lines}
+}
+else out = JzAzBz_to_RGB(interpolated_jab);
+
+@{output the color}
+// @/
+
+// @='a flag to keep track of static demos optimization'
+bool ran = false;
+// @/
+
+// @='query the interpolator'
+if constexpr (std::is_same_v<decltype(interpolator), Interpolator::IntersectingNSpheres>)
+{
+    if (not context.dynamic_demos && not ran)
+    {
+        interpolator.dynamic_demos = true;
+        interpolator.query(q, context.demo, para, meta, interpolated_jab);
+        interpolator.dynamic_demos = false;
+        ran = true;
+    }
+    else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+}
+else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+// @/
+
+// @='draw contour lines'
+for (unsigned int n = 0; n < context.N; ++n)
+{
+    RGBVec rgb;
+    Scalar w;
+    if (context.grabbed) 
+    {
+        rgb = JzAzBz_to_RGB(context.grabbed->p);
+        w = meta[context.grabbed_idx].w;
+    }
+    else 
+    {
+        rgb = JzAzBz_to_RGB(context.demo[n].p); 
+        w = meta[n].w;
+    }
+    if (w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
+    {
+        // visualize maximum elevation with inverted colour dots
+        out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
+    }
+    else
+    {
+        Scalar brightness = std::pow(std::fmod(w * context.C, 1.0f), 8);
+        brightness = brightness * w;
+        out += rgb * brightness;
+    }
+    if (context.grabbed) break;
+}
+// @/
+
+// @='output the color'
+SDL_SetRenderDrawColor
+        ( context.renderer
+        , (unsigned char)std::round(std::min(out.x(), 1.0f) * 255)
+        , (unsigned char)std::round(std::min(out.y(), 1.0f) * 255)
+        , (unsigned char)std::round(std::min(out.z(), 1.0f) * 255)
+        , 255
+        );
+SDL_RenderDrawPoint(context.renderer, xpix, ypix);
+// @/
+```
+
+### Event Handling
+
+```cpp
+// @='poll event queue and handle events'
+static SDL_Event ev;
+while (SDL_PollEvent(&ev)) switch (ev.type)
+{
+case SDL_QUIT:
+case SDL_APP_TERMINATING:
+case SDL_APP_LOWMEMORY:
+    context.quit = true;
+    break;
+
+@{handle window events}
+
+@{handle keyboard events}
+
+@{handle mouse events}
+
+default:
+    break;
+}
+// @/
+
+// @='handle window events'
     case SDL_WINDOWEVENT:
         // TODO
         break;
+// @/
 
+// @='handle keyboard events'
     case SDL_KEYDOWN:
         context.C = 10; 
         context.redraw = true;
@@ -727,7 +795,9 @@ void loop ()
         context.C = 0; 
         context.redraw = true;
         break;
+// @/
 
+// @='handle mouse events'
     case SDL_MOUSEMOTION:
         context.mouse = {ev.button.x / (Scalar)context.w, ev.button.y / (Scalar)context.h};
         if (context.grabbed)
@@ -769,25 +839,43 @@ void loop ()
         context.active_interpolator = (context.active_interpolator + 1) % context.num_interpolators;
         context.redraw = true;
         break;
+// @/
 
-    default:
-        break;
-    }
+//@+'globally visible state'
+    std::vector<Interpolator::Demo> demo;
+    std::size_t N = 3; // number of demonstrations
+    std::size_t active_interpolator = 0;
+    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
+    unsigned int C = 0;
+    unsigned int w = 500;
+    unsigned int h = 500;
+    bool dynamic_demos = false;
+    bool redraw = true;
+    bool quit = false;
+    Scalar grab_dist = 20;
+    Interpolator::Demo * grabbed = nullptr;
+    std::size_t grabbed_idx = 0;
+    Vec2 mouse = {0, 0};
+    SDL_Window * window;
+    SDL_Surface * surface;
+    SDL_Renderer * renderer;
+// @/
+```
 
-    if (context.redraw)
-    {
-        SDL_RenderClear(context.renderer);
-        unsigned int i = 0;
-        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
-        context.redraw = false;
-        SDL_RenderPresent(context.renderer);
-    }
+### Setup
 
-    //SDL_UpdateWindowSurface(context.window);
-}
+```cpp
+// @='setup'
+@{SDL setup}
 
-int main()
-{
+@{initialize random demonstrations}
+
+@{resize interpolator extra lists}
+
+atexit(cleanup);
+// @/
+
+// @='SDL setup'
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
@@ -823,48 +911,68 @@ int main()
     else SDL_Log("Created renderer\n");
 
     context.surface = SDL_GetWindowSurface(context.window);
+// @/
 
-    unsigned int n = context.N;
-    unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
-    std::default_random_engine generator (seed);
-    std::uniform_real_distribution<Scalar> random(0, 1);
-    while(n-- > 0)
-    {
-        auto v = Vec2{random(generator), random(generator)};
-        auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-        context.demo.push_back({n, v, c});
-    }
+// @='initialize random demonstrations'
+unsigned int n = context.N;
+unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+std::default_random_engine generator (seed);
+std::uniform_real_distribution<Scalar> random(0, 1);
+while(n-- > 0)
+{
+    auto v = Vec2{random(generator), random(generator)};
+    auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
+    context.demo.push_back({n, v, c});
+}
+// @/
 
-    auto resize_lists = [&](auto& tup)
-    {
-        auto& meta = std::get<1>(tup);
-        auto& para = std::get<2>(tup);
-        auto& default_para = std::get<3>(tup);
-        meta.resize(context.demo.size());
-        for (auto& m : meta) m = {};
-        para.resize(context.demo.size());
-        for (auto& p : para) p = default_para;
-    };
-    std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
+// @='resize interpolators extra lists'
+auto resize_lists = [&](auto& tup)
+{
+    auto& meta = std::get<1>(tup);
+    auto& para = std::get<2>(tup);
+    auto& default_para = std::get<3>(tup);
+    meta.resize(context.demo.size());
+    for (auto& m : meta) m = {};
+    para.resize(context.demo.size());
+    for (auto& p : para) p = default_para;
+};
+std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
+// @/
 
-#ifdef __EMSCRIPTEN__
-    emscripten_set_main_loop(loop, -1, 1);
-#else
-    while (not context.quit)
-    {
-        loop();
-        SDL_Delay(33);
-    }
-#endif
-
+// @+'helper functions'
+void cleanup ()
+{
     SDL_FreeSurface(context.surface);
     SDL_DestroyRenderer(context.renderer);
     SDL_DestroyWindow(context.window);
     SDL_Quit();
-    return 0;
 }
 // @/
 ```
+
+### Includes
+
+```cpp
+// @='includes'
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+#include <vector>
+#include <tuple>
+#include <random>
+#include <chrono>
+#include <SDL.h>
+#include <SDL_log.h>
+#include <SDL_error.h>
+#include <SDL_video.h>
+#include <SDL_render.h>
+#include <SDL_events.h>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include "../interpolator/marier_spheres.h"
+// @/
 
 ## Drawing example
 
@@ -895,36 +1003,12 @@ J_zA_zB_z colour space and back are given below.
 
 The program is relatively simple, so here's an overview.
 
-First, the datatypes used are declared, along with a tuple of interpolators
-with their default parameters and containers to hold their metadata and
-parameter lists:
-
-```c++ 
-// @='basic globals'
-using Scalar = float;
-using ID = unsigned int;
-using Vec2 = Eigen::Vector2f;
-using RGBVec = Eigen::Vector3f;
-using CIEXYZVec = Eigen::Vector3f;
-using JzAzBzVec = Eigen::Vector3f;
-using Interp = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
-// @/
-
-// @='drawing interpolators'
-#define ANOTHER_INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
-auto interpolators = std::make_tuple
-        ( ANOTHER_INTERPOLATOR(Interp::IntersectingNSpheres)
-        , ANOTHER_INTERPOLATOR(Interp::InverseDistance, 4, 0.001, 0.0)
-        );
-// @/
-```
-
 Then the program itself is as follows. Notice that most of the program logic
 is contained in a generic lambda function that is applied to the tuple of
 interpolators. Each time the function is invoked, it is given a new tuple
 containing an interpolator and the data associated with it.
 
-```c++ 
+```cpp 
 // @#'examples/color_image.cpp'
 #include <cmath>
 #include <cstdio>
@@ -956,7 +1040,7 @@ int fired_main
     int i = 0;
     bool dynamic_demos = not fast;
 
-    std::vector<Interp::Demo> demo;
+    std::vector<Interpolator::Demo> demo;
     @{generate random demonstrations}
 
     auto interpolate_and_draw = [&](auto& tup)
@@ -1010,7 +1094,7 @@ It is more convenient to generate the colour vectors in RGB space since doing
 so guarantees that the demonstrated colors are possible to display, which may
 not be the case when randomly generating colors in J_zA_zB_z space.
 
-```c++ 
+```cpp 
 // @='generate random demonstrations'
 unsigned int n = N;
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -1031,7 +1115,7 @@ convert the resulting colour to RGB, and then write the colour to the pixel at
 that coordinate. We record how long this takes so that the program also serves
 as a simple benchmark.
 
-```c++ 
+```cpp 
 // @='draw the images'
     bool ran = false;
     auto start = std::chrono::high_resolution_clock::now();
@@ -1041,7 +1125,7 @@ as a simple benchmark.
         {
             auto q = Vec2{xpix/(Scalar)x, ypix/(Scalar)y};
             JzAzBzVec interpolated_jab{0, 0, 0};
-            if constexpr (std::is_same_v<decltype(interpolator), Interp::IntersectingNSpheres>)
+            if constexpr (std::is_same_v<decltype(interpolator), Interpolator::IntersectingNSpheres>)
             {
                 if (not dynamic_demos && not ran)
                 {
@@ -1089,7 +1173,7 @@ in reading the contour map, consider the following:
   a grid of dots is drawn on top of the contour peak
 - it's usually best to focus on contour lines of one colour at a time
 
-```c++
+```cpp
 // @='draw the contour image'
 if (C) 
 {
@@ -1119,7 +1203,7 @@ After drawing the overall image, we also take a moment to draw a circle around
 each demonstration point; this helps to better understand how the image relates
 to the topology of the interpolator.
 
-```c++ 
+```cpp 
 // @='draw circles over demonstrated points'
 auto draw_circles = [&](auto& img)
 {
@@ -1167,7 +1251,7 @@ radial lines dont become obscured by the weight disk in the back. If anyone
 can explain why this is, please contact me. The z-coordinate doesn't appear to
 have any influence, even with depth testing enabled.
 
-```c++ 
+```cpp 
 // @='display callback'
 void drawCircle(const Vec2& position, const Scalar& radius, const Scalar& depth = 0)
 {
@@ -1264,7 +1348,7 @@ the window is wider than it is tall, padding is added on the sides so that the
 scene is centered. Otherwise, when the window is taller than it is wide, the
 padding is added above and below the scene.
 
-```c++ 
+```cpp 
 // @='reshape callback'
 void reshape(int w, int h)
 {
@@ -1285,7 +1369,7 @@ void reshape(int w, int h)
 // @/
 ```
 
-```c++ 
+```cpp 
 // @='h < w: calculate pixels_per_unit and offset'
 Scalar padding = (w - h)/2; // there is `padding` space on either size of the scene square
 Scalar pixels_per_unit = h; // this many pixels per unit in world coordinates
@@ -1294,7 +1378,7 @@ Scalar offset = padding * units_per_pixel;
 // @/
 ```
 
-```c++ 
+```cpp 
 // @='w <= h: calculate pixels_per_unit and offset'
 Scalar padding = (h - w)/2; // there is `padding` space above and below the scene square
 Scalar pixels_per_unit = w; // this many pixels per unit in world coordinates
@@ -1310,7 +1394,7 @@ other direction.
 This callback also drives updates to the display, since moving the cursor
 will change the state of the interpolator.
 
-```c++ 
+```cpp 
 // @='motion callback'
 void mouse_move(int x, int y)
 {
@@ -1338,7 +1422,7 @@ The rest of the program is basically boilerplate for setting up openGL. The
 global `using` declarations are the same as in the drawing example, as is the
 subroutine for generating random demonstrations.
 
-```c++ 
+```cpp 
 // @='setup display and callbacks'
 // fake argv and argc since we can't access the real ones behind fire-hpp
 char * fake_argv[1];
@@ -1362,7 +1446,7 @@ glutSwapBuffers();
 // @/
 ```
 
-```c++ 
+```cpp 
 // @#'examples/interactive_colors.cpp'
 #include <string>
 #include <cmath>
@@ -1378,9 +1462,9 @@ glutSwapBuffers();
 
 @{basic globals}
 
-auto interpolator = Interp::IntersectingNSpheres{};
-std::vector<Interp::Demo> demo;
-std::vector<Interp::IntersectingNSpheres::Meta> meta;
+auto interpolator = Interpolator::IntersectingNSpheres{};
+std::vector<Interpolator::Demo> demo;
+std::vector<Interpolator::IntersectingNSpheres::Meta> meta;
 void * para;
 Vec2 q = {0,0};
 std::size_t N_;
@@ -1438,7 +1522,7 @@ sRGB](https://en.wikipedia.org/wiki/SRGB). Since the example programs make use
 of Eigen for their colour data, the conversion can be succinctly implemented
 with matrix multiplication and other Eigen features.
 
-```c++
+```cpp
 // @='RGB - XYZ colour conversions'
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
 {
@@ -1487,7 +1571,7 @@ et al. introducing J_zA_zB_z published by the Optical Society of America in Volu
 25 Issue 13 pages 15131-15151 of the journal Optics
 Express](https://doi.org/10.1364/OE.25.015131).
 
-```c++
+```cpp
 // @='JzAzBz consts'
 static const Eigen::Matrix3f M1 = (Eigen::Matrix3f() <<
     0.41478972,  0.579999,  0.0146480,
@@ -1586,7 +1670,7 @@ CIEXYZVec JzAzBz_to_XYZ(const JzAzBzVec& jab)
 The conversion between sRGB and J_zA_zB_z is then easily implemented in terms
 of the above conversions to and from CIE XYZ colour space:
 
-```c++
+```cpp
 // @='colour conversions'
 @{RGB - XYZ colour conversions}
 

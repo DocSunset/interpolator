@@ -3,9 +3,9 @@ CXXFLAGS = -O3 -Wall -std=c++17
 EIGEN_INCLUDE = -I/usr/include/eigen3
 OPENGL_LIBS = -lGL -lglut
 
-LITERATE_SOURCES = marier_spheres.lilit
-SOURCES = interpolator/marier_spheres.h examples/interactive_colors.cpp examples/interpolators_demo.cpp
-EXAMPLES =                              examples/interactive_colors     examples/interpolators_demo examples/interpolators_demo.html
+LITERATE_SOURCES = marier_spheres.lilit.md
+SOURCES = interpolator/marier_spheres.h examples/interpolators_demo.cpp
+EXAMPLES =                              examples/interpolators_demo examples/interpolators_demo.html
 DOCS_EXTRAS = docs/marier_spheres.html.header
 DOCS = docs/marier_spheres.html
 
@@ -14,10 +14,6 @@ all: ${SOURCES} ${EXAMPLES} ${DOCS}
 ${SOURCES}: ${LITERATE_SOURCES}
 	@echo tangling $<
 	@lilit $<
-
-examples/interactive_colors: examples/color_image.cpp interpolator/marier_spheres.h
-	@echo building $@
-	@${CXX} ${CXXFLAGS} ${EIGEN_INCLUDE} ${OPENGL_LIBS} -o $@ $@.cpp
 
 examples/interpolators_demo.html: examples/interpolators_demo.cpp interpolator/marier_spheres.h
 	@echo building $@
@@ -29,7 +25,7 @@ examples/interpolators_demo: examples/interpolators_demo.cpp interpolator/marier
 
 ${DOCS}: ${LITERATE_SOURCES} ${DOCS_EXTRAS}
 	@echo weaving $@
-	@pandoc -f markdown -t html -o $@ -s --mathjax -H $@.header marier_spheres.lilit --metadata title="Marier Intersecting N-Spheres Interpolator"
+	@pandoc -f markdown -t html -o $@ -s --mathjax -H $@.header marier_spheres.lilit.md --metadata title="Marier Intersecting N-Spheres Interpolator"
 
 docs: ${DOCS}
 
