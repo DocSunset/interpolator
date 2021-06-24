@@ -1,10 +1,10 @@
-#ifndef MARIER_SPHERES_INTERPOLATOR_H
-#define MARIER_SPHERES_INTERPOLATOR_H
+#ifndef INTERPOLATORS_H
+#define INTERPOLATORS_H
+
 #include<limits>
 #include<cmath>
 #include<iostream>
 #include<cstddef>
-
 
 template<typename Scalar, typename ID, typename SVector, typename PVector>
 struct Interpolators
