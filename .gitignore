@@ -1,4 +1,2 @@
-*.bmp
-examples/color_image
-examples/interactive_colors
+examples/interpolators_demo*
 todo.*

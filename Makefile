@@ -21,7 +21,7 @@ examples/interpolators_demo.html: examples/interpolators_demo.cpp interpolator/m
 
 examples/interpolators_demo: examples/interpolators_demo.cpp interpolator/marier_spheres.h
 	@echo building $@
-	@g++ ${CXXFLAGS} ${EIGEN_INCLUDE} -I/usr/include/SDL2 -lSDL2 -o $@ $@.cpp
+	@g++ ${CXXFLAGS} ${EIGEN_INCLUDE} -I/usr/include/SDL2 -lSDL2 -lGLESv2 -o $@ $@.cpp
 
 ${DOCS}: ${LITERATE_SOURCES} ${DOCS_EXTRAS}
 	@echo weaving $@

@@ -6,12 +6,16 @@
 #include <tuple>
 #include <random>
 #include <chrono>
+#include <cstdio>
+#include <cstdlib>
 #include <SDL.h>
 #include <SDL_log.h>
 #include <SDL_error.h>
 #include <SDL_video.h>
 #include <SDL_render.h>
 #include <SDL_events.h>
+#include <SDL_opengles2.h>
+#include <GLES3/gl3.h>
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include "../interpolator/marier_spheres.h"
@@ -19,8 +23,10 @@ using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
+using RGBAVec = Eigen::Vector4f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
+using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using Interpolator = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 #define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
 auto interpolators = std::make_tuple
@@ -185,63 +191,96 @@ RGBVec JzAzBz_to_RGB(const JzAzBzVec& jab)
     return XYZ_to_RGB(JzAzBz_to_XYZ(jab));
 }
 
+struct TextureQuad
+{
+    static constexpr const char * name = "texture quad";
+    static constexpr const char * vert_name = "texture quad vertex shader";
+    static constexpr const char * vert =
+    "\
+        #version 300 es\n\
+        in vec2 pos;\n\
+        out vec2 tex_coord;\n\
+        const vec4 white = vec4(1.0);\n\
+        \n\
+        void main()\n\
+        {\n\
+            gl_Position = vec4(pos, 0.0, 1.0);\n\
+            tex_coord   = vec2(pos[0] * 0.5 + 0.5, pos[1] * 0.5 + 0.5);\n\
+        }\n\
+    ";
+    
+    static constexpr const char * frag_name = "texture quad fragment shader";
+    static constexpr const char * frag =
+    "\
+        #version 300 es\n\
+        #ifdef GL_ES\n\
+        precision highp float;\n\
+        #endif\n\
+        in vec2 tex_coord;\n\
+        out vec4 fragColour;\n\
+        uniform sampler2D tex_sampler;\n\
+        \n\
+        void main()\n\
+        {\n\
+            fragColour = texture(tex_sampler, tex_coord);\n\
+        }\n\
+    ";
+
+    void texture_parameters(GLuint tex)
+    {
+        glBindTexture(GL_TEXTURE_2D, tex);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    }
+};
+
 struct Context
 {
+    unsigned int active_interpolator = 0;
+    unsigned int C = 0;
+    SDL_Window * window = nullptr;
+    SDL_GLContext gl = nullptr;
+    GLuint prog = 0;
+    const std::vector<Vec2> screen_quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+    GLuint screen_quad_vbo = 0;
+    Texture texture;
+    GLuint texture_gl = 0;
         std::vector<Interpolator::Demo> demo;
         std::size_t N = 3; // number of demonstrations
-        std::size_t active_interpolator = 0;
         const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
-        unsigned int C = 0;
         unsigned int w = 500;
         unsigned int h = 500;
-        bool dynamic_demos = false;
         bool redraw = true;
         bool quit = false;
         Scalar grab_dist = 20;
         Interpolator::Demo * grabbed = nullptr;
         std::size_t grabbed_idx = 0;
         Vec2 mouse = {0, 0};
-        SDL_Window * window;
-        SDL_Surface * surface;
-        SDL_Renderer * renderer;
 } context;
 
 template<typename T>
 void draw(unsigned int& i, T& tup)
 {
-    if (i != context.active_interpolator) 
-    {
-        ++i; 
-        return;
-    }
+    if (i++ != context.active_interpolator) return;
 
     auto& interpolator = std::get<0>(tup);
     auto& meta = std::get<1>(tup);
     auto& para = std::get<2>(tup);
 
-    bool ran = false;
     auto start = std::chrono::high_resolution_clock::now();
 
-    for (unsigned int xpix = 0; xpix < context.w; ++xpix)
+    for (unsigned int col = 0; col < context.texture.cols(); ++col)
     {
-        for (unsigned int ypix = 0; ypix < context.h; ++ypix)
+        for (unsigned int row = 0; row < context.texture.rows(); ++row)
         {
-            auto q = Vec2{xpix/(Scalar)context.w, ypix/(Scalar)context.h};
             RGBVec out = {0, 0, 0};
-            JzAzBzVec interpolated_jab{0, 0, 0};
+            auto q = Vec2{col/(Scalar)context.texture.cols(), row/(Scalar)context.texture.rows()};
 
-            if constexpr (std::is_same_v<decltype(interpolator), Interpolator::IntersectingNSpheres>)
-            {
-                if (not context.dynamic_demos && not ran)
-                {
-                    interpolator.dynamic_demos = true;
-                    interpolator.query(q, context.demo, para, meta, interpolated_jab);
-                    interpolator.dynamic_demos = false;
-                    ran = true;
-                }
-                else interpolator.query(q, context.demo, para, meta, interpolated_jab);
-            }
-            else interpolator.query(q, context.demo, para, meta, interpolated_jab);
+            JzAzBzVec interpolated_jab{0, 0, 0};
+            interpolator.query(q, context.demo, para, meta, interpolated_jab);
+            std::cout << interpolated_jab.x() << " " << interpolated_jab.y() << " " << interpolated_jab.z() << std::endl;
 
             if (context.C) 
             {
@@ -262,7 +301,7 @@ void draw(unsigned int& i, T& tup)
                     if (w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
                     {
                         // visualize maximum elevation with inverted colour dots
-                        out = (xpix % 3) + (ypix % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
+                        out = (col % 3) + (row % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
                     }
                     else
                     {
@@ -275,31 +314,161 @@ void draw(unsigned int& i, T& tup)
             }
             else out = JzAzBz_to_RGB(interpolated_jab);
 
-            SDL_SetRenderDrawColor
-                    ( context.renderer
-                    , (unsigned char)std::round(std::min(out.x(), 1.0f) * 255)
-                    , (unsigned char)std::round(std::min(out.y(), 1.0f) * 255)
-                    , (unsigned char)std::round(std::min(out.z(), 1.0f) * 255)
-                    , 255
-                    );
-            SDL_RenderDrawPoint(context.renderer, xpix, ypix);
+            context.texture(row, col) = RGBAVec{out.x(), out.y(), out.z(), 1};
         }
     }
 
     auto stop = std::chrono::high_resolution_clock::now();
     auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-    std::cout << i-1 << ": Generated " << context.w * context.h << " interpolations in " << usec << " microseconds\n" 
-            << "About " << 1000000 * context.w * context.h / usec << " interpolations per second" 
+    std::cout << i-1 << ": Generated " << context.texture.cols() * context.texture.rows() << " interpolations in " << usec << " microseconds\n" 
+            << "About " << 1000000 * context.texture.cols() * context.texture.rows() / usec << " interpolations per second" 
             << std::endl;
-
-    ++i;
 }
 void cleanup ()
 {
-    SDL_FreeSurface(context.surface);
-    SDL_DestroyRenderer(context.renderer);
+    glDeleteTextures(1, &context.texture_gl);
+    glDeleteBuffers(1, &context.screen_quad_vbo);
+    glDeleteProgram(context.prog);
+    SDL_GL_DeleteContext(context.gl);
     SDL_DestroyWindow(context.window);
     SDL_Quit();
+}
+template<typename ShaderProgram, GLenum shader_type>
+GLuint create_shader()
+{
+    GLuint shader;
+    const char * source;
+    const char * name;
+    if constexpr (shader_type == GL_VERTEX_SHADER)
+    {
+        shader = glCreateShader(shader_type);
+        source = ShaderProgram::vert;
+        name = ShaderProgram::vert_name;
+    }
+    else if constexpr (shader_type == GL_FRAGMENT_SHADER)
+    {
+        shader = glCreateShader(shader_type);
+        source = ShaderProgram::frag;
+        name = ShaderProgram::frag_name;
+    }
+    glShaderSource(shader, 1, (const GLchar**) &source, NULL);
+    glCompileShader(shader);
+    GLint compiled = GL_FALSE;
+    glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
+    if (not compiled)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Shader compilation failed: %s.\n", name);
+        GLint logLength = 0;
+        glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &logLength);
+        GLchar * errLog = (GLchar*)malloc(logLength);
+        if (errLog)
+        {
+            glGetShaderInfoLog(shader, logLength, &logLength, errLog);
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s\n", errLog);
+            free(errLog);
+        }
+        else SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get shader log.\n");
+    
+        glDeleteShader(shader);
+        return 0;
+    }
+    return shader;
+}
+
+template<typename ShaderProgram>
+GLuint create_program()
+{
+    const char * prog_name = ShaderProgram::name;
+
+    GLuint vertShader = create_shader<ShaderProgram, GL_VERTEX_SHADER>();
+    if (vertShader == 0) return 0;
+    GLuint fragShader = create_shader<ShaderProgram, GL_FRAGMENT_SHADER>();
+    if (fragShader == 0)
+    {
+        glDeleteShader(vertShader);
+        return 0;
+    }
+
+    GLuint program = glCreateProgram();
+    if (not program)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't create shader program: %s.\n", prog_name);
+    }
+    
+    glAttachShader(program, vertShader);
+    glAttachShader(program, fragShader);
+    glLinkProgram(program);
+
+    GLint linked = GL_FALSE;
+    glGetProgramiv(program, GL_LINK_STATUS, &linked);
+    if (not linked)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Shader linking failed: %s.\n", prog_name);
+        GLint logLength = 0;
+        glGetShaderiv(program, GL_INFO_LOG_LENGTH, &logLength);
+        GLchar * errLog = (GLchar*)malloc(logLength);
+        if (errLog)
+        {
+            glGetProgramInfoLog(program, logLength, &logLength, errLog);
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "%s\n", errLog);
+            free(errLog);
+        }
+        else SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get program log.\n");
+    
+        glDeleteProgram(program);
+        return 0;
+    }
+
+    glDeleteShader(vertShader);
+    glDeleteShader(fragShader);
+    return program;
+}
+template<typename Vertex>
+GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
+{
+    GLuint vbo;
+    int nBuffers = 1;
+    glGenBuffers(nBuffers, &vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * numVertices, vertices, GL_STATIC_DRAW);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+    {
+        glDeleteBuffers(nBuffers, &vbo);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VBO creation failed with code `%u`.\n", err);
+        vbo = 0;
+    }
+
+    return vbo;
+}
+bool write_gl_texture(const Texture& mat, GLuint tex)
+{
+    glBindTexture(GL_TEXTURE_2D, tex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA32F
+                , mat.cols(), mat.rows(), 0
+                , GL_RGBA , GL_FLOAT, mat.data());
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR)
+    {
+        glDeleteBuffers(1, &tex);
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to allocate memory for texture.\n");
+        return false;
+    }
+    return true;
+}
+
+GLuint create_gl_texture(const Texture& mat)
+{
+    GLuint tex;
+    glGenTextures(1, &tex);
+    if (not write_gl_texture(mat, tex)) return 0;
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    return tex;
 }
 
 void loop ()
@@ -375,51 +544,63 @@ void loop ()
 
     if (context.redraw)
     {
-        SDL_RenderClear(context.renderer);
         unsigned int i = 0;
         std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
         context.redraw = false;
-        SDL_RenderPresent(context.renderer);
+//        for(int row=0; row<context.texture.rows(); row++)
+//            for(int col=0; col<context.texture.cols(); col++)
+//                context.texture(row,col) = RGBAVec(row/((float)context.texture.rows()), col/((float)context.texture.cols()), 0, 1);
+
+        write_gl_texture(context.texture, context.texture_gl);
     }
+
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
+    SDL_GL_SwapWindow(context.window);
 }
 
 int main()
 {
-        if (SDL_Init(SDL_INIT_VIDEO) != 0)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                    "Error initializing SDL:\n    %s\n", 
-                    SDL_GetError());
-            return 1;
-        }
-        else SDL_Log("Initialized successfully\n");
+    if (SDL_Init(SDL_INIT_VIDEO) != 0)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                "Error initializing SDL:\n    %s\n", 
+                SDL_GetError());
+        return EXIT_FAILURE;
+    }
+    else SDL_Log("Initialized successfully\n");
 
-        context.window = SDL_CreateWindow
-                ( "Interpolators"
-                , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-                , context.w , context.h
-                , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI
-                );
-        if (context.window == nullptr)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                    "Error creating window:\n    %s\n", 
-                    SDL_GetError());
-            return 1;
-        }
-        else SDL_Log("Created window\n");
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+    SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+    context.window = SDL_CreateWindow
+            ( "Interpolators"
+            , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
+            , context.w , context.h
+            , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN
+            );
+    if (context.window == nullptr)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                "Error creating window:\n    %s\n", 
+                SDL_GetError());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                "Couldn't create the main window :(", NULL);
+        return EXIT_FAILURE;
+    }
+    else SDL_Log("Created window\n");
 
-        context.renderer = SDL_CreateRenderer(context.window, -1, SDL_RENDERER_ACCELERATED);
-        if (context.renderer == nullptr)
-        {
-            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
-                    "Error creating renderer:\n    %s\n", 
-                    SDL_GetError());
-            return 1;
-        }
-        else SDL_Log("Created renderer\n");
-
-        context.surface = SDL_GetWindowSurface(context.window);
+    context.gl = SDL_GL_CreateContext(context.window);
+    if (context.gl == nullptr)
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                "Error creating OpenGL context:\n    %s\n", 
+                SDL_GetError());
+        SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                "Couldn't create OpenGL context :(", NULL);
+        return EXIT_FAILURE;
+    }
+    else SDL_Log("Created GL context\n");
 
     unsigned int n = context.N;
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -432,6 +613,44 @@ int main()
         context.demo.push_back({n, v, c});
     }
 
+    auto resize_lists = [&](auto& tup)
+    {
+        auto& meta = std::get<1>(tup);
+        auto& para = std::get<2>(tup);
+        auto& default_para = std::get<3>(tup);
+        meta.resize(context.demo.size());
+        for (auto& m : meta) m = {};
+        para.resize(context.demo.size());
+        for (auto& p : para) p = default_para;
+    };
+    std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
+
+    context.prog = create_program<TextureQuad>();
+    if (not context.prog) return EXIT_FAILURE;
+    glUseProgram(context.prog);
+
+    context.screen_quad_vbo = create_vbo(context.screen_quad.data(), context.screen_quad.size());
+    if (not context.screen_quad_vbo) return EXIT_FAILURE;
+
+    GLuint positionIdx = 0;
+    glBindBuffer(GL_ARRAY_BUFFER, context.screen_quad_vbo);
+    glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
+    glEnableVertexAttribArray(positionIdx);
+
+    context.texture = Texture(context.h, context.w);
+    context.texture_gl = create_gl_texture(context.texture);
+    if (not context.texture_gl) return EXIT_FAILURE;
+
+    glUseProgram(context.prog);
+    GLint tex_sampler_uniform_location = glGetUniformLocation(context.prog, "tex_sampler");
+    if (tex_sampler_uniform_location < 0) 
+    {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
+        return EXIT_FAILURE;
+    }
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, context.texture_gl);
+    glUniform1i(tex_sampler_uniform_location, 0);
 
     atexit(cleanup);
 
@@ -445,5 +664,5 @@ int main()
     }
 #endif
 
-    return 0;
+    return EXIT_SUCCESS;
 }

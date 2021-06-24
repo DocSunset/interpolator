@@ -131,6 +131,7 @@ struct Interpolators
 
             return weighted_sum;
         }
+
     };
     struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
     {
