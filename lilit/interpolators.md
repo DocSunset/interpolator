@@ -494,7 +494,7 @@ them once. The demonstration type, `struct Demo`, is also declared at this
 level.
 
 ```cpp 
-// @#'interpolator/marier_spheres.h'
+// @#'include/interpolators.h'
 #ifndef MARIER_SPHERES_INTERPOLATOR_H
 #define MARIER_SPHERES_INTERPOLATOR_H
 #include<limits>
@@ -589,7 +589,7 @@ loop is placed in a seperate function `void loop()` that can be called by the
 browser's event loop or the main function loop depending on the platform.
 
 ```cpp
-// @#'examples/interpolators_demo.cpp'
+// @#'demo/interpolators_demo.cpp'
 @{includes}
 @{types}
 @{declare interpolators}
@@ -1271,7 +1271,7 @@ glUniform1i(tex_sampler_uniform_location, 0);
 #include <GLES3/gl3.h>
 #include <Eigen/Core>
 #include <Eigen/LU>
-#include "../interpolator/marier_spheres.h"
+#include "../include/interpolators.h"
 // @/
 
 //@+'globally visible state'

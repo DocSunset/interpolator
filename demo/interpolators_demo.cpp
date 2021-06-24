@@ -18,7 +18,7 @@
 #include <GLES3/gl3.h>
 #include <Eigen/Core>
 #include <Eigen/LU>
-#include "../interpolator/marier_spheres.h"
+#include "../include/interpolators.h"
 using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
@@ -280,7 +280,6 @@ void draw(unsigned int& i, T& tup)
 
             JzAzBzVec interpolated_jab{0, 0, 0};
             interpolator.query(q, context.demo, para, meta, interpolated_jab);
-            std::cout << interpolated_jab.x() << " " << interpolated_jab.y() << " " << interpolated_jab.z() << std::endl;
 
             if (context.C) 
             {
