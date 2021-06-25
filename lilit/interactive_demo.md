@@ -59,12 +59,6 @@ UserInterface ui;
 
 @{SDL declarations}
 @{openGL declarations}
-struct Context
-{
-    @{globally visible state}
-} context;
-
-@{helper functions}
 
 void loop()
 {
@@ -78,7 +72,7 @@ void loop()
     }
 
     glUseProgram(gl.prog);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     SDL_GL_SwapWindow(sdl.window);
 }
 
@@ -140,19 +134,5 @@ These bits should arguably be shuffled away somewhere else.
 #include "types.h"
 #include "ui.h"
 #include "graphics.h"
-// @/
-
-//@+'globally visible state'
-    std::vector<Interpolator::Demo> demo;
-    std::size_t N = 3; // number of demonstrations
-    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
-    unsigned int w = 500;
-    unsigned int h = 500;
-    bool redraw = true;
-    bool quit = false;
-    Scalar grab_dist = 20;
-    Interpolator::Demo * grabbed = nullptr;
-    std::size_t grabbed_idx = 0;
-    Vec2 mouse = {0, 0};
 // @/
 ```

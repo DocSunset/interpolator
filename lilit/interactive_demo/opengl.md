@@ -177,17 +177,26 @@ if (not gl.prog) return EXIT_FAILURE;
 glUseProgram(gl.prog);
 // @/
 
-// @+'globally visible state'
-const std::vector<Vec2> screen_quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-GLuint screen_quad_vbo = 0;
+// @+'openGL declarations'
+struct Fullscreen
+{
+    static const std::vector<Vec2> quad;
+    static GLuint vbo;
+    static GLuint vao;
+    static GLuint idx;
+};
+const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+GLuint Fullscreen::vbo = 0;
+GLuint Fullscreen::vao = 0;
+GLuint Fullscreen::idx = 0;
 // @/
 
 // @='create vector buffer objects'
-context.screen_quad_vbo = create_vbo(context.screen_quad.data(), context.screen_quad.size());
-if (not context.screen_quad_vbo) return EXIT_FAILURE;
+Fullscreen::vbo = create_vbo(Fullscreen::quad.data(), Fullscreen::quad.size());
+if (not Fullscreen::vbo) return EXIT_FAILURE;
 
 GLuint positionIdx = 0;
-glBindBuffer(GL_ARRAY_BUFFER, context.screen_quad_vbo);
+glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
 glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
 glEnableVertexAttribArray(positionIdx);
 // @/

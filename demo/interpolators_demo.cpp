@@ -36,23 +36,17 @@ struct
     GLuint prog = 0;
     GLuint texture = 0;
 } gl;
-struct Context
+struct Fullscreen
 {
-    const std::vector<Vec2> screen_quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-    GLuint screen_quad_vbo = 0;
-        std::vector<Interpolator::Demo> demo;
-        std::size_t N = 3; // number of demonstrations
-        const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
-        unsigned int w = 500;
-        unsigned int h = 500;
-        bool redraw = true;
-        bool quit = false;
-        Scalar grab_dist = 20;
-        Interpolator::Demo * grabbed = nullptr;
-        std::size_t grabbed_idx = 0;
-        Vec2 mouse = {0, 0};
-} context;
-
+    static const std::vector<Vec2> quad;
+    static GLuint vbo;
+    static GLuint vao;
+    static GLuint idx;
+};
+const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+GLuint Fullscreen::vbo = 0;
+GLuint Fullscreen::vao = 0;
+GLuint Fullscreen::idx = 0;
 
 void loop()
 {
@@ -69,7 +63,7 @@ void loop()
     }
 
     glUseProgram(gl.prog);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     SDL_GL_SwapWindow(sdl.window);
 }
 
@@ -122,11 +116,11 @@ int main()
     if (not gl.prog) return EXIT_FAILURE;
     glUseProgram(gl.prog);
 
-    context.screen_quad_vbo = create_vbo(context.screen_quad.data(), context.screen_quad.size());
-    if (not context.screen_quad_vbo) return EXIT_FAILURE;
+    Fullscreen::vbo = create_vbo(Fullscreen::quad.data(), Fullscreen::quad.size());
+    if (not Fullscreen::vbo) return EXIT_FAILURE;
 
     GLuint positionIdx = 0;
-    glBindBuffer(GL_ARRAY_BUFFER, context.screen_quad_vbo);
+    glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
     glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
     glEnableVertexAttribArray(positionIdx);
 
