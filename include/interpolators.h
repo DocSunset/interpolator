@@ -5,15 +5,64 @@
 #include<cmath>
 #include<iostream>
 #include<cstddef>
+#include<utility>
 
-template<typename Scalar, typename ID, typename SVector, typename PVector>
-struct Interpolators
+#define USING_INTERPOLATOR_DEMO_TYPES \
+using Demo = Demonstration; \
+using Scalar = typename Demo::Scalar; \
+using SVector = typename Demo::SVector; \
+using PVector = typename Demo::PVector
+#define INTERPOLATOR_PARAMETER_STRUCT_START(Names, N) \
+struct Para \
+{ \
+    const Scalar& operator[] (std::size_t n) const {return data[n];} \
+          Scalar& operator[] (std::size_t n)       {return data[n];} \
+    const char * name(std::size_t n) {return Names[n];} \
+    std::size_t size() {return N;} \
+    Scalar data[N];
+
+#define INTERPOLATOR_PARAM_ALIAS(name, idx)\
+const Scalar& name() const {return data[idx];} \
+      Scalar& name()       {return data[idx];}
+
+#define INTERPOLATOR_PARAMETER_STRUCT_END };
+
+namespace Interpolators
 {
-    struct Demo { ID id; SVector s; PVector p; };
+    template<typename Scalar_T, typename ID, typename S_T, typename P_T>
+    struct Demo
+    {
+        using Scalar = Scalar_T;
+        using SVector = S_T;
+        using PVector = P_T;
+
+        ID id;
+        SVector s;
+        PVector p;
+    };
+
+    template<typename Scalar, std::size_t N>
+    struct ParameterBase
+    {
+    };
+
+    template<typename Scalar>
+    struct ParameterBase<Scalar, 0>
+    {
+        const Scalar& operator[] (std::size_t n) const {return zero;}
+              Scalar& operator[] (std::size_t n)       {return zero;}
+        const char * name(std::size_t n) {return "";}
+        std::size_t size() {return 0;}
+    private:
+        Scalar zero{0};
+    };
+
+    template<typename Demonstration>
     struct IntersectingNSpheres
     {
+        USING_INTERPOLATOR_DEMO_TYPES;
         struct Meta { Scalar r = 0, d = 0, w = 0; };
-        struct Para { /* none */ };
+        using Para = ParameterBase<Scalar, 0>;
 
         bool dynamic_demos = true;
         mutable Scalar r_q;
@@ -133,17 +182,25 @@ struct Interpolators
         }
 
     };
-    struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
+    // after e.g. Todoroff 2009 ICMC
+    constexpr const char * const InverseDistanceNames[4] = 
+            { "power"
+            , "minimum_distance"
+            , "minimum_radius"
+            , "gravity"
+            };
+
+    template<typename Demonstration>
+    struct InverseDistance
     {
+        USING_INTERPOLATOR_DEMO_TYPES;
         struct Meta { Scalar d = 0, w = 0; };
-        struct Para 
-        { 
-            Scalar power = 8
-            ,      d_min = std::numeric_limits<Scalar>::min()
-            ,      r_min = 0
-            ,      r = 1
-            ;
-        };
+        INTERPOLATOR_PARAMETER_STRUCT_START(InverseDistanceNames, 4)
+            INTERPOLATOR_PARAM_ALIAS(power, 0);
+            INTERPOLATOR_PARAM_ALIAS(d_min, 1);
+            INTERPOLATOR_PARAM_ALIAS(r_min, 2);
+            INTERPOLATOR_PARAM_ALIAS(r, 3);
+        INTERPOLATOR_PARAMETER_STRUCT_END
 
         template<typename DemoList, typename MetaList, typename ParaList>
         PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
@@ -157,8 +214,8 @@ struct Interpolators
             for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
             for (i=0; i<N; ++i)  
             { 
-                auto base = std::max(meta[i].d - para[i].r_min, para[i].d_min);
-                meta[i].w = para[i].r / pow( base, para[i].power); 
+                auto base = std::max(meta[i].d - para[i].r_min(), para[i].d_min());
+                meta[i].w = para[i].r() / pow( base, para[i].power()); 
             }
             for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
             for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }

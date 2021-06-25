@@ -107,10 +107,38 @@ level.
 #include<iostream>
 #include<cstddef>
 
-template<typename Scalar, typename ID, typename SVector, typename PVector>
-struct Interpolators
+@{interpolator convenience macros}
+
+namespace Interpolators
 {
-    struct Demo { ID id; SVector s; PVector p; };
+    template<typename Scalar_T, typename ID, typename S_T, typename P_T>
+    struct Demo
+    {
+        using Scalar = Scalar_T;
+        using SVector = S_T;
+        using PVector = P_T;
+
+        ID id;
+        SVector s;
+        PVector p;
+    };
+
+    template<typename Scalar, std::size_t N>
+    struct ParameterBase
+    {
+    };
+
+    template<typename Scalar>
+    struct ParameterBase<Scalar, 0>
+    {
+        const Scalar& operator[] (std::size_t n) const {return zero;}
+              Scalar& operator[] (std::size_t n)       {return zero;}
+        const char * name(std::size_t n) {return "";}
+        std::size_t size() {return 0;}
+    private:
+        Scalar zero{0};
+    };
+
     @{interpolators}
 };
 #endif
@@ -120,6 +148,8 @@ struct Interpolators
 @[lilit/intersecting_n_spheres.md]
 
 @[lilit/inverse_weighted_distance.md]
+
+@[lilit/convenience_macros.md]
 
 # Interactive Demo
 

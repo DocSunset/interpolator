@@ -200,10 +200,12 @@ radius calculated in the N-Spheres algorithm.
 
 ```cpp
 // @+'interpolators'
+template<typename Demonstration>
 struct IntersectingNSpheres
 {
+    USING_INTERPOLATOR_DEMO_TYPES;
     struct Meta { Scalar r = 0, d = 0, w = 0; };
-    struct Para { /* none */ };
+    using Para = ParameterBase<Scalar, 0>;
 
     bool dynamic_demos = true;
     mutable Scalar r_q;

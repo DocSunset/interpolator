@@ -10,17 +10,25 @@ source and destination spatial dimensions.
 
 ```cpp
 // @+'interpolators'
-struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
+// after e.g. Todoroff 2009 ICMC
+constexpr const char * const InverseDistanceNames[4] =
+        { "power"
+        , "minimum_distance"
+        , "minimum_radius"
+        , "gravity"
+        };
+
+template<typename Demonstration>
+struct InverseDistance
 {
+    USING_INTERPOLATOR_DEMO_TYPES;
     struct Meta { Scalar d = 0, w = 0; };
-    struct Para 
-    { 
-        Scalar power = 8
-        ,      d_min = std::numeric_limits<Scalar>::min()
-        ,      r_min = 0
-        ,      r = 1
-        ;
-    };
+    INTERPOLATOR_PARAMETER_STRUCT_START(InverseDistanceNames, 4)
+        INTERPOLATOR_PARAM_ALIAS(power, 0);
+        INTERPOLATOR_PARAM_ALIAS(d_min, 1);
+        INTERPOLATOR_PARAM_ALIAS(r_min, 2);
+        INTERPOLATOR_PARAM_ALIAS(r, 3);
+    INTERPOLATOR_PARAMETER_STRUCT_END
 
     template<typename DemoList, typename MetaList, typename ParaList>
     PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
@@ -34,8 +42,8 @@ struct InverseDistance /* after e.g. Todoroff 2009 ICMC */
         for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
         for (i=0; i<N; ++i)  
         { 
-            auto base = std::max(meta[i].d - para[i].r_min, para[i].d_min);
-            meta[i].w = para[i].r / pow( base, para[i].power); 
+            auto base = std::max(meta[i].d - para[i].r_min(), para[i].d_min());
+            meta[i].w = para[i].r() / pow( base, para[i].power());
         }
         for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
         for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }

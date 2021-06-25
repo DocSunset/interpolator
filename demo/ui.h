@@ -314,7 +314,7 @@ private:
     Vec2 mouse = {0, 0};
     unsigned int w = 500;
     unsigned int h = 500;
-    Interpolator::Demo * grabbed = nullptr;
+    Demo * grabbed = nullptr;
     std::size_t grabbed_idx = 0;
     Scalar grab_dist = 20.0/500.0;
     std::size_t _active_interpolator = 0;
