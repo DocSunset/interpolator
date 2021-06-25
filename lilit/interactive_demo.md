@@ -72,6 +72,7 @@ void loop()
     }
 
     glUseProgram(gl.prog);
+    glBindVertexArray(Fullscreen::vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     SDL_GL_SwapWindow(sdl.window);
 }

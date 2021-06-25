@@ -10,6 +10,75 @@
 #endif
 // @/
 ```
+
+# OpenGL setup
+
+```cpp
+// @='openGL setup'
+@{create shader programs}
+
+@{create vector buffer objects}
+
+@{create main texture}
+// @/
+
+// @='openGL declarations'
+struct
+{
+    GLuint prog = 0;
+    GLuint texture = 0;
+} gl;
+// @/
+
+// @='create shader programs'
+gl.prog = create_program<TextureQuad>();
+if (not gl.prog) return EXIT_FAILURE;
+glUseProgram(gl.prog);
+// @/
+
+// @='fullscreen quad'
+struct Fullscreen
+{
+    static const std::vector<Vec2> quad;
+    static GLuint vbo;
+    static GLuint vao;
+    static GLuint idx;
+};
+const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+GLuint Fullscreen::vbo = 0;
+GLuint Fullscreen::vao = 0;
+GLuint Fullscreen::idx = 0;
+// @/
+
+// @='create vector buffer objects'
+create_vertex_objects(Fullscreen::quad.data(), Fullscreen::quad.size(), Fullscreen::vbo, Fullscreen::vao);
+if (not Fullscreen::vbo || not Fullscreen::vao) return EXIT_FAILURE;
+
+GLuint positionIdx = 0;
+glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
+glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
+glEnableVertexAttribArray(positionIdx);
+// @/
+
+// @='create main texture'
+gl.texture = create_gl_texture(ui.texture());
+if (not gl.texture) return EXIT_FAILURE;
+
+glUseProgram(gl.prog);
+GLint tex_sampler_uniform_location = glGetUniformLocation(gl.prog, "tex_sampler");
+if (tex_sampler_uniform_location < 0) 
+{
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
+    return EXIT_FAILURE;
+}
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, gl.texture);
+glUniform1i(tex_sampler_uniform_location, 0);
+// @/
+```
+
+# Utility Shaders
+
 ```cpp
 // @='shaders'
 struct TextureQuad
@@ -58,6 +127,8 @@ struct TextureQuad
 };
 // @/
 ```
+
+# Utility functions
 
 ```cpp
 // @+'openGL functions'
@@ -155,91 +226,29 @@ GLuint create_program()
 ```
 
 ```cpp
-// @='openGL setup'
-@{create shader programs}
-
-@{create vector buffer objects}
-
-@{create main texture}
-// @/
-
-// @='openGL declarations'
-struct
-{
-    GLuint prog = 0;
-    GLuint texture = 0;
-} gl;
-// @/
-
-// @='create shader programs'
-gl.prog = create_program<TextureQuad>();
-if (not gl.prog) return EXIT_FAILURE;
-glUseProgram(gl.prog);
-// @/
-
-// @='fullscreen quad'
-struct Fullscreen
-{
-    static const std::vector<Vec2> quad;
-    static GLuint vbo;
-    static GLuint vao;
-    static GLuint idx;
-};
-const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-GLuint Fullscreen::vbo = 0;
-GLuint Fullscreen::vao = 0;
-GLuint Fullscreen::idx = 0;
-// @/
-
-// @='create vector buffer objects'
-Fullscreen::vbo = create_vbo(Fullscreen::quad.data(), Fullscreen::quad.size());
-if (not Fullscreen::vbo) return EXIT_FAILURE;
-
-GLuint positionIdx = 0;
-glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
-glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
-glEnableVertexAttribArray(positionIdx);
-// @/
-
-// @='create main texture'
-gl.texture = create_gl_texture(ui.texture());
-if (not gl.texture) return EXIT_FAILURE;
-
-glUseProgram(gl.prog);
-GLint tex_sampler_uniform_location = glGetUniformLocation(gl.prog, "tex_sampler");
-if (tex_sampler_uniform_location < 0) 
-{
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
-    return EXIT_FAILURE;
-}
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, gl.texture);
-glUniform1i(tex_sampler_uniform_location, 0);
-// @/
-```
-
-```cpp
 
 // @+'openGL functions'
 template<typename Vertex>
-GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
+void create_vertex_objects(const Vertex * vertices, GLuint numVertices, GLuint& vbo, GLuint& vao)
 {
-    GLuint vbo;
-    int nBuffers = 1;
-    glGenBuffers(nBuffers, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * numVertices, vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    vbo = 0;
+    vao = 0;
+
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+
+    glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * numVertices, vertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLenum err = glGetError();
     if (err != GL_NO_ERROR)
     {
-        glDeleteBuffers(nBuffers, &vbo);
+        glDeleteBuffers(1, &vbo);
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VBO creation failed with code `%u`.\n", err);
         vbo = 0;
     }
-
-    return vbo;
 }
 // @/
 ```

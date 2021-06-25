@@ -52,6 +52,7 @@ void loop()
     }
 
     glUseProgram(gl.prog);
+    glBindVertexArray(Fullscreen::vao);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     SDL_GL_SwapWindow(sdl.window);
 }
@@ -105,8 +106,8 @@ int main()
     if (not gl.prog) return EXIT_FAILURE;
     glUseProgram(gl.prog);
 
-    Fullscreen::vbo = create_vbo(Fullscreen::quad.data(), Fullscreen::quad.size());
-    if (not Fullscreen::vbo) return EXIT_FAILURE;
+    create_vertex_objects(Fullscreen::quad.data(), Fullscreen::quad.size(), Fullscreen::vbo, Fullscreen::vao);
+    if (not Fullscreen::vbo || not Fullscreen::vao) return EXIT_FAILURE;
 
     GLuint positionIdx = 0;
     glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);

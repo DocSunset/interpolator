@@ -136,24 +136,26 @@ GLuint create_program()
     return program;
 }
 template<typename Vertex>
-GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
+void create_vertex_objects(const Vertex * vertices, GLuint numVertices, GLuint& vbo, GLuint& vao)
 {
-    GLuint vbo;
-    int nBuffers = 1;
-    glGenBuffers(nBuffers, &vbo);
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * numVertices, vertices, GL_STATIC_DRAW);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    vbo = 0;
+    vao = 0;
+
+    glGenVertexArrays(1, &vao);
+    glGenBuffers(1, &vbo);
+
+    glBindVertexArray(vao);
+        glBindBuffer(GL_ARRAY_BUFFER, vbo);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(Vertex) * numVertices, vertices, GL_STATIC_DRAW);
+        glBindBuffer(GL_ARRAY_BUFFER, 0);
 
     GLenum err = glGetError();
     if (err != GL_NO_ERROR)
     {
-        glDeleteBuffers(nBuffers, &vbo);
+        glDeleteBuffers(1, &vbo);
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "VBO creation failed with code `%u`.\n", err);
         vbo = 0;
     }
-
-    return vbo;
 }
 bool write_gl_texture(const Texture& mat, GLuint tex)
 {
