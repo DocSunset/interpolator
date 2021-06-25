@@ -1,4 +1,61 @@
-# Event Handling
+```cpp
+// @#'demo/ui.h'
+#ifndef UI_H
+#define UI_H
+
+#include <cstddef>
+#include "types.h"
+
+@{colour conversions}
+
+class UserInterface
+{
+public:
+    bool ready_to_quit() const {return quit;}
+    bool needs_to_redraw() const {return redraw;}
+    std::size_t active_interpolator() const {return _active_interpolator;}
+    const Texture& texture() const {return _texture;}
+
+    template<typename Tuple> void draw(const std::size_t i, Tuple& tup, const DemoList& demo) const
+    {
+        auto& interpolator = std::get<0>(tup);
+        auto& meta = std::get<1>(tup);
+        auto& para = std::get<2>(tup);
+        
+        @{run the timer and draw}
+
+        redraw = false;
+    }
+
+    void poll_event_queue(DemoList& demo)
+    {
+        @{poll event queue and handle events}
+    }
+
+    mutable Texture _texture = Texture(500, 500);
+private:
+    mutable bool redraw = true;
+
+    bool quit = false;
+    unsigned int contour_lines = 0;
+    Vec2 mouse = {0, 0};
+    unsigned int w = 500;
+    unsigned int h = 500;
+    Interpolator::Demo * grabbed = nullptr;
+    std::size_t grabbed_idx = 0;
+    Scalar grab_dist = 20.0/500.0;
+    std::size_t _active_interpolator = 0;
+};
+#endif
+// @/
+```
+
+The drawing routine is described in drawing.md. Event handline is described
+below.
+
+Each loop, the SDL event queue is polled until empty, and execution switches
+over the type of event. The current implementation is self-explanatory and
+provisional, so no further documentation is provided at this time.
 
 ```cpp
 // @='poll event queue and handle events'
@@ -8,7 +65,7 @@ while (SDL_PollEvent(&ev)) switch (ev.type)
 case SDL_QUIT:
 case SDL_APP_TERMINATING:
 case SDL_APP_LOWMEMORY:
-    context.quit = true;
+    quit = true;
     break;
 
 @{handle window events}
@@ -30,58 +87,57 @@ default:
 
 // @='handle keyboard events'
     case SDL_KEYDOWN:
-        context.C = 10; 
-        context.redraw = true;
+        contour_lines = 10; 
+        redraw = true;
         break;
 
     case SDL_KEYUP:
-        context.C = 0; 
-        context.redraw = true;
+        contour_lines = 0; 
+        redraw = true;
         break;
 // @/
 
 // @='handle mouse events'
     case SDL_MOUSEMOTION:
-        context.mouse = {ev.button.x / (Scalar)context.w, ev.button.y / (Scalar)context.h};
-        if (context.grabbed)
+        mouse = {ev.button.x / (Scalar)w, ev.button.y / (Scalar)h};
+        if (grabbed)
         {
-            context.grabbed->s = context.mouse;
+            grabbed->s = mouse;
 #           ifndef __EMSCRIPTEN__
-            context.redraw = true;
+            redraw = true;
 #           endif
         }
         break;
 
     case SDL_MOUSEBUTTONDOWN:
-        context.mouse = {ev.button.x / (Scalar)context.w, ev.button.y / (Scalar)context.h};
+        mouse = {ev.button.x / (Scalar)w, ev.button.y / (Scalar)h};
         {
             Scalar dist, min_dist;
             min_dist = std::numeric_limits<Scalar>::max();
-            for (unsigned int n = 0; n < context.N; ++n)
+            for (unsigned int n = 0; n < demo.size(); ++n)
             {
-                auto& d = context.demo[n];
-                dist = (context.mouse - d.s).norm();
+                auto& d = demo[n];
+                dist = (mouse - d.s).norm();
                 if (dist < min_dist) 
                 {
-                    context.grabbed = &d;
-                    context.grabbed_idx = n;
+                    grabbed = &d;
+                    grabbed_idx = n;
                     min_dist = dist;
                 }
             }
-            if (min_dist > context.grab_dist / (Scalar)context.w) context.grabbed = nullptr;
+            if (min_dist > grab_dist / (Scalar)w) grabbed = nullptr;
         }
-        if (context.C) context.redraw = true;
+        if (contour_lines) redraw = true;
         break;
 
     case SDL_MOUSEBUTTONUP:
-        context.grabbed = nullptr;
-        context.redraw = true;
+        grabbed = nullptr;
+        redraw = true;
         break;
 
     case SDL_MOUSEWHEEL:
-        context.active_interpolator = (context.active_interpolator + 1) % context.num_interpolators;
-        context.redraw = true;
+        _active_interpolator = (_active_interpolator + 1) % num_interpolators;
+        redraw = true;
         break;
 // @/
 ```
-

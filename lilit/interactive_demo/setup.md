@@ -27,7 +27,7 @@ SDL_GLContext gl = nullptr;
 
 ```cpp
 // @='initialize random demonstrations'
-unsigned int n = context.N;
+unsigned int n = 3;
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
@@ -35,7 +35,7 @@ while(n-- > 0)
 {
     auto v = Vec2{random(generator), random(generator)};
     auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
-    context.demo.push_back({n, v, c});
+    demo.push_back({n, v, c});
 }
 // @/
 
@@ -45,9 +45,9 @@ auto resize_lists = [&](auto& tup)
     auto& meta = std::get<1>(tup);
     auto& para = std::get<2>(tup);
     auto& default_para = std::get<3>(tup);
-    meta.resize(context.demo.size());
+    meta.resize(demo.size());
     for (auto& m : meta) m = {};
-    para.resize(context.demo.size());
+    para.resize(demo.size());
     for (auto& p : para) p = default_para;
 };
 std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);

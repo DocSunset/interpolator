@@ -12,7 +12,14 @@ space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
 J_zA_zB_z colour space and back are given in the file @[lilit/colour_space.md].
 
 ```cpp 
-// @='types'
+// @#'demo/types.h'
+#ifndef TYPES_H
+#define TYPES_H
+
+#include <vector>
+@{include eigen}
+#include "../include/interpolators.h"
+
 using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
@@ -22,6 +29,9 @@ using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
 using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 using Interpolator = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
+using DemoList = std::vector<Interpolator::Demo>;
+const std::size_t num_interpolators = 2;
+#endif
 // @/
 
 // @='declare interpolators'
@@ -30,6 +40,7 @@ auto interpolators = std::make_tuple
         ( INTERPOLATOR(Interpolator::IntersectingNSpheres)
         , INTERPOLATOR(Interpolator::InverseDistance, 4, 0.001, 0.0)
         );
+
 // @/
 ```
 
@@ -41,11 +52,11 @@ browser's event loop or the main function loop depending on the platform.
 ```cpp
 // @#'demo/interpolators_demo.cpp'
 @{includes}
-@{types}
 @{declare interpolators}
-@{colour conversions}
 
 @{shaders}
+DemoList demo;
+UserInterface ui;
 
 struct Context
 {
@@ -56,16 +67,16 @@ struct Context
 
 void loop ()
 {
-    @{poll event queue and handle events}
+    ui.poll_event_queue(demo);
 
-    if (context.redraw)
+    if (ui.needs_to_redraw())
     {
-        @{draw and refresh screen}
-//        for(int row=0; row<context.texture.rows(); row++)
-//            for(int col=0; col<context.texture.cols(); col++)
-//                context.texture(row,col) = RGBAVec(row/((float)context.texture.rows()), col/((float)context.texture.cols()), 0, 1);
+        //@{draw the active interpolator}
+        for(int row=0; row<ui.texture().rows(); row++)
+            for(int col=0; col<ui.texture().cols(); col++)
+                ui._texture(row,col) = RGBAVec(row/((float)ui.texture().rows()), col/((float)ui.texture().cols()), 0, 1);
 
-        write_gl_texture(context.texture, context.texture_gl);
+        write_gl_texture(ui.texture(), context.texture_gl);
     }
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
@@ -79,7 +90,7 @@ int main()
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);
 #else
-    while (not context.quit)
+    while (not ui.ready_to_quit())
     {
         loop();
         SDL_Delay(33);
@@ -126,6 +137,9 @@ These bits should arguably be shuffled away somewhere else.
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include "../include/interpolators.h"
+#include "types.h"
+#include "ui.h"
+//#include "graphics.h"
 // @/
 
 //@+'globally visible state'
