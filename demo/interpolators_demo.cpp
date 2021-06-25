@@ -95,15 +95,6 @@ struct Context
         Vec2 mouse = {0, 0};
 } context;
 
-void cleanup ()
-{
-    glDeleteTextures(1, &context.texture_gl);
-    glDeleteBuffers(1, &context.screen_quad_vbo);
-    glDeleteProgram(context.prog);
-    SDL_GL_DeleteContext(sdl.gl);
-    SDL_DestroyWindow(sdl.window);
-    SDL_Quit();
-}
 template<typename ShaderProgram, GLenum shader_type>
 GLuint create_shader()
 {
@@ -357,8 +348,6 @@ int main()
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, context.texture_gl);
     glUniform1i(tex_sampler_uniform_location, 0);
-
-    atexit(cleanup);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);

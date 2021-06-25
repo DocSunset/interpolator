@@ -22,8 +22,6 @@ struct
 @{create vector buffer objects}
 
 @{create main texture}
-
-atexit(cleanup);
 // @/
 
 ```
@@ -105,17 +103,4 @@ if (sdl.gl == nullptr)
 }
 else SDL_Log("Created GL context\n");
 // @/
-
-// @+'helper functions'
-void cleanup ()
-{
-    glDeleteTextures(1, &context.texture_gl);
-    glDeleteBuffers(1, &context.screen_quad_vbo);
-    glDeleteProgram(context.prog);
-    SDL_GL_DeleteContext(sdl.gl);
-    SDL_DestroyWindow(sdl.window);
-    SDL_Quit();
-}
-// @/
 ```
-
