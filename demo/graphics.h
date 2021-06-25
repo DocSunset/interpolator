@@ -1,17 +1,6 @@
-```cpp
-// @#'demo/graphics.h'
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
-@{shaders}
-@{openGL functions}
-@{fullscreen quad}
-
-#endif
-// @/
-```
-```cpp
-// @='shaders'
 struct TextureQuad
 {
     static constexpr const char * name = "texture quad";
@@ -56,11 +45,6 @@ struct TextureQuad
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 };
-// @/
-```
-
-```cpp
-// @+'openGL functions'
 template<typename ShaderProgram, GLenum shader_type>
 GLuint create_shader()
 {
@@ -151,76 +135,6 @@ GLuint create_program()
     glDeleteShader(fragShader);
     return program;
 }
-// @/
-```
-
-```cpp
-// @='openGL setup'
-@{create shader programs}
-
-@{create vector buffer objects}
-
-@{create main texture}
-// @/
-
-// @='openGL declarations'
-struct
-{
-    GLuint prog = 0;
-    GLuint texture = 0;
-} gl;
-// @/
-
-// @='create shader programs'
-gl.prog = create_program<TextureQuad>();
-if (not gl.prog) return EXIT_FAILURE;
-glUseProgram(gl.prog);
-// @/
-
-// @='fullscreen quad'
-struct Fullscreen
-{
-    static const std::vector<Vec2> quad;
-    static GLuint vbo;
-    static GLuint vao;
-    static GLuint idx;
-};
-const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-GLuint Fullscreen::vbo = 0;
-GLuint Fullscreen::vao = 0;
-GLuint Fullscreen::idx = 0;
-// @/
-
-// @='create vector buffer objects'
-Fullscreen::vbo = create_vbo(Fullscreen::quad.data(), Fullscreen::quad.size());
-if (not Fullscreen::vbo) return EXIT_FAILURE;
-
-GLuint positionIdx = 0;
-glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
-glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
-glEnableVertexAttribArray(positionIdx);
-// @/
-
-// @='create main texture'
-gl.texture = create_gl_texture(ui.texture());
-if (not gl.texture) return EXIT_FAILURE;
-
-glUseProgram(gl.prog);
-GLint tex_sampler_uniform_location = glGetUniformLocation(gl.prog, "tex_sampler");
-if (tex_sampler_uniform_location < 0) 
-{
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
-    return EXIT_FAILURE;
-}
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, gl.texture);
-glUniform1i(tex_sampler_uniform_location, 0);
-// @/
-```
-
-```cpp
-
-// @+'openGL functions'
 template<typename Vertex>
 GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
 {
@@ -241,11 +155,6 @@ GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
 
     return vbo;
 }
-// @/
-```
-
-```cpp
-// @+'openGL functions'
 bool write_gl_texture(const Texture& mat, GLuint tex)
 {
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -273,5 +182,16 @@ GLuint create_gl_texture(const Texture& mat)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     return tex;
 }
-// @/
-```
+struct Fullscreen
+{
+    static const std::vector<Vec2> quad;
+    static GLuint vbo;
+    static GLuint vao;
+    static GLuint idx;
+};
+const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+GLuint Fullscreen::vbo = 0;
+GLuint Fullscreen::vao = 0;
+GLuint Fullscreen::idx = 0;
+
+#endif

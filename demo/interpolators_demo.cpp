@@ -36,17 +36,6 @@ struct
     GLuint prog = 0;
     GLuint texture = 0;
 } gl;
-struct Fullscreen
-{
-    static const std::vector<Vec2> quad;
-    static GLuint vbo;
-    static GLuint vao;
-    static GLuint idx;
-};
-const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-GLuint Fullscreen::vbo = 0;
-GLuint Fullscreen::vao = 0;
-GLuint Fullscreen::idx = 0;
 
 void loop()
 {
