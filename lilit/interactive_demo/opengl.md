@@ -1,4 +1,16 @@
 ```cpp
+// @#'demo/graphics.h'
+#ifndef GRAPHICS_H
+#define GRAPHICS_H
+
+@{shaders}
+@{openGL functions}
+@{fullscreen quad}
+
+#endif
+// @/
+```
+```cpp
 // @='shaders'
 struct TextureQuad
 {
@@ -45,9 +57,10 @@ struct TextureQuad
     }
 };
 // @/
+```
 
 ```cpp
-// @+'helper functions'
+// @+'openGL functions'
 template<typename ShaderProgram, GLenum shader_type>
 GLuint create_shader()
 {
@@ -142,17 +155,63 @@ GLuint create_program()
 ```
 
 ```cpp
-// @+'globally visible state'
-GLuint prog = 0;
+// @='openGL setup'
+@{create shader programs}
+
+@{create vector buffer objects}
+
+@{create main texture}
+// @/
+
+// @='openGL declarations'
+struct
+{
+    GLuint prog = 0;
+    GLuint texture = 0;
+} gl;
 // @/
 
 // @='create shader programs'
-context.prog = create_program<TextureQuad>();
-if (not context.prog) return EXIT_FAILURE;
-glUseProgram(context.prog);
+gl.prog = create_program<TextureQuad>();
+if (not gl.prog) return EXIT_FAILURE;
+glUseProgram(gl.prog);
 // @/
 
-// @+'helper functions'
+// @+'globally visible state'
+const std::vector<Vec2> screen_quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+GLuint screen_quad_vbo = 0;
+// @/
+
+// @='create vector buffer objects'
+context.screen_quad_vbo = create_vbo(context.screen_quad.data(), context.screen_quad.size());
+if (not context.screen_quad_vbo) return EXIT_FAILURE;
+
+GLuint positionIdx = 0;
+glBindBuffer(GL_ARRAY_BUFFER, context.screen_quad_vbo);
+glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
+glEnableVertexAttribArray(positionIdx);
+// @/
+
+// @='create main texture'
+gl.texture = create_gl_texture(ui.texture());
+if (not gl.texture) return EXIT_FAILURE;
+
+glUseProgram(gl.prog);
+GLint tex_sampler_uniform_location = glGetUniformLocation(gl.prog, "tex_sampler");
+if (tex_sampler_uniform_location < 0) 
+{
+    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
+    return EXIT_FAILURE;
+}
+glActiveTexture(GL_TEXTURE0);
+glBindTexture(GL_TEXTURE_2D, gl.texture);
+glUniform1i(tex_sampler_uniform_location, 0);
+// @/
+```
+
+```cpp
+
+// @+'openGL functions'
 template<typename Vertex>
 GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
 {
@@ -174,25 +233,10 @@ GLuint create_vbo(const Vertex * vertices, GLuint numVertices)
     return vbo;
 }
 // @/
-
-// @+'globally visible state'
-const std::vector<Vec2> screen_quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-GLuint screen_quad_vbo = 0;
-// @/
-
-// @='create vector buffer objects'
-context.screen_quad_vbo = create_vbo(context.screen_quad.data(), context.screen_quad.size());
-if (not context.screen_quad_vbo) return EXIT_FAILURE;
-
-GLuint positionIdx = 0;
-glBindBuffer(GL_ARRAY_BUFFER, context.screen_quad_vbo);
-glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
-glEnableVertexAttribArray(positionIdx);
-// @/
 ```
 
 ```cpp
-// @+'helper functions'
+// @+'openGL functions'
 bool write_gl_texture(const Texture& mat, GLuint tex)
 {
     glBindTexture(GL_TEXTURE_2D, tex);
@@ -220,29 +264,5 @@ GLuint create_gl_texture(const Texture& mat)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     return tex;
 }
-// @/
-```
-
-```cpp
-// @+'globally visible state'
-Texture texture;
-GLuint texture_gl = 0;
-// @/
-
-// @='create main texture'
-context.texture = Texture(context.h, context.w);
-context.texture_gl = create_gl_texture(context.texture);
-if (not context.texture_gl) return EXIT_FAILURE;
-
-glUseProgram(context.prog);
-GLint tex_sampler_uniform_location = glGetUniformLocation(context.prog, "tex_sampler");
-if (tex_sampler_uniform_location < 0) 
-{
-    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
-    return EXIT_FAILURE;
-}
-glActiveTexture(GL_TEXTURE0);
-glBindTexture(GL_TEXTURE_2D, context.texture_gl);
-glUniform1i(tex_sampler_uniform_location, 0);
 // @/
 ```

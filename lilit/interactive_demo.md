@@ -54,11 +54,11 @@ browser's event loop or the main function loop depending on the platform.
 @{includes}
 @{declare interpolators}
 
-@{shaders}
 DemoList demo;
 UserInterface ui;
 
 @{SDL declarations}
+@{openGL declarations}
 struct Context
 {
     @{globally visible state}
@@ -73,13 +73,11 @@ void loop()
     if (ui.needs_to_redraw())
     {
         @{draw the active interpolator}
-        //for(int row=0; row<ui.texture().rows(); row++)
-        //    for(int col=0; col<ui.texture().cols(); col++)
-        //        ui._texture(row,col) = RGBAVec(row/((float)ui.texture().rows()), col/((float)ui.texture().cols()), 0, 1);
 
-        write_gl_texture(ui.texture(), context.texture_gl);
+        write_gl_texture(ui.texture(), gl.texture);
     }
 
+    glUseProgram(gl.prog);
     glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
     SDL_GL_SwapWindow(sdl.window);
 }
@@ -141,7 +139,7 @@ These bits should arguably be shuffled away somewhere else.
 #include "../include/interpolators.h"
 #include "types.h"
 #include "ui.h"
-//#include "graphics.h"
+#include "graphics.h"
 // @/
 
 //@+'globally visible state'

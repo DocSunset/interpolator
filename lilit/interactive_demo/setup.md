@@ -13,15 +13,11 @@ struct
 // @='setup'
 @{SDL setup}
 
+@{openGL setup}
+
 @{initialize random demonstrations}
 
 @{resize interpolators extra lists}
-
-@{create shader programs}
-
-@{create vector buffer objects}
-
-@{create main texture}
 // @/
 
 ```
