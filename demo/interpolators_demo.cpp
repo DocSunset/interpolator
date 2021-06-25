@@ -22,12 +22,6 @@
 #include "types.h"
 #include "ui.h"
 //#include "graphics.h"
-#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
-auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolator::IntersectingNSpheres)
-        , INTERPOLATOR(Interpolator::InverseDistance, 4, 0.001, 0.0)
-        );
-
 
 struct TextureQuad
 {
@@ -76,10 +70,13 @@ struct TextureQuad
 DemoList demo;
 UserInterface ui;
 
-struct Context
+struct
 {
     SDL_Window * window = nullptr;
     SDL_GLContext gl = nullptr;
+} sdl;
+struct Context
+{
     GLuint prog = 0;
     const std::vector<Vec2> screen_quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
     GLuint screen_quad_vbo = 0;
@@ -103,8 +100,8 @@ void cleanup ()
     glDeleteTextures(1, &context.texture_gl);
     glDeleteBuffers(1, &context.screen_quad_vbo);
     glDeleteProgram(context.prog);
-    SDL_GL_DeleteContext(context.gl);
-    SDL_DestroyWindow(context.window);
+    SDL_GL_DeleteContext(sdl.gl);
+    SDL_DestroyWindow(sdl.window);
     SDL_Quit();
 }
 template<typename ShaderProgram, GLenum shader_type>
@@ -245,29 +242,30 @@ GLuint create_gl_texture(const Texture& mat)
     return tex;
 }
 
-void loop ()
+void loop()
 {
     ui.poll_event_queue(demo);
 
     if (ui.needs_to_redraw())
     {
-        //unsigned int i = 0;
-        //auto draw = [](unsigned int i, auto& tuple) 
-        //        {if (i++ == ui.active_interpolator()) ui.draw(i, tuple, demo);};
-        //std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
-        for(int row=0; row<ui.texture().rows(); row++)
-            for(int col=0; col<ui.texture().cols(); col++)
-                ui._texture(row,col) = RGBAVec(row/((float)ui.texture().rows()), col/((float)ui.texture().cols()), 0, 1);
+        unsigned int i = 0;
+        auto draw = [](unsigned int i, auto& tuple) 
+                {if (i++ == ui.active_interpolator()) ui.draw(i, tuple, demo);};
+        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
+        //for(int row=0; row<ui.texture().rows(); row++)
+        //    for(int col=0; col<ui.texture().cols(); col++)
+        //        ui._texture(row,col) = RGBAVec(row/((float)ui.texture().rows()), col/((float)ui.texture().cols()), 0, 1);
 
         write_gl_texture(ui.texture(), context.texture_gl);
     }
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
-    SDL_GL_SwapWindow(context.window);
+    SDL_GL_SwapWindow(sdl.window);
 }
 
 int main()
 {
+    ui = UserInterface{};
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
@@ -281,13 +279,13 @@ int main()
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
     SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-    context.window = SDL_CreateWindow
+    sdl.window = SDL_CreateWindow
             ( "Interpolators"
             , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-            , context.w , context.h
+            , ui.texture().cols() , ui.texture().rows()
             , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN
             );
-    if (context.window == nullptr)
+    if (sdl.window == nullptr)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                 "Error creating window:\n    %s\n", 
@@ -298,8 +296,8 @@ int main()
     }
     else SDL_Log("Created window\n");
 
-    context.gl = SDL_GL_CreateContext(context.window);
-    if (context.gl == nullptr)
+    sdl.gl = SDL_GL_CreateContext(sdl.window);
+    if (sdl.gl == nullptr)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                 "Error creating OpenGL context:\n    %s\n", 

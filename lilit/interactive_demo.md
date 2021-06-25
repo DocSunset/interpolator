@@ -58,6 +58,7 @@ browser's event loop or the main function loop depending on the platform.
 DemoList demo;
 UserInterface ui;
 
+@{SDL declarations}
 struct Context
 {
     @{globally visible state}
@@ -65,7 +66,7 @@ struct Context
 
 @{helper functions}
 
-void loop ()
+void loop()
 {
     ui.poll_event_queue(demo);
 
@@ -80,11 +81,12 @@ void loop ()
     }
 
     glDrawArrays(GL_TRIANGLE_STRIP, 0, context.screen_quad.size());
-    SDL_GL_SwapWindow(context.window);
+    SDL_GL_SwapWindow(sdl.window);
 }
 
 int main()
 {
+    ui = UserInterface{};
     @{setup}
 
 #ifdef __EMSCRIPTEN__

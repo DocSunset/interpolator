@@ -1,6 +1,15 @@
 # Setup
 
 ```cpp
+// @='SDL declarations'
+struct
+{
+    SDL_Window * window = nullptr;
+    SDL_GLContext gl = nullptr;
+} sdl;
+// @/
+
+```cpp
 // @='setup'
 @{SDL setup}
 
@@ -17,10 +26,6 @@
 atexit(cleanup);
 // @/
 
-// @+'globally visible state'
-SDL_Window * window = nullptr;
-SDL_GLContext gl = nullptr;
-// @/
 ```
 
 # Interpolators Setup
@@ -54,7 +59,6 @@ std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators
 // @/
 ```
 
-
 # SDL
 
 ```cpp
@@ -72,13 +76,13 @@ SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
 SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
 SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-context.window = SDL_CreateWindow
+sdl.window = SDL_CreateWindow
         ( "Interpolators"
         , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-        , context.w , context.h
+        , ui.texture().cols() , ui.texture().rows()
         , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN
         );
-if (context.window == nullptr)
+if (sdl.window == nullptr)
 {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
             "Error creating window:\n    %s\n", 
@@ -89,8 +93,8 @@ if (context.window == nullptr)
 }
 else SDL_Log("Created window\n");
 
-context.gl = SDL_GL_CreateContext(context.window);
-if (context.gl == nullptr)
+sdl.gl = SDL_GL_CreateContext(sdl.window);
+if (sdl.gl == nullptr)
 {
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
             "Error creating OpenGL context:\n    %s\n", 
@@ -108,8 +112,8 @@ void cleanup ()
     glDeleteTextures(1, &context.texture_gl);
     glDeleteBuffers(1, &context.screen_quad_vbo);
     glDeleteProgram(context.prog);
-    SDL_GL_DeleteContext(context.gl);
-    SDL_DestroyWindow(context.window);
+    SDL_GL_DeleteContext(sdl.gl);
+    SDL_DestroyWindow(sdl.window);
     SDL_Quit();
 }
 // @/
