@@ -28,19 +28,19 @@ using RGBAVec = Eigen::Vector4f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
 using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
+
 using Interpolator = Interpolators<Scalar, ID, Vec2, JzAzBzVec>;
 using DemoList = std::vector<Interpolator::Demo>;
-const std::size_t num_interpolators = 2;
-#endif
-// @/
 
-// @='declare interpolators'
 #define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
 auto interpolators = std::make_tuple
         ( INTERPOLATOR(Interpolator::IntersectingNSpheres)
         , INTERPOLATOR(Interpolator::InverseDistance, 4, 0.001, 0.0)
         );
 
+const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
+
+#endif
 // @/
 ```
 
@@ -71,10 +71,10 @@ void loop ()
 
     if (ui.needs_to_redraw())
     {
-        //@{draw the active interpolator}
-        for(int row=0; row<ui.texture().rows(); row++)
-            for(int col=0; col<ui.texture().cols(); col++)
-                ui._texture(row,col) = RGBAVec(row/((float)ui.texture().rows()), col/((float)ui.texture().cols()), 0, 1);
+        @{draw the active interpolator}
+        //for(int row=0; row<ui.texture().rows(); row++)
+        //    for(int col=0; col<ui.texture().cols(); col++)
+        //        ui._texture(row,col) = RGBAVec(row/((float)ui.texture().rows()), col/((float)ui.texture().cols()), 0, 1);
 
         write_gl_texture(ui.texture(), context.texture_gl);
     }
