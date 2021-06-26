@@ -10,6 +10,9 @@ linearity.  This is meant to ensure that the image produced reflects the
 topology of the interpolation rather than the non-linearity of sRGB colour
 space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
 J_zA_zB_z colour space and back are given in the file @[lilit/colour_space.md].
+At the moment, the implementation is being transitioned toward using OpenGL for
+most of the interpolation; during this transition, RGB space is used for its
+convenience.
 
 ```cpp 
 // @#'demo/types.h'
@@ -51,14 +54,35 @@ browser's event loop or the main function loop depending on the platform.
 
 ```cpp
 // @#'demo/interpolators_demo.cpp'
-@{includes}
-@{declare interpolators}
+#ifdef __EMSCRIPTEN__
+#include <emscripten.h>
+#endif
+
+#include <vector>
+#include <tuple>
+#include <random>
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <SDL.h>
+#include <SDL_log.h>
+#include <SDL_error.h>
+#include <SDL_video.h>
+#include <SDL_render.h>
+#include <SDL_events.h>
+#include <SDL_opengles2.h>
+#include <GLES3/gl3.h>
+#include <Eigen/Core>
+#include <Eigen/LU>
+#include "../include/interpolators.h"
+#include "../include/shader_interpolators.h"
+#include "types.h"
+#include "ui.h"
 
 DemoList demo;
 UserInterface ui;
 
 @{SDL declarations}
-@{openGL declarations}
 
 void loop()
 {
@@ -98,41 +122,5 @@ int main()
 There are several main conceptual section or thematic areas in the program, and
 the details of implementation of each is broken out into a seperate file: 
 
-@[lilit/interactive_demo/drawing.md]
 @[lilit/interactive_demo/event_handling.md]
 @[lilit/interactive_demo/setup.md]
-@[lilit/interactive_demo/opengl.md]
-
-# ETC
-
-These bits should arguably be shuffled away somewhere else.
-
-```cpp
-// @+'includes'
-#ifdef __EMSCRIPTEN__
-#include <emscripten.h>
-#endif
-
-#include <vector>
-#include <tuple>
-#include <random>
-#include <chrono>
-#include <cstdio>
-#include <cstdlib>
-#include <SDL.h>
-#include <SDL_log.h>
-#include <SDL_error.h>
-#include <SDL_video.h>
-#include <SDL_render.h>
-#include <SDL_events.h>
-#include <SDL_opengles2.h>
-#include <GLES3/gl3.h>
-#include <Eigen/Core>
-#include <Eigen/LU>
-#include "../include/interpolators.h"
-#include "../include/shader_interpolators.h"
-#include "types.h"
-#include "ui.h"
-//#include "graphics.h"
-// @/
-```

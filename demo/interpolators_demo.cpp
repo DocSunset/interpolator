@@ -22,7 +22,6 @@
 #include "../include/shader_interpolators.h"
 #include "types.h"
 #include "ui.h"
-//#include "graphics.h"
 
 DemoList demo;
 UserInterface ui;
@@ -32,11 +31,6 @@ struct
     SDL_Window * window = nullptr;
     SDL_GLContext gl = nullptr;
 } sdl;
-struct
-{
-    GLuint prog = 0;
-    GLuint texture = 0;
-} gl;
 
 void loop()
 {
