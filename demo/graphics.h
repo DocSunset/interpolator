@@ -1,40 +1,19 @@
 #ifndef GRAPHICS_H
 #define GRAPHICS_H
 
+#include <string>
+#include <fstream>
+#include <sstream>
+#include <iostream>
+
 struct TextureQuad
 {
     static constexpr const char * name = "texture quad";
     static constexpr const char * vert_name = "texture quad vertex shader";
-    static constexpr const char * vert =
-    "\
-        #version 300 es\n\
-        in vec2 pos;\n\
-        out vec2 tex_coord;\n\
-        const vec4 white = vec4(1.0);\n\
-        \n\
-        void main()\n\
-        {\n\
-            gl_Position = vec4(pos, 0.0, 1.0);\n\
-            tex_coord   = vec2(pos[0] * 0.5 + 0.5, pos[1] * 0.5 + 0.5);\n\
-        }\n\
-    ";
+    static constexpr const char * vert = "demo/shaders/position_passthrough.vert";
     
     static constexpr const char * frag_name = "texture quad fragment shader";
-    static constexpr const char * frag =
-    "\
-        #version 300 es\n\
-        #ifdef GL_ES\n\
-        precision highp float;\n\
-        #endif\n\
-        in vec2 tex_coord;\n\
-        out vec4 fragColour;\n\
-        uniform sampler2D tex_sampler;\n\
-        \n\
-        void main()\n\
-        {\n\
-            fragColour = texture(tex_sampler, tex_coord);\n\
-        }\n\
-    ";
+    static constexpr const char * frag = "demo/shaders/texture_quad.frag";
 
     void texture_parameters(GLuint tex)
     {
@@ -45,25 +24,37 @@ struct TextureQuad
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     }
 };
+std::string load_file(const char * filename)
+{
+    std::ifstream file;
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    file.open(filename);
+    std::stringstream shader_stream;
+    shader_stream << file.rdbuf();
+    file.close();
+    return shader_stream.str();
+}
+
 template<typename ShaderProgram, GLenum shader_type>
 GLuint create_shader()
 {
     GLuint shader;
-    const char * source;
-    const char * name;
+    std::string source;
+    const char * src;
+    const char * name = ShaderProgram::name;
     if constexpr (shader_type == GL_VERTEX_SHADER)
     {
         shader = glCreateShader(shader_type);
-        source = ShaderProgram::vert;
-        name = ShaderProgram::vert_name;
+        source = load_file(ShaderProgram::vert);
+        src = source.c_str();
     }
     else if constexpr (shader_type == GL_FRAGMENT_SHADER)
     {
         shader = glCreateShader(shader_type);
-        source = ShaderProgram::frag;
-        name = ShaderProgram::frag_name;
+        source = load_file(ShaderProgram::frag);
+        src = source.c_str();
     }
-    glShaderSource(shader, 1, (const GLchar**) &source, NULL);
+    glShaderSource(shader, 1, (const GLchar**) &src, NULL);
     glCompileShader(shader);
     GLint compiled = GL_FALSE;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);

@@ -4,6 +4,8 @@ EIGEN_INCLUDE = -I/usr/include/eigen3
 OPENGL_LIBS = -lGL -lglut
 
 LITERATE_SOURCES = lilit/*
+SHADERDIR = demo/shaders
+SHADERS = ${SHADERDIR}/position_passthrough.vert ${SHADERDIR}/texture_quad.frag
 SOURCES = include/interpolators.h demo/interpolators_demo.cpp
 DEMO =                            demo/interpolators_demo demo/interpolators_demo.html
 DOCS_EXTRAS = docs/interpolators.html.header
@@ -17,7 +19,7 @@ ${SOURCES}: ${LITERATE_SOURCES}
 
 demo/interpolators_demo.html: ${SOURCES}
 	@echo building $@
-	@em++ ${CXXFLAGS} ${EIGEN_INCLUDE} -s USE_SDL=2 -s USE_SDL_TTF=2 -s ALLOW_MEMORY_GROWTH=1 -fsanitize=undefined -o $@ demo/interpolators_demo.cpp
+	@em++ ${CXXFLAGS} ${EIGEN_INCLUDE} -s USE_SDL=2 -s USE_SDL_TTF=2 -s ALLOW_MEMORY_GROWTH=1 -fsanitize=undefined -o $@ demo/interpolators_demo.cpp --preload-file ${SHADERDIR}
 
 demo/interpolators_demo: ${SOURCES}
 	@echo building $@

@@ -5,7 +5,6 @@
 #include<cmath>
 #include<iostream>
 #include<cstddef>
-#include<utility>
 
 #define USING_INTERPOLATOR_DEMO_TYPES \
 using Demo = Demonstration; \
@@ -183,7 +182,7 @@ namespace Interpolators
 
     };
     // after e.g. Todoroff 2009 ICMC
-    constexpr const char * const InverseDistanceNames[4] = 
+    constexpr const char * const InverseDistanceNames[4] =
             { "power"
             , "minimum_distance"
             , "minimum_radius"
@@ -215,7 +214,7 @@ namespace Interpolators
             for (i=0; i<N; ++i)  
             { 
                 auto base = std::max(meta[i].d - para[i].r_min(), para[i].d_min());
-                meta[i].w = para[i].r() / pow( base, para[i].power()); 
+                meta[i].w = para[i].r() / pow( base, para[i].power());
             }
             for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
             for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }

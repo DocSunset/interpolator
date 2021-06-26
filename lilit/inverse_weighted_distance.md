@@ -53,4 +53,7 @@ struct InverseDistance
     }
 };
 // @/
+
+// @+'shader interolators'
+// @/
 ```
