@@ -25,28 +25,35 @@ public:
         auto& para = std::get<2>(tup);
         auto& shader_program = std::get<4>(tup);
 
-        if (updated_grab) shader_program.reload(demo, para);
+        if (demo_changed) 
+        {
+            shader_program.reload(demo, para);
+            demo_changed = false;
+        }
         shader_program.state = shader_state;
         shader_program.run();
         redraw = false;
     }
 
-    void poll_event_queue(DemoList& demo)
+    template<typename Interpolators>
+    void poll_event_queue(DemoList& demo, Interpolators& interpolators)
     {
         @{poll event queue and handle events}
     }
 
 private:
     mutable bool redraw = true;
+    mutable bool demo_changed = false;
 
     bool quit = false;
-    bool updated_grab = false;
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     Vec2 mouse = {0, 0};
     unsigned int w = 500;
     unsigned int h = 500;
     Demo * grabbed = nullptr;
-    Scalar grab_dist = 100.0;
+    Demo * selectd = nullptr;
+    Demo * hovered = nullptr;
+    const Scalar select_dist = 100.0;
     std::size_t _active_interpolator = 0;
 
     @{ui mutators}
@@ -87,19 +94,78 @@ default:
         flag = not flag;
         redraw = true;
     }
+
     void set_mouse(SDL_Event ev)
     {
         mouse = {ev.motion.x / (Scalar)w, 1.0 - ev.motion.y / (Scalar)h};
     }
-    void grab(Demo& d, std::size_t n)
+
+    auto search_for_selection(DemoList& demo) const
     {
-        grabbed = &d;
-        shader_state.grabbed_idx = n;
+        Scalar dist, min_dist;
+        Demo * selection = nullptr;
+        int sel_idx = -1;
+        min_dist = std::numeric_limits<Scalar>::max();
+        for (unsigned int n = 0; n < demo.size(); ++n)
+        {
+            auto& d = demo[n];
+            dist = (mouse - d.s).norm();
+            if (dist < min_dist) 
+            {
+                selection = &d;
+                sel_idx = n;
+                min_dist = dist;
+            }
+        }
+        if (min_dist > select_dist / (Scalar)w) return std::make_tuple((Demo *)nullptr, -1);
+        else return std::make_tuple(selection, sel_idx);
     }
-    void ungrab()
+
+    void set_slot(Demo* d, int idx, Demo*& slot, int& idx_slot)
     {
-        grabbed = nullptr;
-        shader_state.grabbed_idx = -1;
+        slot = d;
+        idx_slot = idx;
+    }
+
+    void unset_slot(Demo*& slot, int& idx_slot)
+    {
+        slot = nullptr;
+        idx_slot = -1;
+    }
+
+    void grab(Demo* d, int idx)
+    {
+        set_slot(d, idx, grabbed, shader_state.grabbed_idx);
+        select(d, idx);
+        unhover();
+    }
+
+    void select(Demo* d, int idx)
+    {
+        set_slot(d, idx, selectd, shader_state.selectd_idx);
+        if (shader_state.focus) redraw = true;
+    }
+
+    void hover(Demo* d, int idx)
+    {
+        set_slot(d, idx, hovered, shader_state.hovered_idx);
+        if (shader_state.focus) redraw = true;
+    }
+
+    void ungrab()   
+    {
+        unset_slot(grabbed, shader_state.grabbed_idx);
+    }
+
+    void unselect()
+    {
+        unset_slot(selectd, shader_state.selectd_idx);
+        if (shader_state.focus) redraw = true;
+    }
+
+    void unhover()
+    {
+        unset_slot(hovered, shader_state.hovered_idx);
     }
 // @/
 
@@ -142,6 +208,10 @@ default:
             if (ev.type == SDL_KEYUP) break;
             if (ev.key.keysym.mod == KMOD_NONE) toggle_drawable_flag(shader_state.enable_contours);
             break;
+        case SDLK_ESCAPE:
+            if (grabbed) ungrab();
+            if (selectd) unselect();
+            break;
         }
         break;
 // @/
@@ -152,29 +222,27 @@ default:
         if (grabbed)
         {
             grabbed->s = mouse;
-            updated_grab = true;
+            demo_changed = true;
             redraw = true;
+        }
+        else
+        {
+            auto [demoptr, demoidx] = search_for_selection(demo);
+            if (demoptr) hover(demoptr, demoidx);
+            else unhover();
         }
         break;
 
     case SDL_MOUSEBUTTONDOWN:
         {
             set_mouse(ev);
-            Scalar dist, min_dist;
-            min_dist = std::numeric_limits<Scalar>::max();
-            for (unsigned int n = 0; n < demo.size(); ++n)
+            auto [demoptr, demoidx] = search_for_selection(demo);
+            if (demoptr)
             {
-                auto& d = demo[n];
-                dist = (mouse - d.s).norm();
-                if (dist < min_dist) 
-                {
-                    grab(d, n);
-                    min_dist = dist;
-                }
+                grab(demoptr, demoidx);
             }
-            if (min_dist > grab_dist / (Scalar)w) ungrab();
+            else unselect();
         }
-        if (shader_state.enable_contours) redraw = true;
         break;
 
     case SDL_MOUSEBUTTONUP:

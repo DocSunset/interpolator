@@ -2,8 +2,8 @@ For maximum portability and generality, the straightforward CPU-based
 implementation of the interpolators is ideal. However, for certain applications
 higher performance and throughput is required. This is especially true of the
 interactive demo application provided in this repository, where the whole
-interpolated output of an algorithm is systematically queried in real time and
-ideally needs to render at least as quickly as the display framerate.
+interpolated output topology of an algorithm is systematically queried in real
+time and ideally needs to render at least as quickly as the display framerate.
 
 This document gives an overview of the GPU based implementation of the 
 algorithms used for the display in the interactive demos. 
@@ -76,6 +76,8 @@ struct ShaderInterpolatorState
     bool enable_contours = 0;
     float contours = 10;
     int grabbed_idx = -1;
+    int selectd_idx = -1;
+    int hovered_idx = -1;
 };
 
 std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
@@ -141,6 +143,8 @@ public:
         else
             glUniform1f(glGetUniformLocation(program, "contours"), 0);
         glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
+        glUniform1i(glGetUniformLocation(program, "selectd_idx"), state.selectd_idx);
+        glUniform1i(glGetUniformLocation(program, "hovered_idx"), state.hovered_idx);
         glUniform1i(glGetUniformLocation(program, "focus"), state.focus);
 
         glBindVertexArray(Fullscreen::vao);
@@ -326,6 +330,8 @@ uniform sampler2D tex_sampler;
 uniform bool focus;
 uniform float contours;
 uniform int grabbed_idx;
+uniform int selectd_idx;
+uniform int hovered_idx;
 in vec2 position;
 out vec4 colour;
 // @/
@@ -352,21 +358,30 @@ void main() // line 65
         return;
     }
 
+    int loner = -1;
+    if (focus)
+    {
+        if      (grabbed_idx >= 0) loner = grabbed_idx;
+        else if (selectd_idx >= 0) loner = selectd_idx;
+        else if (hovered_idx >= 0) loner = hovered_idx;
+    }
+
     for (int n = 0; n < N; ++n)
     {
+        load_demonstration(n);
         weight = calculate_weight(n);
         sum_of_weights += weight;
         if (contours <= 0.0)
         {
-            load_demonstration(n);
-            weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
+            if (loner < 0 || n == loner)
+                weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
         }
     }
     if (contours > 0.0)
     {
         for (int n = 0; n < N; ++n)
         {
-            if (focus && grabbed_idx >= 0) n = grabbed_idx;
+            if (loner >= 0) n = loner;
             weight = calculate_weight(n) / sum_of_weights;
             if (weight >= 1.0)
             {
@@ -378,7 +393,7 @@ void main() // line 65
                 float brightness = pow(mod(weight * contours, 1.0), 8.0);
                 weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * brightness * weight;
             }
-            if (focus && grabbed_idx >= 0) break;
+            if (loner >= 0) break;
         }
     }
     if (contours <= 0.0) colour = vec4(weighted_sum / sum_of_weights, 1.0);

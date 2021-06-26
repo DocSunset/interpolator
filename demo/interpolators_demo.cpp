@@ -34,7 +34,7 @@ struct
 
 void loop()
 {
-    ui.poll_event_queue(demo);
+    ui.poll_event_queue(demo, interpolators);
 
     if (ui.needs_to_redraw())
     {
@@ -49,7 +49,6 @@ void loop()
 
 int main()
 {
-    ui = UserInterface{};
     if (SDL_Init(SDL_INIT_VIDEO) != 0)
     {
         SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 

@@ -86,7 +86,7 @@ UserInterface ui;
 
 void loop()
 {
-    ui.poll_event_queue(demo);
+    ui.poll_event_queue(demo, interpolators);
 
     if (ui.needs_to_redraw())
     {
@@ -101,7 +101,6 @@ void loop()
 
 int main()
 {
-    ui = UserInterface{};
     @{setup}
 
 #ifdef __EMSCRIPTEN__
