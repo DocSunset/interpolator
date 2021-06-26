@@ -67,7 +67,7 @@ struct InverseDistance
 
 @{shader functions}
 
-void additional_preparation() {}
+void setup() {}
 
 float calculate_weight(int n)
 {

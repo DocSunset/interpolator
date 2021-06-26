@@ -125,6 +125,8 @@ public:
         glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
         glUniform1i(glGetUniformLocation(program, "contour_lines"), contour_lines);
         glUniform1i(glGetUniformLocation(program, "grabbed_idx"), grabbed_idx);
+        glUniform1i(glGetUniformLocation(program, "N"), N);
+        glUniform1i(glGetUniformLocation(program, "rows"), rows);
         glBindVertexArray(Fullscreen::vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     }
@@ -310,8 +312,8 @@ struct Demo
 float r[R];
 #endif
 
-int N;
-int rows;
+uniform int N;
+uniform int rows;
 
 uniform sampler2D tex_sampler;
 uniform int contour_lines;
@@ -322,20 +324,6 @@ out vec4 colour;
 
 ```
 
-The dimensions of the demonstrations texture can be queried at runtime using
-this routine:
-
-```cpp
-// @+'shader functions'
-void set_dimensions()
-{
-    ivec2 sz = textureSize(tex_sampler, 0);
-    N = sz[0];
-    rows = sz[1];
-}
-// @/
-```
-
 So for most interpolators, all that remains is to calculate the weights and
 accumulate a weighted sum for all of the demonstrations. The shader thus
 takes this form:
@@ -344,9 +332,7 @@ takes this form:
 // @='shader main'
 void main() // line 65
 {
-    set_dimensions();
-
-    additional_preparation();
+    setup();
 
     vec3 weighted_sum = vec3(0.0, 0.0, 0.0);
     float weight = 0.0;
@@ -394,7 +380,7 @@ void main() // line 65
 ```
 
 Each unique interpolation algorithm simply needs to define its own functions:
-`void additional_preparation()` that does any pre-weight calculating set up,
+`void setup()` that does any pre-weight calculating set up,
 and `float calculate_weights()` that examines the current contents of the `d`
 structure and calculates the weight for that demonstration.
 

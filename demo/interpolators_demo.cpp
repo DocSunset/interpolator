@@ -39,7 +39,7 @@ void loop()
     if (ui.needs_to_redraw())
     {
         unsigned int i = 0;
-        auto draw = [](unsigned int& i, auto& tuple) 
+        auto draw = [](unsigned int& i, auto& tuple)
                 {if (i++ == ui.active_interpolator()) ui.draw(tuple, demo);};
         std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
 

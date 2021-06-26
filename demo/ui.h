@@ -204,7 +204,7 @@ public:
                 {
                 case SDLK_LSHIFT:
                 case SDLK_RSHIFT:
-                    _contour_lines = 10; 
+                    _contour_lines = 10;
                     redraw = true;
                     break;
                 case SDLK_LEFT:
@@ -226,7 +226,7 @@ public:
                 {
                 case SDLK_LSHIFT:
                 case SDLK_RSHIFT:
-                    _contour_lines = 0; 
+                    _contour_lines = 0;
                     redraw = true;
                     break;
                 }

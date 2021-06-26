@@ -312,7 +312,7 @@ struct IntersectingNSpheres
 
 float r_q;
 
-void additional_preparation()
+void setup()
 {
     float fMaxFloat = intBitsToFloat(2139095039);
     @{glsl calculate r_q}

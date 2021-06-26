@@ -292,6 +292,8 @@ namespace ShaderInterpolators
             glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
             glUniform1i(glGetUniformLocation(program, "contour_lines"), contour_lines);
             glUniform1i(glGetUniformLocation(program, "grabbed_idx"), grabbed_idx);
+            glUniform1i(glGetUniformLocation(program, "N"), N);
+            glUniform1i(glGetUniformLocation(program, "rows"), rows);
             glBindVertexArray(Fullscreen::vao);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
         }

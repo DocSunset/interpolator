@@ -8,8 +8,8 @@ struct Demo
 float r[R];
 #endif
 
-int N;
-int rows;
+uniform int N;
+uniform int rows;
 
 uniform sampler2D tex_sampler;
 uniform int contour_lines;
@@ -41,12 +41,6 @@ void load_demonstration(int n)
         subrow = idx % 4;
         d.p[i] = texelFetch(tex_sampler, ivec2(row, n), 0)[subrow];
     }
-}
-void set_dimensions()
-{
-    ivec2 sz = textureSize(tex_sampler, 0);
-    N = sz[0];
-    rows = sz[1];
 }
 
 float circle_circle_intersection_area(
@@ -85,7 +79,7 @@ float intersecting_spheres_weight(in float R, in float r, in float d)
 
 float r_q;
 
-void additional_preparation()
+void setup()
 {
     float fMaxFloat = intBitsToFloat(2139095039);
     r_q = fMaxFloat;
@@ -124,9 +118,7 @@ float calculate_weight(int n)
 
 void main() // line 65
 {
-    set_dimensions();
-
-    additional_preparation();
+    setup();
 
     vec3 weighted_sum = vec3(0.0, 0.0, 0.0);
     float weight = 0.0;
