@@ -43,7 +43,7 @@ the implementations should have in order to be turned into OpenGL programs.
 ```cpp
 // @='shader interpolators base class'
 std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
-template<typename ShaderInterpolator>
+template<typename Interpolator>
 class AcceleratedInterpolator
 {
 public:
@@ -57,15 +57,14 @@ public:
     , P{Demo::PVector{}.size()}   // destination dimensionality
     , rows{ceil(S + T + P, 4)}
     {
-        prog_name = ShaderInterpolator::Name;
-        frag = ShaderInterpolator::frag;
     }
 
     template<typename DemoList, typename ParaList>
     void init(const DemoList& demo, const ParaList& para)
     {
-        prog = create_program<ShaderInterpolator>();
+        @{prepare shader program}
         texname = create_gl_texture(texture);
+        assert(texname != 0);
         resize(demo, para);
     }
 
@@ -74,7 +73,6 @@ public:
     void resize(const DemoList& demo, const ParaList& para)
     {
         N = demo.size();
-        glUseShader(prog); glUniform1ui(glGetUniformLocation(prog, "N"), N);
         texture.resize(N, texture.rows());
         reload(demo, para);
     }
@@ -92,10 +90,7 @@ public:
         glUseProgram(gl.prog);
         glBindVertexArray(Fullscreen::vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
-        glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     }
-
-    static const char * vert;
 
 private:
     GLuint prog = 0;
@@ -121,6 +116,50 @@ constexpr const char * const FragmentShaderInterpolatorVert =
 
 template <typename anything>
 const char * AcceleratedInterpolator<anything>::vert = FragmentShaderInterpolatorVert;
+// @/
+```
+
+The shader program is assembled from the generic `position_passthrough.vert`
+vertex shader and the fragment shader source named in the main interpolator
+class. The dimensions of the source, parameter, and destination vectors are
+dynamically prepended to the fragment shader source, along with the glsl
+version and float precision preprocessor directives, by passing an array of two
+strings to the program creation function instead of the typical single string.
+
+```cpp
+// @='prepare shader program'
+std::string name = 
+       std::string("Inverse Distance Fragment Interpolator (") 
+     + std::string(S)
+     + std::string(", ")
+     + std::string(R)
+     + std::string(", ")
+     + std::string(P)
+     + std::string(")");
+
+std::string vertex_source = load_file("demo/shaders/position_passthrough.vert");
+const char * vsrc = vertex_source.c_str();
+
+std::string main_source = load_file("demo/shaders/inverse_distance.frag");
+std::string preamble = { "#version 300 es\n"
+                       , "#ifdef GL_ES\n"
+                       , "precision highp float;\n"
+                       , "#endif\n"
+                       };
+
+preamble += std::string("#define S ") + std::string(S) + std::string("\n")
+          , std::string("#define P ") + std::string(P) + std::string("\n")
+          , std::string("#define R ") + std::string(R) + std::string("\n")
+          ;
+
+constexpr std::size_t source = 2;
+const char * source[sources];
+source[0] = preamble.c_str();
+source[1] = main_source.c_str();
+
+GLuint vertex_shader   = create_shader(name.c_str(), GL_VERTEX_SHADER, &vsrc, 1);
+GLuint fragment_shader = create_shader(name.c_str(), GL_FRAGMENT_SHADER, source, sources);
+prog = create_program(name, vertex_shader, fragment_shader);
 // @/
 ```
 
@@ -157,6 +196,8 @@ from source to parameter, and from parameter to destination). The variable
 currently being filled. It's a bit tricky, and not particularly nice to look
 at, but it's really very simple.
 
+Do note that the JzAzBz colour space is not used in the shaders at this time.
+
 ```cpp
 // @='copy demonstrations to texture buffer'
 for (std::size_t n = 0; n < demo.size(); ++n)
@@ -183,66 +224,89 @@ for (std::size_t n = 0; n < demo.size(); ++n)
         {
             row = idx / 4;
             subrow = idx % 4;
-            texture(row, n)(subrow) = d.p[i];
+            texture(row, n)(subrow) = JzAzBz_to_RGB(d.p)[i];
         }
     }
 }
 // @/
 ```
 
-Similarly, in the shader the current parameters can be loaded as follows. Just
-ignore escape sequences at the end of every line that are needed so that the
-shader can be embedded in the C++ source code.
+Similarly, in the shader the current parameters can be loaded as follows based
+on the source, parameter, and destination vector sizes' availability in from
+the symbols `S`, `R`, and `P` respectively, as well as the number of
+demonstrations and rows in `fN` and `frows` respectively. The latter two, as
+floating point numbers, are needed to convert discrete texel coordinates to the
+normalized 0-1 coordinates used by the texture lookup function.
 
 ```cpp
-// @+'shader interpolator variables'
-#define S " + std::string(S) + "\n\
-#define P " + std::string(P) + "\n\
-#define R " + std::string(R) + "\n\
-
-struct Demo\n\
-{\n\
-    float s[S];\n\
-    float p[P];\n\
-}\n\
-float r[R];\n\
-\n\
-uniform sampler2D tex_sampler;\n\
-\n\
-in vec2 position;\n\
-\n\
-uint N;\n\
-float fN;\n\
-float rows;\n\
-//ivec2 sz = textureSize(tex_sampler, 0);\n\
-//uint N = sz[0];\n\
-//float fN = N;\n\
-//float rows = sz[1];\n\
-// @/
-
 // @+'shader functions'
 void load_demonstration(uint n)
 {
-    uint i, idx, row, subrow;\n\
+    float x = ((float)n + 0.5) / fN;
+    float y;
+    uint i, idx, row, subrow;
     idx = 0;
-    for (i = 0; i < S; ++i, ++idx)\n\
-    {\n\
-        row = idx / 4;\n\
-        subrow = idx % 4;\n\
-        d.s[i] = texture(tex_sampler, vec2(row/rows, n/fN))[subrow];\n\
-    }\n\
-    for (i = 0; i < R; ++i, ++idx)\n\
-    {\n\
-        row = idx / 4;\n\
-        subrow = idx % 4;\n\
-          r[i] = texture(tex_sampler, vec2(row/rows, n/fN))[subrow];\n\
-    }\n\
-    for (i = 0; i < P; ++i, ++idx)\n\
-    {\n\
-        row = idx / 4;\n\
-        subrow = idx % 4;\n\
-        d.p[i] = texture(tex_sampler, vec2(row/rows, n/fN))[subrow];\n\
-    }\n\
+    for (i = 0; i < S; ++i, ++idx)
+    {
+        row = idx / 4;
+        subrow = idx % 4;
+        y = ((float)row + 0.5)/frows;
+        d.s[i] = texture(tex_sampler, vec2(x, y))[subrow];
+    }
+    for (i = 0; i < R; ++i, ++idx)
+    {
+        row = idx / 4;
+        subrow = idx % 4;
+        y = ((float)row + 0.5)/frows;
+          r[i] = texture(tex_sampler, vec2(x, y))[subrow];
+    }
+    for (i = 0; i < P; ++i, ++idx)
+    {
+        row = idx / 4;
+        subrow = idx % 4;
+        y = ((float)row + 0.5)/frows;
+        d.p[i] = texture(tex_sampler, vec2((x, y)/rows, n/fN))[subrow];
+    }
+}
+// @/
+```
+
+The above implies the presence of a few common variables, which are provided
+here. 
+
+```cpp
+// @='common shader interpolator variables'
+struct Demo
+{
+    float s[S];
+    float p[P];
+}
+float r[R];
+
+uint N;
+float fN;
+uint rows;
+float frows;
+
+uniform sampler2D tex_sampler;
+in vec2 position;
+out vec4 colour;
+// @/
+
+```
+
+The dimensions of the demonstrations texture can be queried at runtime using
+this routine:
+
+```cpp
+// @+'shader functions'
+void set_dimensions()
+{
+    ivec2 sz = textureSize(tex_sampler, 0);
+    N = sz[0];
+    fN = N;
+    rows = sz[1];
+    frows = rows;
 }
 // @/
 ```

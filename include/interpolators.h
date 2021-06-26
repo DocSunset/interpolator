@@ -11,6 +11,14 @@ using Demo = Demonstration; \
 using Scalar = typename Demo::Scalar; \
 using SVector = typename Demo::SVector; \
 using PVector = typename Demo::PVector
+
+#define USING_INTERPOLATOR_TYPES \
+using Demo = Interpolator::Demo; \
+using Scalar = typename Interpolator::Scalar; \
+using SVector = typename Interpolator::SVector; \
+using PVector = typename Interpolator::PVector; \
+using Meta = typename Interpolator::Meta; \
+using Para = typename Interpolator::Para
 #define INTERPOLATOR_PARAMETER_STRUCT_START(Names, N) \
 struct Para \
 { \
@@ -222,6 +230,8 @@ namespace Interpolators
 
             return weighted_sum = (1 / sum_of_weights) * weighted_sum;
         }
+
+        static constexpr const char * frag = "demo/shaders/inverse_distance.frag";
     };
 };
 #endif

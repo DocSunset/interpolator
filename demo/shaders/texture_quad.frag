@@ -5,10 +5,10 @@ precision highp float;
 #endif
 
 in vec2 position;
-out vec4 fragColour;
+out vec4 colour;
 uniform sampler2D tex_sampler;
 
 void main()
 {
-    fragColour = texture(tex_sampler, position);
+    colour = texture(tex_sampler, position);
 }

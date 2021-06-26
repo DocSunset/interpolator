@@ -1,8 +1,10 @@
 There are a few macros defined in `interpolators.h` to make it a bit
 easier to implement the interpolation algorithms with a consistent interface.
 
-The first simply propagates the member-types of the demonstration template
-parameter:
+The first two simply propagate the member-types of the template parameter
+(either the Demo type of an Interpolator or the Interpolator type of a
+ShaderInterpolator). Note that these two should be followed by a semicolon,
+since it's more comfortable if they appear to be some kind of statement:
 
 ```cpp
 // @+'interpolator convenience macros'
@@ -11,6 +13,14 @@ using Demo = Demonstration; \
 using Scalar = typename Demo::Scalar; \
 using SVector = typename Demo::SVector; \
 using PVector = typename Demo::PVector
+
+#define USING_INTERPOLATOR_TYPES \
+using Demo = Interpolator::Demo; \
+using Scalar = typename Interpolator::Scalar; \
+using SVector = typename Interpolator::SVector; \
+using PVector = typename Interpolator::PVector; \
+using Meta = typename Interpolator::Meta; \
+using Para = typename Interpolator::Para
 // @/
 ```
 

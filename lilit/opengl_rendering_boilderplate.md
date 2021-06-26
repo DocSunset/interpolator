@@ -3,23 +3,21 @@ boilerplate code involved in using OpenGL to be abstracted away slightly.
 
 ```cpp
 // @+'openGL boilerplate'
-template<typename ShaderProgram, GLenum shader_type>
-GLuint create_shader()
+std::string load_file(const char * filename)
 {
-    GLuint shader;
-    const char * source;
-    const char * name = ShaderProgram::name;
-    if constexpr (shader_type == GL_VERTEX_SHADER)
-    {
-        shader = glCreateShader(shader_type);
-        source = ShaderProgram::vert;
-    }
-    else if constexpr (shader_type == GL_FRAGMENT_SHADER)
-    {
-        shader = glCreateShader(shader_type);
-        source = ShaderProgram::frag;
-    }
-    glShaderSource(shader, 1, (const GLchar**) &source, NULL);
+    std::ifstream file;
+    file.exceptions(std::ifstream::failbit | std::ifstream::badbit);
+    file.open(filename);
+    std::stringstream shader_stream;
+    shader_stream << file.rdbuf();
+    file.close();
+    return shader_stream.str();
+}
+
+GLuint create_shader(const char * name, GLenum shader_type, const GLChar ** source, std::size_t sources)
+{
+    GLuint shader = glCreateShader(shader_type);
+    glShaderSource(shader, sources, source, NULL);
     glCompileShader(shader);
     GLint compiled = GL_FALSE;
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
@@ -45,35 +43,26 @@ GLuint create_shader()
     return shader;
 }
 
-template<typename ShaderProgram>
-GLuint create_program()
+GLuint create_program(const char * name, GLuint vert, GLuint frag)
 {
-    const char * prog_name = ShaderProgram::name;
-
-    GLuint vertShader = create_shader<ShaderProgram, GL_VERTEX_SHADER>();
-    if (vertShader == 0) return 0;
-    GLuint fragShader = create_shader<ShaderProgram, GL_FRAGMENT_SHADER>();
-    if (fragShader == 0)
-    {
-        glDeleteShader(vertShader);
-        return 0;
-    }
+    assert(vert != 0);
+    assert(frag != 0);
 
     GLuint program = glCreateProgram();
     if (not program)
     {
-        std::cerr << "Couldn't create shader program: " << prog_name << "\n";
+        std::cerr << "Couldn't create shader program: " << name << "\n";
     }
     
-    glAttachShader(program, vertShader);
-    glAttachShader(program, fragShader);
+    glAttachShader(program, vert);
+    glAttachShader(program, frag);
     glLinkProgram(program);
 
     GLint linked = GL_FALSE;
     glGetProgramiv(program, GL_LINK_STATUS, &linked);
     if (not linked)
     {
-        std::cerr << "Shader linking failed: " << prog_name << "\n";
+        std::cerr << "Shader linking failed: " << name << "\n";
         GLint logLength = 0;
         glGetShaderiv(program, GL_INFO_LOG_LENGTH, &logLength);
         GLchar * errLog = (GLchar*)malloc(logLength);
