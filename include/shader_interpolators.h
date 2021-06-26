@@ -190,7 +190,8 @@ namespace ShaderInterpolators
         {
             Fullscreen::init();
             std::string name = 
-                   std::string("Inverse Distance Fragment Interpolator (") 
+                   std::string(Interpolator::name)
+                 + std::string(" (") 
                  + std::to_string(S)
                  + std::string(", ")
                  + std::to_string(R)
@@ -201,7 +202,7 @@ namespace ShaderInterpolators
             std::string vertex_source = load_file("demo/shaders/position_passthrough.vert");
             const char * vsrc = vertex_source.c_str();
 
-            std::string main_source = load_file("demo/shaders/inverse_distance.frag");
+            std::string main_source = load_file(Interpolator::frag);
             std::string preamble = std::string("#version 300 es\n")
                                  + std::string("#ifdef GL_ES\n")
                                  + std::string("precision highp float;\n")
@@ -209,9 +210,10 @@ namespace ShaderInterpolators
                                  + std::string("#define S ") 
                                  + std::to_string(S) + std::string("\n") 
                                  + std::string("#define P ") 
-                                 + std::to_string(P) + std::string("\n") 
-                                 + std::string("#define R ") 
-                                 + std::to_string(R) + std::string("\n")
+                                 + std::to_string(P) + std::string("\n")
+                                 ;
+            if (R > 0) preamble += std::string("#define R ") 
+                                 + std::to_string(R) + std::string("\n") 
                                  ;
 
             constexpr std::size_t sources = 2;

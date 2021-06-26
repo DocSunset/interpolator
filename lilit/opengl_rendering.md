@@ -151,7 +151,8 @@ strings to the program creation function instead of the typical single string.
 ```cpp
 // @='prepare shader program'
 std::string name = 
-       std::string("Inverse Distance Fragment Interpolator (") 
+       std::string(Interpolator::name)
+     + std::string(" (") 
      + std::to_string(S)
      + std::string(", ")
      + std::to_string(R)
@@ -162,7 +163,7 @@ std::string name =
 std::string vertex_source = load_file("demo/shaders/position_passthrough.vert");
 const char * vsrc = vertex_source.c_str();
 
-std::string main_source = load_file("demo/shaders/inverse_distance.frag");
+std::string main_source = load_file(Interpolator::frag);
 std::string preamble = std::string("#version 300 es\n")
                      + std::string("#ifdef GL_ES\n")
                      + std::string("precision highp float;\n")
@@ -170,9 +171,10 @@ std::string preamble = std::string("#version 300 es\n")
                      + std::string("#define S ") 
                      + std::to_string(S) + std::string("\n") 
                      + std::string("#define P ") 
-                     + std::to_string(P) + std::string("\n") 
-                     + std::string("#define R ") 
-                     + std::to_string(R) + std::string("\n")
+                     + std::to_string(P) + std::string("\n")
+                     ;
+if (R > 0) preamble += std::string("#define R ") 
+                     + std::to_string(R) + std::string("\n") 
                      ;
 
 constexpr std::size_t sources = 2;
@@ -275,12 +277,14 @@ void load_demonstration(int n)
         subrow = idx % 4;
         d.s[i] = texelFetch(tex_sampler, ivec2(row, n), 0)[subrow];
     }
+#ifdef R
     for (i = 0; i < R; ++i, ++idx)
     {
         row = idx / 4;
         subrow = idx % 4;
           r[i] = texelFetch(tex_sampler, ivec2(row, n), 0)[subrow];
     }
+#endif
     for (i = 0; i < P; ++i, ++idx)
     {
         row = idx / 4;
@@ -302,7 +306,9 @@ struct Demo
     float p[P];
 } d;
 
+#ifdef R
 float r[R];
+#endif
 
 int N;
 int rows;
@@ -340,6 +346,8 @@ void main() // line 65
 {
     set_dimensions();
 
+    additional_preparation();
+
     vec3 weighted_sum = vec3(0.0, 0.0, 0.0);
     float weight = 0.0;
     float sum_of_weights = 0.0;
@@ -352,11 +360,11 @@ void main() // line 65
 
     for (int n = 0; n < N; ++n)
     {
-        load_demonstration(n);
-        weight = calculate_weight();
+        weight = calculate_weight(n);
         sum_of_weights += weight;
         if (contour_lines <= 0)
         {
+            load_demonstration(n);
             weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
         }
     }
@@ -365,8 +373,7 @@ void main() // line 65
         for (int n = 0; n < N; ++n)
         {
             if (grabbed_idx >= 0) n = grabbed_idx;
-            load_demonstration(n);
-            weight = calculate_weight() / sum_of_weights;
+            weight = calculate_weight(n) / sum_of_weights;
             if (weight >= 1.0)
             {
                 weighted_sum = vec3(1.0, 1.0, 1.0);
@@ -386,9 +393,10 @@ void main() // line 65
 // @/
 ```
 
-Each unique interpolation algorithm simply needs to define its own function
-`float calculate_weights()` that examines the current contents of the `d`
-structure.
+Each unique interpolation algorithm simply needs to define its own functions:
+`void additional_preparation()` that does any pre-weight calculating set up,
+and `float calculate_weights()` that examines the current contents of the `d`
+structure and calculates the weight for that demonstration.
 
 Obviously the shader currently assumes the output is a 3D normalized floating
 point vector that can be directly rendered as a colour. A fully general shader-

@@ -102,7 +102,7 @@ testing, the `acos` args only ever fell at or slightly above `1.0f`, so this
 is the only condition which is addressed by the boundary check for these args.
 
 ```cpp
-// @='weight functions'
+// @='intersecting n-spheres weight functions'
 Scalar circle_circle_intersection_area(
         const Scalar& R, 
         const Scalar& r, 
@@ -141,6 +141,46 @@ Scalar circle_area(const Scalar& r) const
 }
 
 Scalar intersecting_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d) const
+{
+    return circle_circle_intersection_area(R, r, d) / circle_area(r);
+}
+// @/
+```
+
+And as GLSL shader functions:
+
+```cpp
+// @='glsl intersecting n-spheres weight functions'
+float circle_circle_intersection_area(
+        in float R,
+        in float r,
+        in float d)
+{
+    float d2 = d * d;
+    float r2 = r * r;
+    float R2 = R * R;
+    float two_d = 2.0 * d;
+    float arg1 = (d2 + r2 - R2)/(two_d * r);
+    float arg2 = (d2 + R2 - r2)/(two_d * R);
+    float arg3 = (-d+r+ R) * (d+r-R) * (d-r+R) * (d+r+R);
+    float a, b, c;
+    if (arg1 > 1.0) a = 0.0;
+    else a = r2 * acos(arg1);
+    if (arg2 > 1.0) b = 0.0;
+    else b = R2 * acos(arg2);
+    if (arg3 < 0.0) c = 0.0;
+    else c = sqrt(arg3) / 2.0;
+    return a + b - c;
+}
+
+#define pi 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863
+
+float circle_area(in float r)
+{
+    return pi * r * r;
+}
+
+float intersecting_spheres_weight(in float R, in float r, in float d)
 {
     return circle_circle_intersection_area(R, r, d) / circle_area(r);
 }
@@ -210,7 +250,7 @@ struct IntersectingNSpheres
     bool dynamic_demos = true;
     mutable Scalar r_q;
 
-    @{weight functions}
+    @{intersecting n-spheres weight functions}
 
     template<typename DemoList, typename MetaList, typename ParaList>
     PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
@@ -258,12 +298,45 @@ struct IntersectingNSpheres
         return weighted_sum;
     }
 
+    static constexpr const char * name = "Intersecting N-Spheres";
+    static constexpr const char * frag = "demo/shaders/intersecting_n-spheres.frag";
 };
+// @/
+
+// @#'demo/shaders/intersecting_n-spheres.frag'
+@{common shader interpolator variables}
+
+@{shader functions}
+
+@{glsl intersecting n-spheres weight functions}
+
+float r_q;
+
+void additional_preparation()
+{
+    float fMaxFloat = intBitsToFloat(2139095039);
+    @{glsl calculate r_q}
+}
+
+float calculate_weight(int n)
+{
+    float fMaxFloat = intBitsToFloat(2139095039);
+    load_demonstration(n);
+    vec2 q = position;
+    vec2 s = vec2(d.s[0], d.s[1]);
+    vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
+    float d_n = distance(q, s);
+    @{glsl calculate the radius r_n}
+    if ((r_q + r_n) < d_n) return 0.0;
+    return intersecting_spheres_weight(r_q, min(r_n, d_n), d_n);
+}
+
+@{shader main}
 // @/
 ```
 
-One quirk of the above implementation is that the output (`weighted_sum`) is
-passed by variable. This is necessary to avoid having to initialize
+One quirk of the above CPU implementation is that the output (`weighted_sum`)
+is passed by variable. This is necessary to avoid having to initialize
 `weighted_sum` to zero. By leaving this responsibility to the caller, the
 implementation of the interpolator is more generic, only imposing the need for
 operators for addition and multiplication by a scalar, and `size()` member and
@@ -296,6 +369,26 @@ for (std::size_t i = 0; i < demo.size(); ++i)
     if (d_n < r_q) r_q = d_n;
 
     @{avoid numerical imprecision issues}
+}
+// @/
+```
+
+There's no way to allocate an array to cache the distances on the GPU, since
+the number of demonstrations isn't known at compile time and you can't allocate
+an array with a variable length on the stack, so the GPU just has to
+recalculate the distance.
+
+```cpp
+// @='glsl calculate r_q'
+r_q = fMaxFloat;
+for (int n = 0; n < N; ++n)
+{
+    load_demonstration(n);
+    vec2 q = position;
+    vec2 s = vec2(d.s[0], d.s[1]);
+    vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
+    float d_n = distance(q, s);
+    r_q = min(d_n, r_q);
 }
 // @/
 ```
@@ -346,5 +439,18 @@ for (const Demo& demo2 : demo)
     Scalar r = (s_n - demo2.s).norm();
     if (r < r_n) r_n = r;
 }
+// @/
+
+// @='glsl calculate the radius r_n'
+float r_n = fMaxFloat;
+for (int m = 0; m < N; ++m)
+{
+    if (n == m) continue;
+    load_demonstration(m);
+    vec2 s_m = vec2(d.s[0], d.s[1]);
+    float r = distance(s, s_m);
+    r_n = min(r, r_n);
+}
+load_demonstration(n);
 // @/
 ```

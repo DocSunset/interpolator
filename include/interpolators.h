@@ -188,6 +188,8 @@ namespace Interpolators
             return weighted_sum;
         }
 
+        static constexpr const char * name = "Intersecting N-Spheres";
+        static constexpr const char * frag = "demo/shaders/intersecting_n-spheres.frag";
     };
     // after e.g. Todoroff 2009 ICMC
     constexpr const char * const InverseDistanceNames[4] =
@@ -231,6 +233,7 @@ namespace Interpolators
             return weighted_sum = (1 / sum_of_weights) * weighted_sum;
         }
 
+        static constexpr const char * name = "Inverse Weighted Distance";
         static constexpr const char * frag = "demo/shaders/inverse_distance.frag";
     };
 };

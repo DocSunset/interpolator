@@ -52,6 +52,7 @@ struct InverseDistance
         return weighted_sum = (1 / sum_of_weights) * weighted_sum;
     }
 
+    static constexpr const char * name = "Inverse Weighted Distance";
     static constexpr const char * frag = "demo/shaders/inverse_distance.frag";
 };
 // @/
@@ -66,8 +67,11 @@ struct InverseDistance
 
 @{shader functions}
 
-float calculate_weight()
+void additional_preparation() {}
+
+float calculate_weight(int n)
 {
+    load_demonstration(n);
     vec2 q = position;
     vec2 s = vec2(d.s[0], d.s[1]);
     vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
