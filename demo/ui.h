@@ -200,13 +200,36 @@ public:
                 break;
 
             case SDL_KEYDOWN:
-                _contour_lines = 10; 
-                redraw = true;
+                switch (ev.key.keysym.sym)
+                {
+                case SDLK_LSHIFT:
+                case SDLK_RSHIFT:
+                    _contour_lines = 10; 
+                    redraw = true;
+                    break;
+                case SDLK_LEFT:
+                    if (ev.key.repeat) break;
+                    _active_interpolator = (_active_interpolator - 1) % num_interpolators;
+                    redraw = true;
+                    break;
+                case SDLK_RIGHT:
+                    if (ev.key.repeat) break;
+                    _active_interpolator = (_active_interpolator + 1) % num_interpolators;
+                    redraw = true;
+                    break;
+                }
+                SDL_Log("%d", _active_interpolator);
                 break;
 
             case SDL_KEYUP:
-                _contour_lines = 0; 
-                redraw = true;
+                switch (ev.key.keysym.sym)
+                {
+                case SDLK_LSHIFT:
+                case SDLK_RSHIFT:
+                    _contour_lines = 0; 
+                    redraw = true;
+                    break;
+                }
                 break;
 
             case SDL_MOUSEMOTION:
@@ -247,8 +270,6 @@ public:
                 break;
 
             case SDL_MOUSEWHEEL:
-                _active_interpolator = (_active_interpolator + 1) % num_interpolators;
-                redraw = true;
                 break;
 
         default:
