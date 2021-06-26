@@ -13,11 +13,11 @@ struct
 // @='setup'
 @{SDL setup}
 
-//@{openGL setup}
-
 @{initialize random demonstrations}
 
 @{resize interpolators extra lists}
+
+@{initialize shader programs}
 // @/
 
 ```
@@ -51,6 +51,16 @@ auto resize_lists = [&](auto& tup)
 };
 std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
 // @/
+
+// @='initialize shader programs'
+auto init_shaders = [&](auto& tup)
+{
+    auto& para = std::get<2>(tup);
+    auto& shader_program = std::get<4>(tup);
+    shader_program.init(demo, para);
+};
+std::apply([&](auto& ... tuples) {((init_shaders(tuples)), ...);}, interpolators);
+// @/
 ```
 
 # SDL
@@ -73,7 +83,7 @@ SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 sdl.window = SDL_CreateWindow
         ( "Interpolators"
         , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-        , ui.texture().cols() , ui.texture().rows()
+        , 500 , 500
         , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN
         );
 if (sdl.window == nullptr)

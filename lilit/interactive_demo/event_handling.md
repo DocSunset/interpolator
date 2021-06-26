@@ -14,18 +14,19 @@ public:
     bool ready_to_quit() const {return quit;}
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
-    const Texture& texture() const {return _texture;}
     unsigned int contour_lines() const {return _contour_lines;}
     int grabbed_index() const {return grabbed_idx;}
 
-    template<typename Tuple> void draw(const std::size_t i, Tuple& tup, const DemoList& demo) const
+    template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
     {
-        auto& interpolator = std::get<0>(tup);
-        auto& meta = std::get<1>(tup);
-        auto& para = std::get<2>(tup);
-        
-        @{run the timer and draw}
+    //    auto& interpolator = std::get<0>(tup);
+    //    auto& meta = std::get<1>(tup);
+    //    auto& para = std::get<2>(tup);
+        auto& shader_program = std::get<4>(tup);
 
+        shader_program.contour_lines = contour_lines();
+        shader_program.grabbed_idx = grabbed_index();
+        shader_program.run();
         redraw = false;
     }
 
@@ -34,7 +35,6 @@ public:
         @{poll event queue and handle events}
     }
 
-    mutable Texture _texture = Texture(500, 500);
 private:
     mutable bool redraw = true;
 
@@ -51,9 +51,6 @@ private:
 #endif
 // @/
 ```
-
-The drawing routine is described in drawing.md. Event handline is described
-below.
 
 Each loop, the SDL event queue is polled until empty, and execution switches
 over the type of event. The current implementation is self-explanatory and

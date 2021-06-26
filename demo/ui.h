@@ -168,70 +168,19 @@ public:
     bool ready_to_quit() const {return quit;}
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
-    const Texture& texture() const {return _texture;}
     unsigned int contour_lines() const {return _contour_lines;}
     int grabbed_index() const {return grabbed_idx;}
 
-    template<typename Tuple> void draw(const std::size_t i, Tuple& tup, const DemoList& demo) const
+    template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
     {
-        auto& interpolator = std::get<0>(tup);
-        auto& meta = std::get<1>(tup);
-        auto& para = std::get<2>(tup);
-        
-        auto start = std::chrono::high_resolution_clock::now();
+    //    auto& interpolator = std::get<0>(tup);
+    //    auto& meta = std::get<1>(tup);
+    //    auto& para = std::get<2>(tup);
+        auto& shader_program = std::get<4>(tup);
 
-        for (unsigned int col = 0; col < _texture.cols(); ++col)
-        {
-            for (unsigned int row = 0; row < _texture.rows(); ++row)
-            {
-                RGBVec out = {0, 0, 0};
-                auto q = Vec2{col/(Scalar)_texture.cols(), row/(Scalar)_texture.rows()};
-                JzAzBzVec interpolated_jab{0, 0, 0};
-
-                interpolator.query(q, demo, para, meta, interpolated_jab);
-
-                if (_contour_lines) 
-                {
-                    for (unsigned int n = 0; n < demo.size(); ++n)
-                    {
-                        RGBVec rgb;
-                        Scalar w;
-                        if (grabbed) 
-                        {
-                            rgb = JzAzBz_to_RGB(grabbed->p);
-                            w = meta[grabbed_idx].w;
-                        }
-                        else 
-                        {
-                            rgb = JzAzBz_to_RGB(demo[n].p); 
-                            w = meta[n].w;
-                        }
-                        if (w >= 1.0 - std::numeric_limits<Scalar>::min() * 5)
-                        {
-                            // visualize maximum elevation with inverted colour dots
-                            out = (col % 3) + (row % 3) == 0 ? RGBVec{1,1,1} - rgb : rgb;
-                        }
-                        else
-                        {
-                            Scalar brightness = std::pow(std::fmod(w * _contour_lines, 1.0f), 8);
-                            brightness = brightness * w;
-                            out += rgb * brightness;
-                        }
-                        if (grabbed) break;
-                    }
-                }
-                else out = JzAzBz_to_RGB(interpolated_jab);
-
-                _texture(row, col) = RGBAVec{out.x(), out.y(), out.z(), 1};
-            }
-        }
-
-        auto stop = std::chrono::high_resolution_clock::now();
-        auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
-        std::cout << i << ": Generated " << _texture.cols() * _texture.rows() << " interpolations in " << usec << " microseconds\n" 
-                << "About " << _texture.cols() * _texture.rows() * (1000000 / (double)usec) << " interpolations per second" 
-                << std::endl;
-
+        shader_program.contour_lines = contour_lines();
+        shader_program.grabbed_idx = grabbed_index();
+        shader_program.run();
         redraw = false;
     }
 
@@ -307,7 +256,6 @@ public:
         }
     }
 
-    mutable Texture _texture = Texture(500, 500);
 private:
     mutable bool redraw = true;
 

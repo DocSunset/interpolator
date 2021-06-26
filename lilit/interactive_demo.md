@@ -24,18 +24,18 @@ using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
-using RGBAVec = Eigen::Vector4f;
 using CIEXYZVec = Eigen::Vector3f;
 using JzAzBzVec = Eigen::Vector3f;
-using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
 using Demo = Interpolators::Demo<Scalar, ID, Vec2, JzAzBzVec>;
 using DemoList = std::vector<Demo>;
+template<typename Interpolator>
+using Shadr = ShaderInterpolators::AcceleratedInterpolator<Interpolator>;
 
-#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__})
+#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
 auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
-        , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
+        ( //INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
+        /*,*/ INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
         );
 
 const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
@@ -56,9 +56,6 @@ browser's event loop or the main function loop depending on the platform.
 
 DemoList demo;
 UserInterface ui;
-ShaderInterpolators::AcceleratedInterpolator<Interpolators::InverseDistance<Demo>>
-    shader_program;
-std::vector<Interpolators::InverseDistance<Demo>::Para> para;
 
 @{SDL declarations}
 @{openGL declarations}
@@ -67,29 +64,21 @@ void loop()
 {
     ui.poll_event_queue(demo);
 
-    //if (ui.needs_to_redraw())
-    //{
-    //    @{draw the active interpolator}
+    if (ui.needs_to_redraw())
+    {
+        unsigned int i = 0;
+        auto draw = [](unsigned int i, auto& tuple) 
+                {if (i++ == ui.active_interpolator()) ui.draw(tuple, demo);};
+        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
 
-    //    write_gl_texture(ui.texture(), gl.texture);
-    //}
-
-    //glUseProgram(gl.prog);
-    //glBindVertexArray(Fullscreen::vao);
-    //glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
-    shader_program.contour_lines = ui.contour_lines();
-    shader_program.grabbed_idx = ui.grabbed_index();
-    shader_program.run();
-    SDL_GL_SwapWindow(sdl.window);
+        SDL_GL_SwapWindow(sdl.window);
+    }
 }
 
 int main()
 {
     ui = UserInterface{};
     @{setup}
-    para.resize(demo.size());
-    for (auto& p : para) p = {4, 0.001, 0.0, 1.0};
-    shader_program.init(demo, para);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);

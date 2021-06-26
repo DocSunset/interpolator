@@ -396,12 +396,15 @@ based implementation remains as future work; the most useful incarnation of
 this would be for each instance of the shader to calculate a single weight or
 weighted parameter vector that could then be collected and added together on
 the CPU. If there were a large number of demonstrations this would probably
-provide a performance improvement over using the CPU. Another useful approach
-would be for the shader perform some means of visualizing the P-dimensional
-output of the interpolator that is agnostic about the actual number of
-dimensions.  Development of such algorithms is the subject of high-dimensional
-data visualization, and is currently beyond the scope of this project. Maybe
-one day though.
+provide a performance improvement over using the CPU. It would probably be best
+to do this using a vertex shader and transform feedback techniques to read the
+output. 
+
+Another useful approach using fragment shaders would be for the shader to
+perform some means of visualizing the P-dimensional output of the interpolator
+that is agnostic about the actual number of dimensions.  Development of such
+algorithms is the subject of high-dimensional data visualization, and is
+currently beyond the scope of this project. Maybe one day though.
 
 With those resources in place, it shouldn't be difficult to implement various
 interpolators as fragment shaders. The shaders themselves are listed alongside
