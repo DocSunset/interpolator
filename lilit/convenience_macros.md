@@ -15,7 +15,7 @@ using SVector = typename Demo::SVector; \
 using PVector = typename Demo::PVector
 
 #define USING_INTERPOLATOR_TYPES \
-using Demo = Interpolator::Demo; \
+using Demo = typename Interpolator::Demo; \
 using Scalar = typename Interpolator::Scalar; \
 using SVector = typename Interpolator::SVector; \
 using PVector = typename Interpolator::PVector; \

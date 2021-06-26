@@ -151,6 +151,8 @@ namespace Interpolators
 
 @[lilit/convenience_macros.md]
 
+@[lilit/opengl_rendering.md]
+
 # Interactive Demo
 
 An demo program is provided in the repository that is helpful in exploring the

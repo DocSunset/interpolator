@@ -19,12 +19,16 @@
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include "../include/interpolators.h"
+#include "../include/shader_interpolators.h"
 #include "types.h"
 #include "ui.h"
-#include "graphics.h"
+//#include "graphics.h"
 
 DemoList demo;
 UserInterface ui;
+ShaderInterpolators::AcceleratedInterpolator<Interpolators::InverseDistance<Demo>>
+    shader_program;
+std::vector<Interpolators::InverseDistance<Demo>::Para> para;
 
 struct
 {
@@ -41,19 +45,20 @@ void loop()
 {
     ui.poll_event_queue(demo);
 
-    if (ui.needs_to_redraw())
-    {
-        unsigned int i = 0;
-        auto draw = [](unsigned int i, auto& tuple) 
-                {if (i++ == ui.active_interpolator()) ui.draw(i, tuple, demo);};
-        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
+    //if (ui.needs_to_redraw())
+    //{
+    //    unsigned int i = 0;
+    //    auto draw = [](unsigned int i, auto& tuple) 
+    //            {if (i++ == ui.active_interpolator()) ui.draw(i, tuple, demo);};
+    //    std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
 
-        write_gl_texture(ui.texture(), gl.texture);
-    }
+    //    write_gl_texture(ui.texture(), gl.texture);
+    //}
 
-    glUseProgram(gl.prog);
-    glBindVertexArray(Fullscreen::vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
+    //glUseProgram(gl.prog);
+    //glBindVertexArray(Fullscreen::vao);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
+    shader_program.run();
     SDL_GL_SwapWindow(sdl.window);
 }
 
@@ -102,31 +107,31 @@ int main()
     }
     else SDL_Log("Created GL context\n");
 
-    gl.prog = create_program<TextureQuad>();
-    if (not gl.prog) return EXIT_FAILURE;
-    glUseProgram(gl.prog);
+    //gl.prog = create_program<TextureQuad>();
+    //if (not gl.prog) return EXIT_FAILURE;
+    //glUseProgram(gl.prog);
 
-    create_vertex_objects(Fullscreen::quad.data(), Fullscreen::quad.size(), Fullscreen::vbo, Fullscreen::vao);
-    if (not Fullscreen::vbo || not Fullscreen::vao) return EXIT_FAILURE;
+    //create_vertex_objects(Fullscreen::quad.data(), Fullscreen::quad.size(), Fullscreen::vbo, Fullscreen::vao);
+    //if (not Fullscreen::vbo || not Fullscreen::vao) return EXIT_FAILURE;
 
-    GLuint positionIdx = 0;
-    glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
-    glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
-    glEnableVertexAttribArray(positionIdx);
+    //GLuint positionIdx = 0;
+    //glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
+    //glVertexAttribPointer(positionIdx, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
+    //glEnableVertexAttribArray(positionIdx);
 
-    gl.texture = create_gl_texture(ui.texture());
-    if (not gl.texture) return EXIT_FAILURE;
+    //gl.texture = create_gl_texture(ui.texture());
+    //if (not gl.texture) return EXIT_FAILURE;
 
-    glUseProgram(gl.prog);
-    GLint tex_sampler_uniform_location = glGetUniformLocation(gl.prog, "tex_sampler");
-    if (tex_sampler_uniform_location < 0) 
-    {
-        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
-        return EXIT_FAILURE;
-    }
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, gl.texture);
-    glUniform1i(tex_sampler_uniform_location, 0);
+    //glUseProgram(gl.prog);
+    //GLint tex_sampler_uniform_location = glGetUniformLocation(gl.prog, "tex_sampler");
+    //if (tex_sampler_uniform_location < 0) 
+    //{
+    //    SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Couldn't get 'tex_sampler' uniform location.\n");
+    //    return EXIT_FAILURE;
+    //}
+    //glActiveTexture(GL_TEXTURE0);
+    //glBindTexture(GL_TEXTURE_2D, gl.texture);
+    //glUniform1i(tex_sampler_uniform_location, 0);
 
     unsigned int n = 3;
     unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
@@ -135,7 +140,7 @@ int main()
     while(n-- > 0)
     {
         auto v = Vec2{random(generator), random(generator)};
-        auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
+        auto c = RGBVec{random(generator), random(generator), random(generator)};
         demo.push_back({n, v, c});
     }
 
@@ -150,6 +155,9 @@ int main()
         for (auto& p : para) p = default_para;
     };
     std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
+    para.resize(demo.size());
+    for (auto& p : para) p = {4, 0.001, 0.0, 1.0};
+    shader_program.init(demo, para);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);

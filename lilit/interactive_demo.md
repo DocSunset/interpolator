@@ -56,6 +56,9 @@ browser's event loop or the main function loop depending on the platform.
 
 DemoList demo;
 UserInterface ui;
+ShaderInterpolators::AcceleratedInterpolator<Interpolators::InverseDistance<Demo>>
+    shader_program;
+std::vector<Interpolators::InverseDistance<Demo>::Para> para;
 
 @{SDL declarations}
 @{openGL declarations}
@@ -64,16 +67,17 @@ void loop()
 {
     ui.poll_event_queue(demo);
 
-    if (ui.needs_to_redraw())
-    {
-        @{draw the active interpolator}
+    //if (ui.needs_to_redraw())
+    //{
+    //    @{draw the active interpolator}
 
-        write_gl_texture(ui.texture(), gl.texture);
-    }
+    //    write_gl_texture(ui.texture(), gl.texture);
+    //}
 
-    glUseProgram(gl.prog);
-    glBindVertexArray(Fullscreen::vao);
-    glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
+    //glUseProgram(gl.prog);
+    //glBindVertexArray(Fullscreen::vao);
+    //glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
+    shader_program.run();
     SDL_GL_SwapWindow(sdl.window);
 }
 
@@ -81,6 +85,9 @@ int main()
 {
     ui = UserInterface{};
     @{setup}
+    para.resize(demo.size());
+    for (auto& p : para) p = {4, 0.001, 0.0, 1.0};
+    shader_program.init(demo, para);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);
@@ -132,8 +139,9 @@ These bits should arguably be shuffled away somewhere else.
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include "../include/interpolators.h"
+#include "../include/shader_interpolators.h"
 #include "types.h"
 #include "ui.h"
-#include "graphics.h"
+//#include "graphics.h"
 // @/
 ```

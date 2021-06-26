@@ -13,7 +13,7 @@ struct
 // @='setup'
 @{SDL setup}
 
-@{openGL setup}
+//@{openGL setup}
 
 @{initialize random demonstrations}
 
@@ -33,7 +33,7 @@ std::uniform_real_distribution<Scalar> random(0, 1);
 while(n-- > 0)
 {
     auto v = Vec2{random(generator), random(generator)};
-    auto c = RGB_to_JzAzBz(RGBVec{random(generator), random(generator), random(generator)});
+    auto c = RGBVec{random(generator), random(generator), random(generator)};
     demo.push_back({n, v, c});
 }
 // @/

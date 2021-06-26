@@ -9,21 +9,49 @@ This document gives an overview of the GPU based implementation of the
 algorithms used for the display in the interactive demos. 
 
 ```cpp
-// @='include/shader_interpolators.h'
+// @#'include/shader_interpolators.h'
 #ifndef SHADER_INTERPOLATORS_H
 #define SHADER_INTERPOLATORS_H
 #include <iostream>
+#include <fstream>
+#include <sstream>
 #include <string>
 #include <Eigen/Core>
 #include <GLES3/gl3.h>
 
 namespace ShaderInterpolators
 {
+    using Vec2 = Eigen::Vector2f;
+    using RGBAVec = Eigen::Vector4f;
     using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
     @{openGL boilerplate}
 
-    @{fullscreen quad} // this is defined in interactive_demo/opengl.md 
+    struct Fullscreen
+    {
+        static const std::vector<Vec2> quad;
+        static GLuint vbo;
+        static GLuint vao;
+        static GLuint idx;
+        static bool initialized;
+    
+        static void init()
+        {
+            if (initialized) return;
+            create_vertex_objects(quad.data(), quad.size(), vbo, vao);
+            glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
+            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
+            glEnableVertexAttribArray(0);
+            assert(vbo != 0);
+            assert(vao != 0);
+            initialized = true;
+        }
+    };
+    const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+    GLuint Fullscreen::vbo = 0;
+    GLuint Fullscreen::vao = 0;
+    GLuint Fullscreen::idx = 0;
+    bool Fullscreen::initialized = false;
     
     @{shader interpolators base class}
     
@@ -47,34 +75,34 @@ template<typename Interpolator>
 class AcceleratedInterpolator
 {
 public:
-    using Demo = ShaderInterpolator::Demo;
-    using Para = ShaderInterpolator::Para;
-    using ShaderNames = ShaderInterpolator::ShaderNames;
+    USING_INTERPOLATOR_TYPES;
 
     AcceleratedInterpolator()
-    : S{Demo::SVector{}.size()}   // source dimensionality
-    , R{Para{}.size()}            // interpolator parameter dimensionality
-    , P{Demo::PVector{}.size()}   // destination dimensionality
-    , rows{ceil(S + T + P, 4)}
     {
+        S = SVector{}.size();   // source dimensionality
+        R = Para{}.size();            // interpolator parameter dimensionality
+        P = PVector{}.size();   // destination dimensionality
+        rows = ceil(S + R + P, 4);
     }
 
     template<typename DemoList, typename ParaList>
     void init(const DemoList& demo, const ParaList& para)
     {
+        Fullscreen::init();
         @{prepare shader program}
+        resize(demo, para, false);
         texname = create_gl_texture(texture);
+        reload(demo, para);
         assert(texname != 0);
-        resize(demo, para);
     }
 
     // this is to be called when demonstrations are added or removed
     template<typename DemoList, typename ParaList>
-    void resize(const DemoList& demo, const ParaList& para)
+    void resize(const DemoList& demo, const ParaList& para, bool need_to_reload = true)
     {
         N = demo.size();
-        texture.resize(N, texture.rows());
-        reload(demo, para);
+        texture.resize(N, rows);
+        if (need_to_reload) reload(demo, para);
     }
 
     // this is to be called when demonstrations are changed
@@ -87,35 +115,25 @@ public:
 
     void run() const
     {
-        glUseProgram(gl.prog);
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texname);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glUseProgram(program);
+        glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
         glBindVertexArray(Fullscreen::vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     }
 
 private:
-    GLuint prog = 0;
+    GLuint program = 0;
     GLuint texname = 0;
     Texture texture;
     std::size_t N = 0; // number of demonstrations ( == number of columns)
-    const std::size_t S, R, P, rows;
+    std::size_t S, R, P, rows;
 };
-
-constexpr const char * const FragmentShaderInterpolatorVert =
-"\
-    #version 300 es\n\
-    in vec2 pos;\n\
-    out vec2 tex_coord;\n\
-    const vec4 white = vec4(1.0);\n\
-    \n\
-    void main()\n\
-    {\n\
-        gl_Position = vec4(pos, 0.0, 1.0);\n\
-        tex_coord   = vec2(pos[0] * 0.5 + 0.5, pos[1] * 0.5 + 0.5);\n\
-    }\n\
-";
-
-template <typename anything>
-const char * AcceleratedInterpolator<anything>::vert = FragmentShaderInterpolatorVert;
 // @/
 ```
 
@@ -130,36 +148,37 @@ strings to the program creation function instead of the typical single string.
 // @='prepare shader program'
 std::string name = 
        std::string("Inverse Distance Fragment Interpolator (") 
-     + std::string(S)
+     + std::to_string(S)
      + std::string(", ")
-     + std::string(R)
+     + std::to_string(R)
      + std::string(", ")
-     + std::string(P)
+     + std::to_string(P)
      + std::string(")");
 
 std::string vertex_source = load_file("demo/shaders/position_passthrough.vert");
 const char * vsrc = vertex_source.c_str();
 
 std::string main_source = load_file("demo/shaders/inverse_distance.frag");
-std::string preamble = { "#version 300 es\n"
-                       , "#ifdef GL_ES\n"
-                       , "precision highp float;\n"
-                       , "#endif\n"
-                       };
+std::string preamble = std::string("#version 300 es\n")
+                     + std::string("#ifdef GL_ES\n")
+                     + std::string("precision highp float;\n")
+                     + std::string("#endif\n")
+                     + std::string("#define S ") 
+                     + std::to_string(S) + std::string("u\n") 
+                     + std::string("#define P ") 
+                     + std::to_string(P) + std::string("u\n") 
+                     + std::string("#define R ") 
+                     + std::to_string(R) + std::string("u\n")
+                     ;
 
-preamble += std::string("#define S ") + std::string(S) + std::string("\n")
-          , std::string("#define P ") + std::string(P) + std::string("\n")
-          , std::string("#define R ") + std::string(R) + std::string("\n")
-          ;
-
-constexpr std::size_t source = 2;
+constexpr std::size_t sources = 2;
 const char * source[sources];
 source[0] = preamble.c_str();
 source[1] = main_source.c_str();
 
 GLuint vertex_shader   = create_shader(name.c_str(), GL_VERTEX_SHADER, &vsrc, 1);
 GLuint fragment_shader = create_shader(name.c_str(), GL_FRAGMENT_SHADER, source, sources);
-prog = create_program(name, vertex_shader, fragment_shader);
+program = create_program(name.c_str(), vertex_shader, fragment_shader);
 // @/
 ```
 
@@ -196,36 +215,31 @@ from source to parameter, and from parameter to destination). The variable
 currently being filled. It's a bit tricky, and not particularly nice to look
 at, but it's really very simple.
 
-Do note that the JzAzBz colour space is not used in the shaders at this time.
-
 ```cpp
 // @='copy demonstrations to texture buffer'
-for (std::size_t n = 0; n < demo.size(); ++n)
+std::size_t n, i, idx, row, subrow;
+for (n = 0; n < N; ++n)
 {
-    const auto& d = demo;
-    const auto& r = para;
-    std::size_t n, i, idx, row, subrow;
-    for (n = 0; n < N; ++n)
+    const auto& d = demo[n];
+    const auto& r = para[n];
+    idx = 0;
+    for (i = 0; i < S; ++i, ++idx)
     {
-        idx = 0;
-        for (i = 0; i < S; ++i, ++idx)
-        {
-            row = idx / 4; // floor(i / 4) implied
-            subrow = idx % 4;
-            texture(row, n)(subrow) = d.s[i];
-        }
-        for (i = 0; i < R; ++i, ++idx)
-        {
-            row = idx / 4;
-            subrow = idx % 4;
-            texture(row, n)(subrow) =   r[i];
-        }
-        for (i = 0; i < P; ++i, ++idx)
-        {
-            row = idx / 4;
-            subrow = idx % 4;
-            texture(row, n)(subrow) = JzAzBz_to_RGB(d.p)[i];
-        }
+        row = idx / 4; // floor(i / 4) implied
+        subrow = idx % 4;
+        texture(n, row)(subrow) = d.s[i];
+    }
+    for (i = 0; i < R; ++i, ++idx)
+    {
+        row = idx / 4;
+        subrow = idx % 4;
+        texture(n, row)(subrow) =   r[i];
+    }
+    for (i = 0; i < P; ++i, ++idx)
+    {
+        row = idx / 4;
+        subrow = idx % 4;
+        texture(n, row)(subrow) = d.p[i];
     }
 }
 // @/
@@ -242,30 +256,30 @@ normalized 0-1 coordinates used by the texture lookup function.
 // @+'shader functions'
 void load_demonstration(uint n)
 {
-    float x = ((float)n + 0.5) / fN;
+    float x = (float(n) + 0.5) / fN;
     float y;
     uint i, idx, row, subrow;
-    idx = 0;
-    for (i = 0; i < S; ++i, ++idx)
+    idx = 0u;
+    for (i = 0u; i < S; ++i, ++idx)
     {
-        row = idx / 4;
-        subrow = idx % 4;
-        y = ((float)row + 0.5)/frows;
+        row = idx / 4u;
+        subrow = idx % 4u;
+        y = (float(row) + 0.5)/frows;
         d.s[i] = texture(tex_sampler, vec2(x, y))[subrow];
     }
-    for (i = 0; i < R; ++i, ++idx)
+    for (i = 0u; i < R; ++i, ++idx)
     {
-        row = idx / 4;
-        subrow = idx % 4;
-        y = ((float)row + 0.5)/frows;
+        row = idx / 4u;
+        subrow = idx % 4u;
+        y = (float(row) + 0.5)/frows;
           r[i] = texture(tex_sampler, vec2(x, y))[subrow];
     }
-    for (i = 0; i < P; ++i, ++idx)
+    for (i = 0u; i < P; ++i, ++idx)
     {
-        row = idx / 4;
-        subrow = idx % 4;
-        y = ((float)row + 0.5)/frows;
-        d.p[i] = texture(tex_sampler, vec2((x, y)/rows, n/fN))[subrow];
+        row = idx / 4u;
+        subrow = idx % 4u;
+        y = (float(row) + 0.5)/frows;
+        d.p[i] = texture(tex_sampler, vec2(x, y))[subrow];
     }
 }
 // @/
@@ -280,7 +294,8 @@ struct Demo
 {
     float s[S];
     float p[P];
-}
+} d;
+
 float r[R];
 
 uint N;
@@ -303,10 +318,10 @@ this routine:
 void set_dimensions()
 {
     ivec2 sz = textureSize(tex_sampler, 0);
-    N = sz[0];
-    fN = N;
-    rows = sz[1];
-    frows = rows;
+    N = uint(sz[0]);
+    fN = float(N);
+    rows = uint(sz[1]);
+    frows = float(rows);
 }
 // @/
 ```

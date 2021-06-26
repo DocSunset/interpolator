@@ -14,7 +14,7 @@ std::string load_file(const char * filename)
     return shader_stream.str();
 }
 
-GLuint create_shader(const char * name, GLenum shader_type, const GLChar ** source, std::size_t sources)
+GLuint create_shader(const char * name, GLenum shader_type, const GLchar ** source, std::size_t sources)
 {
     GLuint shader = glCreateShader(shader_type);
     glShaderSource(shader, sources, source, NULL);
@@ -23,7 +23,7 @@ GLuint create_shader(const char * name, GLenum shader_type, const GLChar ** sour
     glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
     if (not compiled)
     {
-        if constexpr (shader_type == GL_VERTEX_SHADER)
+        if (shader_type == GL_VERTEX_SHADER)
             std::cerr << "Vertex shader compilation failed: " << name << "\n";
         else std::cerr << "Fragment shader compilation failed: " << name << "\n";
         GLint logLength = 0;
@@ -78,8 +78,8 @@ GLuint create_program(const char * name, GLuint vert, GLuint frag)
         return 0;
     }
 
-    glDeleteShader(vertShader);
-    glDeleteShader(fragShader);
+    glDeleteShader(vert);
+    glDeleteShader(frag);
     return program;
 }
 
