@@ -17,7 +17,8 @@ uniform int N;
 uniform int rows;
 
 uniform sampler2D tex_sampler;
-uniform int contour_lines;
+uniform bool focus;
+uniform float contours;
 uniform int grabbed_idx;
 in vec2 position;
 out vec4 colour;
@@ -79,17 +80,17 @@ void main() // line 65
     {
         weight = calculate_weight(n);
         sum_of_weights += weight;
-        if (contour_lines <= 0)
+        if (contours <= 0.0)
         {
             load_demonstration(n);
             weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
         }
     }
-    if (contour_lines > 0)
+    if (contours > 0.0)
     {
         for (int n = 0; n < N; ++n)
         {
-            if (grabbed_idx >= 0) n = grabbed_idx;
+            if (focus && grabbed_idx >= 0) n = grabbed_idx;
             weight = calculate_weight(n) / sum_of_weights;
             if (weight >= 1.0)
             {
@@ -98,12 +99,12 @@ void main() // line 65
             }
             else
             {
-                float brightness = pow(mod(weight * float(contour_lines), 1.0), 8.0);
+                float brightness = pow(mod(weight * contours, 1.0), 8.0);
                 weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * brightness * weight;
             }
-            if (grabbed_idx >= 0) break;
+            if (focus && grabbed_idx >= 0) break;
         }
     }
-    if (contour_lines <= 0) colour = vec4(weighted_sum / sum_of_weights, 1.0);
+    if (contours <= 0.0) colour = vec4(weighted_sum / sum_of_weights, 1.0);
     else colour = vec4(weighted_sum, 1.0);
 }

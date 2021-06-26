@@ -70,6 +70,14 @@ the implementations should have in order to be turned into OpenGL programs.
 
 ```cpp
 // @='shader interpolators base class'
+struct ShaderInterpolatorState
+{
+    bool focus = false;
+    bool enable_contours = 0;
+    float contours = 10;
+    int grabbed_idx = -1;
+};
+
 std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
 template<typename Interpolator>
 class AcceleratedInterpolator
@@ -121,18 +129,26 @@ public:
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
         glUseProgram(program);
+
         glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
-        glUniform1i(glGetUniformLocation(program, "contour_lines"), contour_lines);
-        glUniform1i(glGetUniformLocation(program, "grabbed_idx"), grabbed_idx);
         glUniform1i(glGetUniformLocation(program, "N"), N);
         glUniform1i(glGetUniformLocation(program, "rows"), rows);
+
+        if (state.enable_contours)
+            glUniform1f(glGetUniformLocation(program, "contours"), state.contours);
+        else
+            glUniform1f(glGetUniformLocation(program, "contours"), 0);
+        glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
+        glUniform1i(glGetUniformLocation(program, "focus"), state.focus);
+
         glBindVertexArray(Fullscreen::vao);
+
         glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     }
 
-    int contour_lines = 0;
-    int grabbed_idx = 0;
+    ShaderInterpolatorState state;
 private:
     GLuint program = 0;
     GLuint texname = 0;
@@ -250,15 +266,6 @@ for (n = 0; n < N; ++n)
         texture(n, row)(subrow) = d.p[i];
     }
 }
-for (n = 0; n < N; ++n)
-{
-    for (i = 0; i < (S + R + P); ++i)
-    {
-        std::cout << texture(n, i/4)(i%4) << " ";
-    }
-    std::cout << std::endl;
-}
-std::cout << rows << std::endl;
 // @/
 ```
 
@@ -316,7 +323,8 @@ uniform int N;
 uniform int rows;
 
 uniform sampler2D tex_sampler;
-uniform int contour_lines;
+uniform bool focus;
+uniform float contours;
 uniform int grabbed_idx;
 in vec2 position;
 out vec4 colour;
@@ -348,17 +356,17 @@ void main() // line 65
     {
         weight = calculate_weight(n);
         sum_of_weights += weight;
-        if (contour_lines <= 0)
+        if (contours <= 0.0)
         {
             load_demonstration(n);
             weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
         }
     }
-    if (contour_lines > 0)
+    if (contours > 0.0)
     {
         for (int n = 0; n < N; ++n)
         {
-            if (grabbed_idx >= 0) n = grabbed_idx;
+            if (focus && grabbed_idx >= 0) n = grabbed_idx;
             weight = calculate_weight(n) / sum_of_weights;
             if (weight >= 1.0)
             {
@@ -367,13 +375,13 @@ void main() // line 65
             }
             else
             {
-                float brightness = pow(mod(weight * float(contour_lines), 1.0), 8.0);
+                float brightness = pow(mod(weight * contours, 1.0), 8.0);
                 weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * brightness * weight;
             }
-            if (grabbed_idx >= 0) break;
+            if (focus && grabbed_idx >= 0) break;
         }
     }
-    if (contour_lines <= 0) colour = vec4(weighted_sum / sum_of_weights, 1.0);
+    if (contours <= 0.0) colour = vec4(weighted_sum / sum_of_weights, 1.0);
     else colour = vec4(weighted_sum, 1.0);
 }
 // @/

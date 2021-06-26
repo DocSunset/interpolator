@@ -170,6 +170,14 @@ namespace ShaderInterpolators
     GLuint Fullscreen::idx = 0;
     bool Fullscreen::initialized = false;
     
+    struct ShaderInterpolatorState
+    {
+        bool focus = false;
+        bool enable_contours = 0;
+        float contours = 10;
+        int grabbed_idx = -1;
+    };
+
     std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
     template<typename Interpolator>
     class AcceleratedInterpolator
@@ -268,15 +276,6 @@ namespace ShaderInterpolators
                     texture(n, row)(subrow) = d.p[i];
                 }
             }
-            for (n = 0; n < N; ++n)
-            {
-                for (i = 0; i < (S + R + P); ++i)
-                {
-                    std::cout << texture(n, i/4)(i%4) << " ";
-                }
-                std::cout << std::endl;
-            }
-            std::cout << rows << std::endl;
             write_gl_texture(texture, texname);
         }
 
@@ -288,18 +287,26 @@ namespace ShaderInterpolators
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
             glUseProgram(program);
+
             glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
-            glUniform1i(glGetUniformLocation(program, "contour_lines"), contour_lines);
-            glUniform1i(glGetUniformLocation(program, "grabbed_idx"), grabbed_idx);
             glUniform1i(glGetUniformLocation(program, "N"), N);
             glUniform1i(glGetUniformLocation(program, "rows"), rows);
+
+            if (state.enable_contours)
+                glUniform1f(glGetUniformLocation(program, "contours"), state.contours);
+            else
+                glUniform1f(glGetUniformLocation(program, "contours"), 0);
+            glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
+            glUniform1i(glGetUniformLocation(program, "focus"), state.focus);
+
             glBindVertexArray(Fullscreen::vao);
+
             glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
         }
 
-        int contour_lines = 0;
-        int grabbed_idx = 0;
+        ShaderInterpolatorState state;
     private:
         GLuint program = 0;
         GLuint texname = 0;

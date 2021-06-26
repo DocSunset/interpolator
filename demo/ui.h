@@ -3,6 +3,7 @@
 
 #include <cstddef>
 #include "types.h"
+#include "../include/shader_interpolators.h"
 
 RGBVec XYZ_to_RGB(const CIEXYZVec& xyz)
 {
@@ -168,18 +169,18 @@ public:
     bool ready_to_quit() const {return quit;}
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
-    unsigned int contour_lines() const {return _contour_lines;}
-    int grabbed_index() const {return grabbed_idx;}
+    unsigned int width() const {return w;}
+    unsigned int height() const {return h;}
 
     template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
     {
     //    auto& interpolator = std::get<0>(tup);
     //    auto& meta = std::get<1>(tup);
-    //    auto& para = std::get<2>(tup);
+        auto& para = std::get<2>(tup);
         auto& shader_program = std::get<4>(tup);
 
-        shader_program.contour_lines = contour_lines();
-        shader_program.grabbed_idx = grabbed_index();
+        if (updated_grab) shader_program.reload(demo, para);
+        shader_program.state = shader_state;
         shader_program.run();
         redraw = false;
     }
@@ -200,52 +201,53 @@ public:
                 break;
 
             case SDL_KEYDOWN:
-                switch (ev.key.keysym.sym)
-                {
-                case SDLK_LSHIFT:
-                case SDLK_RSHIFT:
-                    _contour_lines = 10;
-                    redraw = true;
-                    break;
-                case SDLK_LEFT:
-                    if (ev.key.repeat) break;
-                    _active_interpolator = (_active_interpolator - 1) % num_interpolators;
-                    redraw = true;
-                    break;
-                case SDLK_RIGHT:
-                    if (ev.key.repeat) break;
-                    _active_interpolator = (_active_interpolator + 1) % num_interpolators;
-                    redraw = true;
-                    break;
-                }
-                SDL_Log("%d", _active_interpolator);
-                break;
-
             case SDL_KEYUP:
                 switch (ev.key.keysym.sym)
                 {
                 case SDLK_LSHIFT:
                 case SDLK_RSHIFT:
-                    _contour_lines = 0;
+                    toggle_drawable_flag(shader_state.enable_contours);
+                    break;
+                case SDLK_LEFT:
+                    if (ev.type == SDL_KEYUP) break;
+                    if (ev.key.repeat) break;
+                    _active_interpolator = (_active_interpolator - 1) % num_interpolators;
                     redraw = true;
+                    break;
+                case SDLK_RIGHT:
+                    if (ev.type == SDL_KEYUP) break;
+                    if (ev.key.repeat) break;
+                    _active_interpolator = (_active_interpolator + 1) % num_interpolators;
+                    redraw = true;
+                    break;
+                case SDLK_q:
+                    if (ev.type == SDL_KEYUP) break;
+                    if (ev.key.keysym.mod & KMOD_CTRL) quit = true;
+                    break;
+                case SDLK_f:
+                    if (ev.type == SDL_KEYUP) break;
+                    if (ev.key.keysym.mod == KMOD_NONE) toggle_drawable_flag(shader_state.focus);
+                    break;
+                case SDLK_c:
+                    if (ev.type == SDL_KEYUP) break;
+                    if (ev.key.keysym.mod == KMOD_NONE) toggle_drawable_flag(shader_state.enable_contours);
                     break;
                 }
                 break;
 
             case SDL_MOUSEMOTION:
-                mouse = {ev.button.x / (Scalar)w, ev.button.y / (Scalar)h};
+                set_mouse(ev);
                 if (grabbed)
                 {
                     grabbed->s = mouse;
-        #           ifndef __EMSCRIPTEN__
+                    updated_grab = true;
                     redraw = true;
-        #           endif
                 }
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
-                mouse = {ev.button.x / (Scalar)w, ev.button.y / (Scalar)h};
                 {
+                    set_mouse(ev);
                     Scalar dist, min_dist;
                     min_dist = std::numeric_limits<Scalar>::max();
                     for (unsigned int n = 0; n < demo.size(); ++n)
@@ -254,18 +256,17 @@ public:
                         dist = (mouse - d.s).norm();
                         if (dist < min_dist) 
                         {
-                            grabbed = &d;
-                            grabbed_idx = n;
+                            grab(d, n);
                             min_dist = dist;
                         }
                     }
-                    if (min_dist > grab_dist / (Scalar)w) grabbed = nullptr;
+                    if (min_dist > grab_dist / (Scalar)w) ungrab();
                 }
-                if (_contour_lines) redraw = true;
+                if (shader_state.enable_contours) redraw = true;
                 break;
 
             case SDL_MOUSEBUTTONUP:
-                grabbed = nullptr;
+                ungrab();
                 redraw = true;
                 break;
 
@@ -281,13 +282,33 @@ private:
     mutable bool redraw = true;
 
     bool quit = false;
-    unsigned int _contour_lines = 0;
+    bool updated_grab = false;
+    ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     Vec2 mouse = {0, 0};
     unsigned int w = 500;
     unsigned int h = 500;
     Demo * grabbed = nullptr;
-    int grabbed_idx = -1;
-    Scalar grab_dist = 20.0/500.0;
+    Scalar grab_dist = 100.0;
     std::size_t _active_interpolator = 0;
+
+        void toggle_drawable_flag(bool& flag)
+        {
+            flag = not flag;
+            redraw = true;
+        }
+        void set_mouse(SDL_Event ev)
+        {
+            mouse = {ev.motion.x / (Scalar)w, 1.0 - ev.motion.y / (Scalar)h};
+        }
+        void grab(Demo& d, std::size_t n)
+        {
+            grabbed = &d;
+            shader_state.grabbed_idx = n;
+        }
+        void ungrab()
+        {
+            grabbed = nullptr;
+            shader_state.grabbed_idx = -1;
+        }
 };
 #endif
