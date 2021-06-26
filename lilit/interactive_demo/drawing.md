@@ -50,7 +50,7 @@ for (unsigned int col = 0; col < _texture.cols(); ++col)
 auto stop = std::chrono::high_resolution_clock::now();
 auto usec = std::chrono::duration_cast<std::chrono::microseconds>(stop - start).count();
 std::cout << i << ": Generated " << _texture.cols() * _texture.rows() << " interpolations in " << usec << " microseconds\n" 
-        << "About " << 1000000 * _texture.cols() * _texture.rows() / usec << " interpolations per second" 
+        << "About " << _texture.cols() * _texture.rows() * (1000000 / (double)usec) << " interpolations per second" 
         << std::endl;
 // @/
 ```

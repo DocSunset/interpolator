@@ -19,7 +19,7 @@ ${SOURCES}: ${LITERATE_SOURCES}
 
 demo/interpolators_demo.html: ${SOURCES}
 	@echo building $@
-	@em++ ${CXXFLAGS} ${EIGEN_INCLUDE} -s USE_SDL=2 -s USE_SDL_TTF=2 -s ALLOW_MEMORY_GROWTH=1 -fsanitize=undefined -o $@ demo/interpolators_demo.cpp --preload-file ${SHADERDIR}
+	@em++ ${CXXFLAGS} ${EIGEN_INCLUDE} -s USE_WEBGL2=1 -s USE_SDL=2 -s USE_SDL_TTF=2 -s ALLOW_MEMORY_GROWTH=1 -fsanitize=undefined -o $@ demo/interpolators_demo.cpp --preload-file ${SHADERDIR}
 
 demo/interpolators_demo: ${SOURCES}
 	@echo building $@
