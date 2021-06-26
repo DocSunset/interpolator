@@ -65,7 +65,7 @@ JzAzBzVec interpolated_jab{0, 0, 0};
 
 interpolator.query(q, demo, para, meta, interpolated_jab);
 
-if (contour_lines) 
+if (_contour_lines) 
 {
     @{draw contour lines}
 }
@@ -85,7 +85,7 @@ preset. For guidance in reading the contour map, consider the following:
 - lines of the same color refer to the weight of the same preset
 - points on the sharp edge of a certain contour line all have the same weight
 - the change in weight from one line to the next is always the same, given by
-  `1/contour_lines`
+  `1/_contour_lines`
   (10 by default)
 - lines spaced close together represent a rapid change in weight
 - lines spaced far apart represent a gradual change
@@ -127,7 +127,7 @@ for (unsigned int n = 0; n < demo.size(); ++n)
     }
     else
     {
-        Scalar brightness = std::pow(std::fmod(w * contour_lines, 1.0f), 8);
+        Scalar brightness = std::pow(std::fmod(w * _contour_lines, 1.0f), 8);
         brightness = brightness * w;
         out += rgb * brightness;
     }

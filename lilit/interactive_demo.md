@@ -77,6 +77,8 @@ void loop()
     //glUseProgram(gl.prog);
     //glBindVertexArray(Fullscreen::vao);
     //glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
+    shader_program.contour_lines = ui.contour_lines();
+    shader_program.grabbed_idx = ui.grabbed_index();
     shader_program.run();
     SDL_GL_SwapWindow(sdl.window);
 }

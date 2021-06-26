@@ -169,6 +169,8 @@ public:
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
     const Texture& texture() const {return _texture;}
+    unsigned int contour_lines() const {return _contour_lines;}
+    int grabbed_index() const {return grabbed_idx;}
 
     template<typename Tuple> void draw(const std::size_t i, Tuple& tup, const DemoList& demo) const
     {
@@ -188,7 +190,7 @@ public:
 
                 interpolator.query(q, demo, para, meta, interpolated_jab);
 
-                if (contour_lines) 
+                if (_contour_lines) 
                 {
                     for (unsigned int n = 0; n < demo.size(); ++n)
                     {
@@ -211,7 +213,7 @@ public:
                         }
                         else
                         {
-                            Scalar brightness = std::pow(std::fmod(w * contour_lines, 1.0f), 8);
+                            Scalar brightness = std::pow(std::fmod(w * _contour_lines, 1.0f), 8);
                             brightness = brightness * w;
                             out += rgb * brightness;
                         }
@@ -249,12 +251,12 @@ public:
                 break;
 
             case SDL_KEYDOWN:
-                contour_lines = 10; 
+                _contour_lines = 10; 
                 redraw = true;
                 break;
 
             case SDL_KEYUP:
-                contour_lines = 0; 
+                _contour_lines = 0; 
                 redraw = true;
                 break;
 
@@ -287,7 +289,7 @@ public:
                     }
                     if (min_dist > grab_dist / (Scalar)w) grabbed = nullptr;
                 }
-                if (contour_lines) redraw = true;
+                if (_contour_lines) redraw = true;
                 break;
 
             case SDL_MOUSEBUTTONUP:
@@ -310,12 +312,12 @@ private:
     mutable bool redraw = true;
 
     bool quit = false;
-    unsigned int contour_lines = 0;
+    unsigned int _contour_lines = 0;
     Vec2 mouse = {0, 0};
     unsigned int w = 500;
     unsigned int h = 500;
     Demo * grabbed = nullptr;
-    std::size_t grabbed_idx = 0;
+    int grabbed_idx = -1;
     Scalar grab_dist = 20.0/500.0;
     std::size_t _active_interpolator = 0;
 };

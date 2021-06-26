@@ -207,11 +207,11 @@ namespace ShaderInterpolators
                                  + std::string("precision highp float;\n")
                                  + std::string("#endif\n")
                                  + std::string("#define S ") 
-                                 + std::to_string(S) + std::string("u\n") 
+                                 + std::to_string(S) + std::string("\n") 
                                  + std::string("#define P ") 
-                                 + std::to_string(P) + std::string("u\n") 
+                                 + std::to_string(P) + std::string("\n") 
                                  + std::string("#define R ") 
-                                 + std::to_string(R) + std::string("u\n")
+                                 + std::to_string(R) + std::string("\n")
                                  ;
 
             constexpr std::size_t sources = 2;
@@ -266,6 +266,15 @@ namespace ShaderInterpolators
                     texture(n, row)(subrow) = d.p[i];
                 }
             }
+            for (n = 0; n < N; ++n)
+            {
+                for (i = 0; i < (S + R + P); ++i)
+                {
+                    std::cout << texture(n, i/4)(i%4) << " ";
+                }
+                std::cout << std::endl;
+            }
+            std::cout << rows << std::endl;
             write_gl_texture(texture, texname);
         }
 
@@ -273,16 +282,20 @@ namespace ShaderInterpolators
         {
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texname);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
             glUseProgram(program);
             glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
+            glUniform1i(glGetUniformLocation(program, "contour_lines"), contour_lines);
+            glUniform1i(glGetUniformLocation(program, "grabbed_idx"), grabbed_idx);
             glBindVertexArray(Fullscreen::vao);
             glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
         }
 
+        int contour_lines = 0;
+        int grabbed_idx = 0;
     private:
         GLuint program = 0;
         GLuint texname = 0;

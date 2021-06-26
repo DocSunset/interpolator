@@ -57,38 +57,25 @@ struct InverseDistance
 // @/
 
 // @#'demo/shaders/inverse_distance.frag'
-@{common shader interpolator variables}
-@{shader functions}
 #define POWER 0
 #define D_MIN 1
 #define R_MIN 2
 #define RDIUS 3
 
-void main() // line 65
+@{common shader interpolator variables}
+
+@{shader functions}
+
+float calculate_weight()
 {
-    set_dimensions();
-
-    vec3 weighted_sum = vec3(0.0, 0.0, 0.0);
-    float sum_of_weights = 0.0;
-
-    if (N < 1u)
-    {
-        colour = vec4(weighted_sum, 1.0);
-        return;
-    }
-
     vec2 q = position;
     vec2 s = vec2(d.s[0], d.s[1]);
-    for (uint n = 0u; n < N; ++n)
-    {
-        load_demonstration(n);
-        float dist = distance(q, s);
-        float base = max(dist - r[R_MIN], r[D_MIN]);
-        float weight = r[RDIUS] / pow(base, r[POWER]);
-        sum_of_weights += weight;
-        weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
-    }
-    colour = vec4(weighted_sum / sum_of_weights, 1.0);
+    vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
+    float dist = distance(q, s);
+    float base = max(dist - r[R_MIN], r[D_MIN]);
+    return r[RDIUS] / pow(base, r[POWER]);
 }
+
+@{shader main}
 // @/
 ```

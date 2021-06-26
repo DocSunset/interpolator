@@ -117,16 +117,20 @@ public:
     {
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texname);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
         glUseProgram(program);
         glUniform1i(glGetUniformLocation(program, "tex_sampler"), 0);
+        glUniform1i(glGetUniformLocation(program, "contour_lines"), contour_lines);
+        glUniform1i(glGetUniformLocation(program, "grabbed_idx"), grabbed_idx);
         glBindVertexArray(Fullscreen::vao);
         glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
     }
 
+    int contour_lines = 0;
+    int grabbed_idx = 0;
 private:
     GLuint program = 0;
     GLuint texname = 0;
@@ -164,11 +168,11 @@ std::string preamble = std::string("#version 300 es\n")
                      + std::string("precision highp float;\n")
                      + std::string("#endif\n")
                      + std::string("#define S ") 
-                     + std::to_string(S) + std::string("u\n") 
+                     + std::to_string(S) + std::string("\n") 
                      + std::string("#define P ") 
-                     + std::to_string(P) + std::string("u\n") 
+                     + std::to_string(P) + std::string("\n") 
                      + std::string("#define R ") 
-                     + std::to_string(R) + std::string("u\n")
+                     + std::to_string(R) + std::string("\n")
                      ;
 
 constexpr std::size_t sources = 2;
@@ -242,44 +246,46 @@ for (n = 0; n < N; ++n)
         texture(n, row)(subrow) = d.p[i];
     }
 }
+for (n = 0; n < N; ++n)
+{
+    for (i = 0; i < (S + R + P); ++i)
+    {
+        std::cout << texture(n, i/4)(i%4) << " ";
+    }
+    std::cout << std::endl;
+}
+std::cout << rows << std::endl;
 // @/
 ```
 
 Similarly, in the shader the current parameters can be loaded as follows based
 on the source, parameter, and destination vector sizes' availability in from
 the symbols `S`, `R`, and `P` respectively, as well as the number of
-demonstrations and rows in `fN` and `frows` respectively. The latter two, as
-floating point numbers, are needed to convert discrete texel coordinates to the
-normalized 0-1 coordinates used by the texture lookup function.
+demonstrations and rows in `N` and `rows` respectively.
 
 ```cpp
 // @+'shader functions'
-void load_demonstration(uint n)
+void load_demonstration(int n)
 {
-    float x = (float(n) + 0.5) / fN;
-    float y;
-    uint i, idx, row, subrow;
-    idx = 0u;
-    for (i = 0u; i < S; ++i, ++idx)
+    int i, idx, row, subrow;
+    idx = 0;
+    for (i = 0; i < S; ++i, ++idx)
     {
-        row = idx / 4u;
-        subrow = idx % 4u;
-        y = (float(row) + 0.5)/frows;
-        d.s[i] = texture(tex_sampler, vec2(x, y))[subrow];
+        row = idx / 4;
+        subrow = idx % 4;
+        d.s[i] = texelFetch(tex_sampler, ivec2(row, n), 0)[subrow];
     }
-    for (i = 0u; i < R; ++i, ++idx)
+    for (i = 0; i < R; ++i, ++idx)
     {
-        row = idx / 4u;
-        subrow = idx % 4u;
-        y = (float(row) + 0.5)/frows;
-          r[i] = texture(tex_sampler, vec2(x, y))[subrow];
+        row = idx / 4;
+        subrow = idx % 4;
+          r[i] = texelFetch(tex_sampler, ivec2(row, n), 0)[subrow];
     }
-    for (i = 0u; i < P; ++i, ++idx)
+    for (i = 0; i < P; ++i, ++idx)
     {
-        row = idx / 4u;
-        subrow = idx % 4u;
-        y = (float(row) + 0.5)/frows;
-        d.p[i] = texture(tex_sampler, vec2(x, y))[subrow];
+        row = idx / 4;
+        subrow = idx % 4;
+        d.p[i] = texelFetch(tex_sampler, ivec2(row, n), 0)[subrow];
     }
 }
 // @/
@@ -298,12 +304,12 @@ struct Demo
 
 float r[R];
 
-uint N;
-float fN;
-uint rows;
-float frows;
+int N;
+int rows;
 
 uniform sampler2D tex_sampler;
+uniform int contour_lines;
+uniform int grabbed_idx;
 in vec2 position;
 out vec4 colour;
 // @/
@@ -318,13 +324,84 @@ this routine:
 void set_dimensions()
 {
     ivec2 sz = textureSize(tex_sampler, 0);
-    N = uint(sz[0]);
-    fN = float(N);
-    rows = uint(sz[1]);
-    frows = float(rows);
+    N = sz[0];
+    rows = sz[1];
 }
 // @/
 ```
+
+So for most interpolators, all that remains is to calculate the weights and
+accumulate a weighted sum for all of the demonstrations. The shader thus
+takes this form:
+
+```cpp
+// @='shader main'
+void main() // line 65
+{
+    set_dimensions();
+
+    vec3 weighted_sum = vec3(0.0, 0.0, 0.0);
+    float weight = 0.0;
+    float sum_of_weights = 0.0;
+
+    if (N < 1)
+    {
+        colour = vec4(weighted_sum, 1.0);
+        return;
+    }
+
+    for (int n = 0; n < N; ++n)
+    {
+        load_demonstration(n);
+        weight = calculate_weight();
+        sum_of_weights += weight;
+        if (contour_lines <= 0)
+        {
+            weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * weight;
+        }
+    }
+    if (contour_lines > 0)
+    {
+        for (int n = 0; n < N; ++n)
+        {
+            if (grabbed_idx >= 0) n = grabbed_idx;
+            load_demonstration(n);
+            weight = calculate_weight() / sum_of_weights;
+            if (weight >= 1.0)
+            {
+                weighted_sum = vec3(1.0, 1.0, 1.0);
+                break;
+            }
+            else
+            {
+                float brightness = pow(mod(weight * float(contour_lines), 1.0), 8.0);
+                weighted_sum += vec3(d.p[0], d.p[1], d.p[2]) * brightness * weight;
+            }
+            if (grabbed_idx >= 0) break;
+        }
+    }
+    if (contour_lines <= 0) colour = vec4(weighted_sum / sum_of_weights, 1.0);
+    else colour = vec4(weighted_sum, 1.0);
+}
+// @/
+```
+
+Each unique interpolation algorithm simply needs to define its own function
+`float calculate_weights()` that examines the current contents of the `d`
+structure.
+
+Obviously the shader currently assumes the output is a 3D normalized floating
+point vector that can be directly rendered as a colour. A fully general shader-
+based implementation remains as future work; the most useful incarnation of
+this would be for each instance of the shader to calculate a single weight or
+weighted parameter vector that could then be collected and added together on
+the CPU. If there were a large number of demonstrations this would probably
+provide a performance improvement over using the CPU. Another useful approach
+would be for the shader perform some means of visualizing the P-dimensional
+output of the interpolator that is agnostic about the actual number of
+dimensions.  Development of such algorithms is the subject of high-dimensional
+data visualization, and is currently beyond the scope of this project. Maybe
+one day though.
 
 With those resources in place, it shouldn't be difficult to implement various
 interpolators as fragment shaders. The shaders themselves are listed alongside
