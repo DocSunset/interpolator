@@ -22,14 +22,9 @@ public:
     {
     //    auto& interpolator = std::get<0>(tup);
     //    auto& meta = std::get<1>(tup);
-        auto& para = std::get<2>(tup);
+    //    auto& para = std::get<2>(tup);
         auto& shader_program = std::get<4>(tup);
 
-        if (demo_changed) 
-        {
-            shader_program.reload(demo, para);
-            demo_changed = false;
-        }
         shader_program.state = shader_state;
         shader_program.run();
         redraw = false;
@@ -43,13 +38,12 @@ public:
 
 private:
     mutable bool redraw = true;
-    mutable bool demo_changed = false;
 
     bool quit = false;
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     Vec2 mouse = {0, 0};
-    unsigned int w = 500;
-    unsigned int h = 500;
+    unsigned int w = 720;
+    unsigned int h = 720;
     Demo * grabbed = nullptr;
     Demo * selectd = nullptr;
     Demo * hovered = nullptr;
@@ -119,6 +113,20 @@ default:
         }
         if (min_dist > select_dist / (Scalar)w) return std::make_tuple((Demo *)nullptr, -1);
         else return std::make_tuple(selection, sel_idx);
+    }
+
+    template<typename Interpolators>
+    void move_grabbed(DemoList& demo, Interpolators& interpolators)
+    {
+        grabbed->s = mouse;
+        auto move = [](auto& demo, auto& tup)
+        {
+            auto& para = std::get<2>(tup);
+            auto& shader = std::get<4>(tup);
+            shader.reload(demo, para);
+        };
+        std::apply([&](auto& ... tuples) {((move(demo, tuples)), ...);}, interpolators);
+        redraw = true;
     }
 
     void set_slot(Demo* d, int idx, Demo*& slot, int& idx_slot)
@@ -215,15 +223,15 @@ default:
         }
         break;
 // @/
+```
 
+```cpp
 // @='handle mouse events'
     case SDL_MOUSEMOTION:
         set_mouse(ev);
         if (grabbed)
         {
-            grabbed->s = mouse;
-            demo_changed = true;
-            redraw = true;
+            move_grabbed(demo, interpolators);
         }
         else
         {

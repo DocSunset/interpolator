@@ -88,7 +88,7 @@ void loop()
 {
     ui.poll_event_queue(demo, interpolators);
 
-    if (ui.needs_to_redraw())
+    if (true)//ui.needs_to_redraw())
     {
         unsigned int i = 0;
         auto draw = [](unsigned int& i, auto& tuple)

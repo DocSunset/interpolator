@@ -5,7 +5,7 @@
 
 struct Fullscreen
 {
-    static const std::vector<Vec2> quad;
+    static const std::vector<Vec2> vertices;
     static GLuint vbo;
     static GLuint vao;
     static GLuint idx;
@@ -14,7 +14,7 @@ struct Fullscreen
     static void init()
     {
         if (initialized) return;
-        create_vertex_objects(quad.data(), quad.size(), vbo, vao);
+        create_vertex_objects(vertices.data(), vertices.size(), vbo, vao);
         glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
         glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
         glEnableVertexAttribArray(0);
@@ -22,16 +22,17 @@ struct Fullscreen
         assert(vao != 0);
         initialized = true;
     }
+
+    static void draw()
+    {
+        glBindVertexArray(Fullscreen::vao);
+        glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::vertices.size());
+    }
 };
-const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
+const std::vector<Vec2> Fullscreen::vertices = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
 GLuint Fullscreen::vbo = 0;
 GLuint Fullscreen::vao = 0;
 GLuint Fullscreen::idx = 0;
 bool Fullscreen::initialized = false;
-
-struct Circle
-{
-    static const std::vector<Vec2> vertices;
-}
 
 #endif

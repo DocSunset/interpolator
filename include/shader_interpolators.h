@@ -19,6 +19,8 @@ namespace ShaderInterpolators
         int grabbed_idx = -1;
         int selectd_idx = -1;
         int hovered_idx = -1;
+        float w = 720;
+        float h = 720;
     };
 
     std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
@@ -144,11 +146,11 @@ namespace ShaderInterpolators
             glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
             glUniform1i(glGetUniformLocation(program, "selectd_idx"), state.selectd_idx);
             glUniform1i(glGetUniformLocation(program, "hovered_idx"), state.hovered_idx);
+            glUniform1f(glGetUniformLocation(program, "w"), state.w);
+            glUniform1f(glGetUniformLocation(program, "h"), state.h);
             glUniform1i(glGetUniformLocation(program, "focus"), state.focus);
 
-            glBindVertexArray(Fullscreen::vao);
-
-            glDrawArrays(GL_TRIANGLE_STRIP, 0, Fullscreen::quad.size());
+            Fullscreen::draw();
         }
 
         ShaderInterpolatorState state;
