@@ -18,41 +18,11 @@ algorithms used for the display in the interactive demos.
 #include <string>
 #include <Eigen/Core>
 #include <GLES3/gl3.h>
+#include "gl_boilerplate.h"
+#include "gl_primitives.h"
 
 namespace ShaderInterpolators
 {
-    using Vec2 = Eigen::Vector2f;
-    using RGBAVec = Eigen::Vector4f;
-    using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
-
-    @{openGL boilerplate}
-
-    struct Fullscreen
-    {
-        static const std::vector<Vec2> quad;
-        static GLuint vbo;
-        static GLuint vao;
-        static GLuint idx;
-        static bool initialized;
-    
-        static void init()
-        {
-            if (initialized) return;
-            create_vertex_objects(quad.data(), quad.size(), vbo, vao);
-            glBindBuffer(GL_ARRAY_BUFFER, Fullscreen::vbo);
-            glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, sizeof(Vec2), (const GLvoid*)0);
-            glEnableVertexAttribArray(0);
-            assert(vbo != 0);
-            assert(vao != 0);
-            initialized = true;
-        }
-    };
-    const std::vector<Vec2> Fullscreen::quad = { {-1,-1}, {1,-1}, {-1,1}, {1,1} };
-    GLuint Fullscreen::vbo = 0;
-    GLuint Fullscreen::vao = 0;
-    GLuint Fullscreen::idx = 0;
-    bool Fullscreen::initialized = false;
-    
     @{shader interpolators base class}
     
     @{shader interpolators}
@@ -426,5 +396,7 @@ currently beyond the scope of this project. Maybe one day though.
 With those resources in place, it shouldn't be difficult to implement various
 interpolators as fragment shaders. The shaders themselves are listed alongside
 the CPU-based implementation of the interpolators.
+
+@[lilit/opengl_primitives.md]
 
 @[lilit/opengl_rendering_boilerplate.md]

@@ -1,8 +1,3 @@
-This document contains the helper functions that allow the copious amount of
-boilerplate code involved in using OpenGL to be abstracted away slightly.
-
-```cpp
-// @#'include/gl_boilerplate.h'
 #ifndef GL_BOILERPLATE_H
 #define GL_BOILERPLATE_H
 #include <Eigen/Core>
@@ -11,11 +6,6 @@ using Vec2 = Eigen::Vector2f;
 using RGBAVec = Eigen::Vector4f;
 using Texture = Eigen::Matrix<RGBAVec, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
 
-@{openGL boilerplate}
-#endif
-// @/
-
-// @+'openGL boilerplate'
 std::string load_file(const char * filename)
 {
     std::ifstream file;
@@ -146,5 +136,4 @@ GLuint create_gl_texture(const Texture& mat)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     return tex;
 }
-// @/
-```
+#endif

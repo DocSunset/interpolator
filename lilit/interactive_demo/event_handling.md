@@ -100,7 +100,7 @@ default:
         mouse = {ev.motion.x / (Scalar)w, 1.0 - ev.motion.y / (Scalar)h};
     }
 
-    auto search_for_selection(DemoList& demo) const
+    std::tuple<Demo*, int> search_for_selection(DemoList& demo) const
     {
         Scalar dist, min_dist;
         Demo * selection = nullptr;
