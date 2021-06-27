@@ -329,7 +329,25 @@ public:
                     if (ev.key.keysym.mod & KMOD_CTRL) quit = true;
                     if (ev.key.keysym.mod & KMOD_GUI)  quit = true;
                     break;
+                #ifndef __EMSCRIPTEN__
                 case SDLK_f:
+                    if (ev.type == SDL_KEYUP) break;
+                    if (ev.key.keysym.mod == KMOD_NONE)
+                    {
+                        if (fullscreen)
+                        {
+                            SDL_SetWindowFullscreen(sdl.window, 0);
+                            fullscreen = false;
+                        }
+                        else
+                        {
+                            SDL_SetWindowFullscreen(sdl.window, SDL_WINDOW_FULLSCREEN);
+                            fullscreen = true;
+                        }
+                    }
+                    break;
+                #endif
+                case SDLK_x:
                     if (ev.type == SDL_KEYUP) break;
                     if (ev.key.keysym.mod == KMOD_NONE) toggle_drawable_flag(shader_state.focus);
                     break;
@@ -394,6 +412,7 @@ private:
     Demo * hovered = nullptr;
     const Scalar select_dist = 30.0;
     std::size_t _active_interpolator = 0;
+    bool fullscreen = false;
 
     struct
     {

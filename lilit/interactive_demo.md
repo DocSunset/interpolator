@@ -108,4 +108,115 @@ int main()
 There are several main conceptual section or thematic areas in the program, and
 the details of implementation of each is broken out into a seperate file: 
 
+```cpp
+// @#'demo/ui.h'
+#ifndef UI_H
+#define UI_H
+
+#include <cstddef>
+#include <random>
+#include <chrono>
+#include <SDL.h>
+#include <SDL_log.h>
+#include <SDL_error.h>
+#include <SDL_video.h>
+#include <SDL_render.h>
+#include <SDL_events.h>
+#include <SDL_opengles2.h>
+#include <GLES3/gl3.h>
+#include "types.h"
+#include "../include/shader_interpolators.h"
+
+@{colour conversions}
+
+class UserInterface
+{
+public:
+    bool ready_to_quit() const {return quit;}
+    bool needs_to_redraw() const {return redraw;}
+    std::size_t active_interpolator() const {return _active_interpolator;}
+    unsigned int width() const {return shader_state.w;}
+    unsigned int height() const {return shader_state.h;}
+
+    template<typename Interpolators>
+    void init(DemoList& demo, Interpolators& interpolators)
+    {
+        @{setup}
+    }
+
+    template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
+    {
+    //    auto& interpolator = std::get<0>(tup);
+    //    auto& meta = std::get<1>(tup);
+    //    auto& para = std::get<2>(tup);
+        auto& shader_program = std::get<4>(tup);
+
+        shader_program.state = shader_state;
+        shader_program.run();
+
+        SDL_GL_SwapWindow(sdl.window);
+
+        redraw = false;
+    }
+
+    template<typename Interpolators>
+    void poll_event_queue(DemoList& demo, Interpolators& interpolators)
+    {
+        @{poll event queue and handle events}
+    }
+
+private:
+    mutable bool redraw = true;
+
+    bool quit = false;
+    ShaderInterpolators::ShaderInterpolatorState shader_state = {};
+    Vec2 mouse = {0, 0};
+    Demo * grabbed = nullptr;
+    Demo * selectd = nullptr;
+    Demo * hovered = nullptr;
+    const Scalar select_dist = 30.0;
+    std::size_t _active_interpolator = 0;
+    bool fullscreen = false;
+
+    @{SDL declarations}
+
+    @{ui mutators}
+};
+#endif
+// @/
+```
+
+Each loop, the SDL event queue is polled until empty, and execution switches
+over the type of event. The current implementation is self-explanatory and
+provisional, so no further documentation is provided at this time.
+
+```cpp
+// @='poll event queue and handle events'
+static SDL_Event ev;
+while (SDL_PollEvent(&ev)) switch (ev.type)
+{
+case SDL_QUIT:
+case SDL_APP_TERMINATING:
+case SDL_APP_LOWMEMORY:
+    quit = true;
+    break;
+
+@{handle window events}
+
+@{handle keyboard events}
+
+@{handle mouse events}
+
+default:
+    break;
+}
+// @/
+```
+
+The details of event handing are found here:
+
 @[lilit/interactive_demo/event_handling.md]
+
+The details of setup are found here:
+
+@[lilit/interactive_demo/setup.md]
