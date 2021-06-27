@@ -126,6 +126,8 @@ namespace ShaderInterpolators
 
         void run() const
         {
+            glViewport(0,0,state.w,state.h);
+
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texname);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);

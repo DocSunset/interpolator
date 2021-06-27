@@ -4,6 +4,16 @@
 #define UI_H
 
 #include <cstddef>
+#include <random>
+#include <chrono>
+#include <SDL.h>
+#include <SDL_log.h>
+#include <SDL_error.h>
+#include <SDL_video.h>
+#include <SDL_render.h>
+#include <SDL_events.h>
+#include <SDL_opengles2.h>
+#include <GLES3/gl3.h>
 #include "types.h"
 #include "../include/shader_interpolators.h"
 
@@ -15,8 +25,14 @@ public:
     bool ready_to_quit() const {return quit;}
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
-    unsigned int width() const {return w;}
-    unsigned int height() const {return h;}
+    unsigned int width() const {return shader_state.w;}
+    unsigned int height() const {return shader_state.h;}
+
+    template<typename Interpolators>
+    void init(DemoList& demo, Interpolators& interpolators)
+    {
+        @{setup}
+    }
 
     template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
     {
@@ -27,6 +43,9 @@ public:
 
         shader_program.state = shader_state;
         shader_program.run();
+
+        SDL_GL_SwapWindow(sdl.window);
+
         redraw = false;
     }
 
@@ -42,13 +61,13 @@ private:
     bool quit = false;
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     Vec2 mouse = {0, 0};
-    unsigned int w = 720;
-    unsigned int h = 720;
     Demo * grabbed = nullptr;
     Demo * selectd = nullptr;
     Demo * hovered = nullptr;
-    const Scalar select_dist = 100.0;
+    const Scalar select_dist = 30.0;
     std::size_t _active_interpolator = 0;
+
+    @{SDL declarations}
 
     @{ui mutators}
 };
@@ -81,7 +100,9 @@ default:
     break;
 }
 // @/
+```
 
+```cpp
 // @='ui mutators'
     void toggle_drawable_flag(bool& flag)
     {
@@ -91,7 +112,9 @@ default:
 
     void set_mouse(SDL_Event ev)
     {
-        mouse = {ev.motion.x / (Scalar)w, 1.0 - ev.motion.y / (Scalar)h};
+        mouse = { ev.motion.x - shader_state.w/2.0
+                , shader_state.h/2.0 - ev.motion.y
+                };
     }
 
     std::tuple<Demo*, int> search_for_selection(DemoList& demo) const
@@ -111,14 +134,13 @@ default:
                 min_dist = dist;
             }
         }
-        if (min_dist > select_dist / (Scalar)w) return std::make_tuple((Demo *)nullptr, -1);
+        if (min_dist > select_dist) return std::make_tuple((Demo *)nullptr, -1);
         else return std::make_tuple(selection, sel_idx);
     }
 
     template<typename Interpolators>
-    void move_grabbed(DemoList& demo, Interpolators& interpolators)
+    void reload_textures(DemoList& demo, Interpolators& interpolators)
     {
-        grabbed->s = mouse;
         auto move = [](auto& demo, auto& tup)
         {
             auto& para = std::get<2>(tup);
@@ -127,6 +149,13 @@ default:
         };
         std::apply([&](auto& ... tuples) {((move(demo, tuples)), ...);}, interpolators);
         redraw = true;
+    }
+
+    template<typename Interpolators>
+    void move_grabbed(DemoList& demo, Interpolators& interpolators)
+    {
+        grabbed->s = mouse;
+        reload_textures(demo, interpolators);
     }
 
     void set_slot(Demo* d, int idx, Demo*& slot, int& idx_slot)
@@ -176,13 +205,36 @@ default:
         unset_slot(hovered, shader_state.hovered_idx);
     }
 // @/
+```
 
+Currently we ignore all window events except closing the window, which quits
+the application, and changes to the screen size, which require the width and
+height variables in our shader to be updated. The shader itself calls
+`glViewport` and does whatever else is necessary to ensure that the whole
+window is drawn to and mouse coordinates are not distorted.
+
+```cpp
 // @='handle window events'
     case SDL_WINDOWEVENT:
-        // TODO
+        switch (ev.window.event)
+        {
+        case SDL_WINDOWEVENT_SIZE_CHANGED:
+            shader_state.w = ev.window.data1;
+            shader_state.h = ev.window.data2;
+            redraw = true;
+            break;
+        case SDL_WINDOWEVENT_CLOSE:
+            quit = true;
+            break;
+        }
         break;
 // @/
+```
 
+Keyboard events trigger a variety of effects, most of which are fairly self
+explanatory.
+
+```cpp
 // @='handle keyboard events'
     case SDL_KEYDOWN:
     case SDL_KEYUP:
@@ -207,6 +259,7 @@ default:
         case SDLK_q:
             if (ev.type == SDL_KEYUP) break;
             if (ev.key.keysym.mod & KMOD_CTRL) quit = true;
+            if (ev.key.keysym.mod & KMOD_GUI)  quit = true;
             break;
         case SDLK_f:
             if (ev.type == SDL_KEYUP) break;
@@ -262,3 +315,5 @@ default:
         break;
 // @/
 ```
+
+@[lilit/interactive_demo/setup.md]

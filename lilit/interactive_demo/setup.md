@@ -8,6 +8,7 @@ struct
     SDL_GLContext gl = nullptr;
 } sdl;
 // @/
+```
 
 ```cpp
 // @='setup'
@@ -17,9 +18,10 @@ struct
 
 @{resize interpolators extra lists}
 
+poll_event_queue(demo, interpolators); // sets height and width if window was resized immediately, e.g. by a dynamic tiling window manager
+
 @{initialize shader programs}
 // @/
-
 ```
 
 # Interpolators Setup
@@ -32,7 +34,9 @@ std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
 while(n-- > 0)
 {
-    auto v = Vec2{random(generator), random(generator)};
+    auto v = Vec2{ random(generator) * width() - width()/2.0
+                 , random(generator) * height() - height()/2.0
+                 };
     auto c = RGBVec{random(generator), random(generator), random(generator)};
     demo.push_back({n, v, c});
 }
@@ -72,7 +76,7 @@ if (SDL_Init(SDL_INIT_VIDEO) != 0)
     SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
             "Error initializing SDL:\n    %s\n", 
             SDL_GetError());
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 }
 else SDL_Log("Initialized successfully\n");
 
@@ -83,8 +87,8 @@ SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 sdl.window = SDL_CreateWindow
         ( "Interpolators"
         , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-        , ui.width() , ui.height()
-        , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN
+        , width() , height()
+        , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
         );
 if (sdl.window == nullptr)
 {
@@ -93,7 +97,7 @@ if (sdl.window == nullptr)
             SDL_GetError());
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
             "Couldn't create the main window :(", NULL);
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 }
 else SDL_Log("Created window\n");
 
@@ -105,7 +109,7 @@ if (sdl.gl == nullptr)
             SDL_GetError());
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
             "Couldn't create OpenGL context :(", NULL);
-    return EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 }
 else SDL_Log("Created GL context\n");
 // @/

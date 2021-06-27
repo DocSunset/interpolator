@@ -67,12 +67,11 @@ struct InverseDistance
 
 @{shader functions}
 
-void setup() {}
+void setup(in vec2 q) {}
 
-float calculate_weight(int n)
+float calculate_weight(in vec2 q, in int n)
 {
     load_demonstration(n);
-    vec2 q = position;
     vec2 s = vec2(d.s[0], d.s[1]);
     vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
     float dist = distance(q, s);

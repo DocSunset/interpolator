@@ -84,14 +84,13 @@ float intersecting_spheres_weight(in float R, in float r, in float d)
 
 float r_q;
 
-void setup()
+void setup(in vec2 q)
 {
     float fMaxFloat = intBitsToFloat(2139095039);
     r_q = fMaxFloat;
     for (int n = 0; n < N; ++n)
     {
         load_demonstration(n);
-        vec2 q = position;
         vec2 s = vec2(d.s[0], d.s[1]);
         vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
         float d_n = distance(q, s);
@@ -99,11 +98,10 @@ void setup()
     }
 }
 
-float calculate_weight(int n)
+float calculate_weight(in vec2 q, in int n)
 {
     float fMaxFloat = intBitsToFloat(2139095039);
     load_demonstration(n);
-    vec2 q = position;
     vec2 s = vec2(d.s[0], d.s[1]);
     vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
     float d_n = distance(q, s);
@@ -121,9 +119,10 @@ float calculate_weight(int n)
     return intersecting_spheres_weight(r_q, min(r_n, d_n), d_n);
 }
 
-void main() // line 65
+void main()
 {
-    setup();
+    vec2 q = vec2(position.x * w/2.0, position.y * h/2.0);
+    setup(q);
 
     vec3 weighted_sum = vec3(0.0, 0.0, 0.0);
     float weight = 0.0;
@@ -146,7 +145,7 @@ void main() // line 65
     for (int n = 0; n < N; ++n)
     {
         load_demonstration(n);
-        weight = calculate_weight(n);
+        weight = calculate_weight(q, n);
         sum_of_weights += weight;
         if (contours <= 0.0)
         {
@@ -159,7 +158,7 @@ void main() // line 65
         for (int n = 0; n < N; ++n)
         {
             if (loner >= 0) n = loner;
-            weight = calculate_weight(n) / sum_of_weights;
+            weight = calculate_weight(q, n) / sum_of_weights;
             if (weight >= 1.0)
             {
                 weighted_sum = vec3(1.0, 1.0, 1.0);
@@ -180,8 +179,7 @@ void main() // line 65
     for (int n = 0; n < N; ++n)
     {
         load_demonstration(n);
-        vec2 s = vec2(d.s[0] * w, d.s[1] * h);
-        vec2 q = vec2(position.x * w, position.y * h);
+        vec2 s = vec2(d.s[0], d.s[1]);
         float dist = distance(s, q);
         if (dist <= 5.0) return;
         float brightness = 0.299 * colour.x + 0.587 * colour.y + 0.114 * colour.z;

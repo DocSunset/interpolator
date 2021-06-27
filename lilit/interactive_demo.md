@@ -60,18 +60,9 @@ browser's event loop or the main function loop depending on the platform.
 
 #include <vector>
 #include <tuple>
-#include <random>
-#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <SDL.h>
-#include <SDL_log.h>
-#include <SDL_error.h>
-#include <SDL_video.h>
-#include <SDL_render.h>
-#include <SDL_events.h>
-#include <SDL_opengles2.h>
-#include <GLES3/gl3.h>
 #include <Eigen/Core>
 #include <Eigen/LU>
 #include "../include/interpolators.h"
@@ -81,8 +72,6 @@ browser's event loop or the main function loop depending on the platform.
 
 DemoList demo;
 UserInterface ui;
-
-@{SDL declarations}
 
 void loop()
 {
@@ -94,14 +83,12 @@ void loop()
         auto draw = [](unsigned int& i, auto& tuple)
                 {if (i++ == ui.active_interpolator()) ui.draw(tuple, demo);};
         std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
-
-        SDL_GL_SwapWindow(sdl.window);
     }
 }
 
 int main()
 {
-    @{setup}
+    ui.init(demo, interpolators);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);
@@ -122,4 +109,3 @@ There are several main conceptual section or thematic areas in the program, and
 the details of implementation of each is broken out into a seperate file: 
 
 @[lilit/interactive_demo/event_handling.md]
-@[lilit/interactive_demo/setup.md]

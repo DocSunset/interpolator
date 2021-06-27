@@ -2,6 +2,16 @@
 #define UI_H
 
 #include <cstddef>
+#include <random>
+#include <chrono>
+#include <SDL.h>
+#include <SDL_log.h>
+#include <SDL_error.h>
+#include <SDL_video.h>
+#include <SDL_render.h>
+#include <SDL_events.h>
+#include <SDL_opengles2.h>
+#include <GLES3/gl3.h>
 #include "types.h"
 #include "../include/shader_interpolators.h"
 
@@ -169,8 +179,89 @@ public:
     bool ready_to_quit() const {return quit;}
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
-    unsigned int width() const {return w;}
-    unsigned int height() const {return h;}
+    unsigned int width() const {return shader_state.w;}
+    unsigned int height() const {return shader_state.h;}
+
+    template<typename Interpolators>
+    void init(DemoList& demo, Interpolators& interpolators)
+    {
+        if (SDL_Init(SDL_INIT_VIDEO) != 0)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                    "Error initializing SDL:\n    %s\n", 
+                    SDL_GetError());
+            exit(EXIT_FAILURE);
+        }
+        else SDL_Log("Initialized successfully\n");
+
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+        SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+        sdl.window = SDL_CreateWindow
+                ( "Interpolators"
+                , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
+                , width() , height()
+                , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+                );
+        if (sdl.window == nullptr)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                    "Error creating window:\n    %s\n", 
+                    SDL_GetError());
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                    "Couldn't create the main window :(", NULL);
+            exit(EXIT_FAILURE);
+        }
+        else SDL_Log("Created window\n");
+
+        sdl.gl = SDL_GL_CreateContext(sdl.window);
+        if (sdl.gl == nullptr)
+        {
+            SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
+                    "Error creating OpenGL context:\n    %s\n", 
+                    SDL_GetError());
+            SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                    "Couldn't create OpenGL context :(", NULL);
+            exit(EXIT_FAILURE);
+        }
+        else SDL_Log("Created GL context\n");
+
+        unsigned int n = 3;
+        unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine generator (seed);
+        std::uniform_real_distribution<Scalar> random(0, 1);
+        while(n-- > 0)
+        {
+            auto v = Vec2{ random(generator) * width() - width()/2.0
+                         , random(generator) * height() - height()/2.0
+                         };
+            auto c = RGBVec{random(generator), random(generator), random(generator)};
+            demo.push_back({n, v, c});
+        }
+
+        auto resize_lists = [&](auto& tup)
+        {
+            auto& meta = std::get<1>(tup);
+            auto& para = std::get<2>(tup);
+            auto& default_para = std::get<3>(tup);
+            meta.resize(demo.size());
+            for (auto& m : meta) m = {};
+            para.resize(demo.size());
+            for (auto& p : para) p = default_para;
+        };
+        std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
+
+        poll_event_queue(demo, interpolators); // sets height and width if window was resized immediately, e.g. by a dynamic tiling window manager
+
+        auto init_shaders = [&](auto& tup)
+        {
+            auto& para = std::get<2>(tup);
+            auto& shader_program = std::get<4>(tup);
+            shader_program.init(demo, para);
+        };
+        std::apply([&](auto& ... tuples) {((init_shaders(tuples)), ...);}, interpolators);
+    }
 
     template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
     {
@@ -181,6 +272,9 @@ public:
 
         shader_program.state = shader_state;
         shader_program.run();
+
+        SDL_GL_SwapWindow(sdl.window);
+
         redraw = false;
     }
 
@@ -197,7 +291,17 @@ public:
             break;
 
             case SDL_WINDOWEVENT:
-                // TODO
+                switch (ev.window.event)
+                {
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    shader_state.w = ev.window.data1;
+                    shader_state.h = ev.window.data2;
+                    redraw = true;
+                    break;
+                case SDL_WINDOWEVENT_CLOSE:
+                    quit = true;
+                    break;
+                }
                 break;
 
             case SDL_KEYDOWN:
@@ -223,6 +327,7 @@ public:
                 case SDLK_q:
                     if (ev.type == SDL_KEYUP) break;
                     if (ev.key.keysym.mod & KMOD_CTRL) quit = true;
+                    if (ev.key.keysym.mod & KMOD_GUI)  quit = true;
                     break;
                 case SDLK_f:
                     if (ev.type == SDL_KEYUP) break;
@@ -284,13 +389,17 @@ private:
     bool quit = false;
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     Vec2 mouse = {0, 0};
-    unsigned int w = 720;
-    unsigned int h = 720;
     Demo * grabbed = nullptr;
     Demo * selectd = nullptr;
     Demo * hovered = nullptr;
-    const Scalar select_dist = 100.0;
+    const Scalar select_dist = 30.0;
     std::size_t _active_interpolator = 0;
+
+    struct
+    {
+        SDL_Window * window = nullptr;
+        SDL_GLContext gl = nullptr;
+    } sdl;
 
         void toggle_drawable_flag(bool& flag)
         {
@@ -300,7 +409,9 @@ private:
 
         void set_mouse(SDL_Event ev)
         {
-            mouse = {ev.motion.x / (Scalar)w, 1.0 - ev.motion.y / (Scalar)h};
+            mouse = { ev.motion.x - shader_state.w/2.0
+                    , shader_state.h/2.0 - ev.motion.y
+                    };
         }
 
         std::tuple<Demo*, int> search_for_selection(DemoList& demo) const
@@ -320,14 +431,13 @@ private:
                     min_dist = dist;
                 }
             }
-            if (min_dist > select_dist / (Scalar)w) return std::make_tuple((Demo *)nullptr, -1);
+            if (min_dist > select_dist) return std::make_tuple((Demo *)nullptr, -1);
             else return std::make_tuple(selection, sel_idx);
         }
 
         template<typename Interpolators>
-        void move_grabbed(DemoList& demo, Interpolators& interpolators)
+        void reload_textures(DemoList& demo, Interpolators& interpolators)
         {
-            grabbed->s = mouse;
             auto move = [](auto& demo, auto& tup)
             {
                 auto& para = std::get<2>(tup);
@@ -336,6 +446,13 @@ private:
             };
             std::apply([&](auto& ... tuples) {((move(demo, tuples)), ...);}, interpolators);
             redraw = true;
+        }
+
+        template<typename Interpolators>
+        void move_grabbed(DemoList& demo, Interpolators& interpolators)
+        {
+            grabbed->s = mouse;
+            reload_textures(demo, interpolators);
         }
 
         void set_slot(Demo* d, int idx, Demo*& slot, int& idx_slot)
