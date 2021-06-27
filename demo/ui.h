@@ -202,7 +202,7 @@ public:
                 ( "Interpolators"
                 , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
                 , width() , height()
-                , SDL_WINDOW_OPENGL | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+                , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
                 );
         if (sdl.window == nullptr)
         {
