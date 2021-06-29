@@ -115,6 +115,7 @@ the details of implementation of each is broken out into a seperate file:
 #include <GLES3/gl3.h>
 #include "types.h"
 #include "slider.h"
+#include "selection.h"
 #include "../include/shader_interpolators.h"
 
 @{colour conversions}
@@ -164,10 +165,9 @@ private:
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     WindowSize window;
     Vec2 mouse = {0, 0};
-    Slider * grabbed_slider = nullptr;
-    Demo * grabbed = nullptr;
-    Demo * selectd = nullptr;
-    Demo * hovered = nullptr;
+    Selection grabbed = Selection::None();
+    Selection selectd = Selection::None();
+    Selection hovered = Selection::None();
     const Scalar select_dist = 30.0;
     std::size_t _active_interpolator = 0;
     bool fullscreen = false;

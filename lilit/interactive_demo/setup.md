@@ -67,8 +67,14 @@ auto init_shaders = [&](auto& tup)
 };
 std::apply([&](auto& ... tuples) {((init_shaders(tuples)), ...);}, interpolators);
 
-slider.resize(max_params);
+slider.resize(max_params + 5);
 for (auto& s : slider) s.init();
+active_sliders = 5;
+slider[0].foreground = {1.0, 1.0, 0.0};
+slider[1].foreground = {1.0, 0.0, 1.0};
+slider[2].foreground = {1.0, 0.0, 0.0};
+slider[3].foreground = {0.0, 1.0, 0.0};
+slider[4].foreground = {0.0, 0.0, 1.0};
 // @/
 ```
 

@@ -13,38 +13,6 @@
                 };
     }
 
-    std::tuple<Demo*, int> search_for_selection(DemoList& demo) const
-    {
-        Scalar dist, min_dist;
-        Demo * selection = nullptr;
-        int sel_idx = -1;
-        min_dist = std::numeric_limits<Scalar>::max();
-        for (unsigned int n = 0; n < demo.size(); ++n)
-        {
-            auto& d = demo[n];
-            dist = (mouse - d.s).norm();
-            if (dist < min_dist) 
-            {
-                selection = &d;
-                sel_idx = n;
-                min_dist = dist;
-            }
-        }
-        if (min_dist > select_dist) return std::make_tuple((Demo *)nullptr, -1);
-        else return std::make_tuple(selection, sel_idx);
-    }
-
-    Slider * search_for_slider()
-    {
-        for (auto& s : slider)
-        {
-            if (  s.box.left < mouse.x() && s.box.left + s.box.width > mouse.x()
-               && s.box.bottom < mouse.y() && s.box.bottom + s.box.height > mouse.y())
-               return &s;
-        }
-        return nullptr;
-    }
-
     template<typename Interpolators>
     void reload_textures(DemoList& demo, Interpolators& interpolators)
     {
@@ -58,63 +26,11 @@
         redraw = true;
     }
 
-    template<typename Interpolators>
-    void move_grabbed(DemoList& demo, Interpolators& interpolators)
-    {
-        grabbed->s = mouse;
-        reload_textures(demo, interpolators);
-    }
-
-    void set_slot(Demo* d, int idx, Demo*& slot, int& idx_slot)
-    {
-        slot = d;
-        idx_slot = idx;
-    }
-
-    void unset_slot(Demo*& slot, int& idx_slot)
-    {
-        slot = nullptr;
-        idx_slot = -1;
-    }
-
-    void grab(Demo* d, int idx)
-    {
-        set_slot(d, idx, grabbed, shader_state.grabbed_idx);
-        select(d, idx);
-        unhover();
-    }
-
-    void select(Demo* d, int idx)
-    {
-        set_slot(d, idx, selectd, shader_state.selectd_idx);
-        if (shader_state.focus) redraw = true;
-    }
-
-    void hover(Demo* d, int idx)
-    {
-        set_slot(d, idx, hovered, shader_state.hovered_idx);
-        if (shader_state.focus) redraw = true;
-    }
-
-    void ungrab()   
-    {
-        unset_slot(grabbed, shader_state.grabbed_idx);
-    }
-
-    void unselect()
-    {
-        unset_slot(selectd, shader_state.selectd_idx);
-        if (shader_state.focus) redraw = true;
-    }
-
-    void unhover()
-    {
-        unset_slot(hovered, shader_state.hovered_idx);
-    }
+    @{selection handlers}
 
     void update_slider_bounds()
     {
-        if (selectd == nullptr) return;
+        if (selectd.type != SelectionType::Demo) return;
         bool vertical_sliders = window.w >= window.h;
         constexpr float spacing = 10;
         constexpr float slider_width = 30;
@@ -127,7 +43,7 @@
         float slider_step = spacing + slider_width;
         if (vertical_sliders)
         {
-            if (selectd->s.x() < 0)
+            if (selectd.demo.d->s.x() < 0)
             {
                 slider_step = -slider_step;
                 step = window.w/2.0 - spacing - slider_width;
@@ -137,7 +53,7 @@
         }
         else
         {
-            if (selectd->s.y() < 0)
+            if (selectd.demo.d->s.y() < 0)
             {
                 slider_step = -slider_step;
                 step = window.h/2.0 - spacing - slider_width;
@@ -153,6 +69,35 @@
             slider[i].window = window;
             step += slider_step;
         }
+
+        redraw = true;
+    }
+
+    template<typename Interpolators>
+    void update_slider_values(const DemoList& demo, const Interpolators& interpolators)
+    {
+        if (selectd.type != SelectionType::Demo) return;
+
+        auto do_update = [&](const Demo& d, const auto& p)
+        {
+            slider[0].set_value(d->s.x() / window.w + 0.5, 0.0, 1.0);
+            slider[1].set_value(d->s.y() / window.h + 0.5, 0.0, 1.0);
+            slider[2].set_value(d->p.x(), 0.0, 1.0);
+            slider[3].set_value(d->p.y(), 0.0, 1.0);
+            slider[4].set_value(d->p.z(), 0.0, 1.0);
+            std::size_t slider_idx = 5;
+            for (std::size_t i = 0; i < active_sliders - 5; ++i)
+                slider[slider_idx++].set_value(p[i], p.min[i], p.max[i]);
+        };
+
+        auto update_outer = [&](std::size_t i, const auto& tuple)
+        {
+            if (i != _active_interpolator) return;
+            auto para = std::get<2>(tuple);
+            do_update(demo[selectd.demo.idx], para[selected.demo.idx]);
+        }
+
+        std::apply([&](auto& ... tuples) {((update_outer(i++, tuples)), ...);}, interpolators);
     }
 
     template<typename Interpolators>
@@ -164,7 +109,9 @@
         {
             if (i != _active_interpolator) return;
             auto& para = std::get<2>(tuple);
-            active_sliders = para[0].size();
+            active_sliders = para[0].size() + 5;
+            if (selectd.type == SelectionType::Demo)
+                update_slider_values(demo, para);
         };
         unsigned int i = 0;
         std::apply([&](auto& ... tuples) {((set_active_sliders(i++, tuples)), ...);}, interpolators);
@@ -173,20 +120,21 @@
 
     void set_grabbed_slider()
     {
+        if (grabbed.type != SelectionType::Slider) return;
         if (window.w > window.h) // vertical sliders
         {
-            grabbed_slider->set_value(
-                      mouse.y() - grabbed_slider->box.bottom
+            grabbed.slider.s->set_value(
+                      mouse.y() - grabbed.slider.s->box.bottom
                     , 0.0f
-                    , grabbed_slider->box.height
+                    , grabbed.slider.s->box.height
                     );
         }
         else
         {
-            grabbed_slider->set_value(
-                      mouse.x() - grabbed_slider->box.left
+            grabbed.slider.s->set_value(
+                      mouse.x() - grabbed.slider.s->box.left
                     , 0.0f
-                    , grabbed_slider->box.width
+                    , grabbed.slider.s->box.width
                     );
         }
     }
@@ -276,82 +224,13 @@ explanatory.
             if (ev.key.keysym.mod == KMOD_NONE) toggle_drawable_flag(shader_state.enable_contours);
             break;
         case SDLK_ESCAPE:
-            if (grabbed) ungrab();
-            if (selectd) unselect();
+            ungrab();
+            unselect();
             break;
         }
         break;
 // @/
 ```
 
-```cpp
-// @='handle mouse events'
-    case SDL_MOUSEMOTION:
-        set_mouse(ev);
-        if (active_sliders > 0) update_slider_bounds();
-        if (grabbed)
-        {
-            move_grabbed(demo, interpolators);
-            update_slider_bounds();
-        }
-        else
-        {
-            auto [demoptr, demoidx] = search_for_selection(demo);
-            if (demoptr) hover(demoptr, demoidx);
-            else 
-            {
-                unhover();
-                if (grabbed_slider) 
-                {
-                    set_grabbed_slider();
-                }
-                else
-                {
-                    Slider * s = search_for_slider();
-                    if (s) s->hover = true;
-                    else for (auto& s : slider) s.hover = false;
-                }
-            }
-        }
-        break;
-
-    case SDL_MOUSEBUTTONDOWN:
-        {
-            set_mouse(ev);
-            auto [demoptr, demoidx] = search_for_selection(demo);
-            if (demoptr)
-            {
-                grab(demoptr, demoidx);
-                update_slider_bounds();
-            }
-            else
-            {
-                grabbed_slider = search_for_slider();
-                if (grabbed_slider)
-                {
-                    grabbed_slider->grab = true;
-                    set_grabbed_slider();
-                }
-                else unselect();
-            }
-        }
-        break;
-
-    case SDL_MOUSEBUTTONUP:
-        set_mouse(ev);
-        ungrab();
-        if (grabbed_slider)
-        {
-            set_grabbed_slider();
-            grabbed_slider->grab = false;
-            grabbed_slider = nullptr;
-        }
-        redraw = true;
-        break;
-
-    case SDL_MOUSEWHEEL:
-        break;
-// @/
-```
-
-@[lilit/interactive_demo/sliders.md]
+@[lilit/interactive_demo/selection.md]
+@[lilit/interactive_demo/slider.md]
