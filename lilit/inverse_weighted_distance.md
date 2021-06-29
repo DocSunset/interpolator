@@ -24,6 +24,8 @@ struct InverseDistance
     USING_INTERPOLATOR_DEMO_TYPES;
     struct Meta { Scalar d = 0, w = 0; };
     INTERPOLATOR_PARAMETER_STRUCT_START(InverseDistanceNames, 4)
+        INTERPOLATOR_PARAMETER_MIN(4, 0.001, -10, -10.0, -10.0);
+        INTERPOLATOR_PARAMETER_MAX(4, 20, 10, 10, 10);
         INTERPOLATOR_PARAM_ALIAS(power, 0);
         INTERPOLATOR_PARAM_ALIAS(d_min, 1);
         INTERPOLATOR_PARAM_ALIAS(r_min, 2);

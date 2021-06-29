@@ -5,6 +5,9 @@ boilerplate code involved in using OpenGL to be abstracted away slightly.
 // @#'include/gl_boilerplate.h'
 #ifndef GL_BOILERPLATE_H
 #define GL_BOILERPLATE_H
+#include <iostream>
+#include <fstream>
+#include <sstream>
 #include <Eigen/Core>
 
 using Vec2 = Eigen::Vector2f;
@@ -97,7 +100,7 @@ GLuint create_program(const char * name, GLuint vert, GLuint frag)
 }
 
 template<typename Vertex>
-void create_vertex_objects(const Vertex * vertices, GLuint numVertices, GLuint& vbo, GLuint& vao)
+void create_vertex_objects(const Vertex * vertices, GLuint numVertices, GLuint& vbo, GLuint& vao, GLenum type = GL_STATIC_DRAW)
 {
     vbo = 0;
     vao = 0;

@@ -12,9 +12,6 @@ algorithms used for the display in the interactive demos.
 // @#'include/shader_interpolators.h'
 #ifndef SHADER_INTERPOLATORS_H
 #define SHADER_INTERPOLATORS_H
-#include <iostream>
-#include <fstream>
-#include <sstream>
 #include <string>
 #include <Eigen/Core>
 #include <GLES3/gl3.h>
@@ -48,8 +45,6 @@ struct ShaderInterpolatorState
     int grabbed_idx = -1;
     int selectd_idx = -1;
     int hovered_idx = -1;
-    float w = 720;
-    float h = 720;
 };
 
 std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
@@ -97,8 +92,6 @@ public:
 
     void run() const
     {
-        glViewport(0,0,state.w,state.h);
-
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, texname);
         glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
@@ -119,14 +112,15 @@ public:
         glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
         glUniform1i(glGetUniformLocation(program, "selectd_idx"), state.selectd_idx);
         glUniform1i(glGetUniformLocation(program, "hovered_idx"), state.hovered_idx);
-        glUniform1f(glGetUniformLocation(program, "w"), state.w);
-        glUniform1f(glGetUniformLocation(program, "h"), state.h);
+        glUniform1f(glGetUniformLocation(program, "w"), window.w);
+        glUniform1f(glGetUniformLocation(program, "h"), window.h);
         glUniform1i(glGetUniformLocation(program, "focus"), state.focus);
 
         Fullscreen::draw();
     }
 
     ShaderInterpolatorState state;
+    WindowSize window;
 private:
     GLuint program = 0;
     GLuint texname = 0;

@@ -48,8 +48,14 @@ struct Para \
     const Scalar& operator[] (std::size_t n) const {return data[n];} \
           Scalar& operator[] (std::size_t n)       {return data[n];} \
     const char * name(std::size_t n) {return Names[n];} \
-    std::size_t size() {return N;} \
-    Scalar data[N];
+    constexpr std::size_t size() {return N;} \
+    Scalar data[N];\
+
+#define INTERPOLATOR_PARAMETER_MIN(N, ...)\
+    Scalar min[N] = {__VA_ARGS__}
+
+#define INTERPOLATOR_PARAMETER_MAX(N, ...)\
+    Scalar max[N] = {__VA_ARGS__}
 
 #define INTERPOLATOR_PARAM_ALIAS(name, idx)\
 const Scalar& name() const {return data[idx];} \

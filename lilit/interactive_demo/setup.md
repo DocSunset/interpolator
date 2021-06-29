@@ -34,8 +34,8 @@ std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);
 while(n-- > 0)
 {
-    auto v = Vec2{ random(generator) * width() - width()/2.0
-                 , random(generator) * height() - height()/2.0
+    auto v = Vec2{ random(generator) * window.w - window.w/2.0
+                 , random(generator) * window.h - window.h/2.0
                  };
     auto c = RGBVec{random(generator), random(generator), random(generator)};
     demo.push_back({n, v, c});
@@ -57,13 +57,18 @@ std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators
 // @/
 
 // @='initialize shader programs'
+std::size_t max_params = 0;
 auto init_shaders = [&](auto& tup)
 {
     auto& para = std::get<2>(tup);
     auto& shader_program = std::get<4>(tup);
     shader_program.init(demo, para);
+    max_params = std::max(para[0].size(), max_params);
 };
 std::apply([&](auto& ... tuples) {((init_shaders(tuples)), ...);}, interpolators);
+
+slider.resize(max_params);
+for (auto& s : slider) s.init();
 // @/
 ```
 
@@ -87,7 +92,7 @@ SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 sdl.window = SDL_CreateWindow
         ( "Interpolators"
         , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-        , width() , height()
+        , window.w , window.h
         , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
         );
 if (sdl.window == nullptr)

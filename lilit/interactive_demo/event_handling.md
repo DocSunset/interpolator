@@ -8,8 +8,8 @@
 
     void set_mouse(SDL_Event ev)
     {
-        mouse = { ev.motion.x - shader_state.w/2.0
-                , shader_state.h/2.0 - ev.motion.y
+        mouse = { ev.motion.x - window.w/2.0
+                , window.h/2.0 - ev.motion.y
                 };
     }
 
@@ -32,6 +32,17 @@
         }
         if (min_dist > select_dist) return std::make_tuple((Demo *)nullptr, -1);
         else return std::make_tuple(selection, sel_idx);
+    }
+
+    Slider * search_for_slider()
+    {
+        for (auto& s : slider)
+        {
+            if (  s.box.left < mouse.x() && s.box.left + s.box.width > mouse.x()
+               && s.box.bottom < mouse.y() && s.box.bottom + s.box.height > mouse.y())
+               return &s;
+        }
+        return nullptr;
     }
 
     template<typename Interpolators>
@@ -100,6 +111,85 @@
     {
         unset_slot(hovered, shader_state.hovered_idx);
     }
+
+    void update_slider_bounds()
+    {
+        if (selectd == nullptr) return;
+        bool vertical_sliders = window.w >= window.h;
+        constexpr float spacing = 10;
+        constexpr float slider_width = 30;
+        float slider_length = vertical_sliders ?  window.h : 0.5 * window.w;
+        slider_length -= 2 * spacing;
+        float width  = vertical_sliders ? slider_width  : slider_length;
+        float height = vertical_sliders ? slider_length : slider_width; 
+
+        float step, baseline;
+        float slider_step = spacing + slider_width;
+        if (vertical_sliders)
+        {
+            if (selectd->s.x() < 0)
+            {
+                slider_step = -slider_step;
+                step = window.w/2.0 - spacing - slider_width;
+            }
+            else step = -window.w/2.0 + spacing;
+            baseline = -window.h/2.0 + spacing;
+        }
+        else
+        {
+            if (selectd->s.y() < 0)
+            {
+                slider_step = -slider_step;
+                step = window.h/2.0 - spacing - slider_width;
+            }
+            else step = -window.h/2.0 + spacing;
+            baseline = -window.w/2.0 + spacing;
+        }
+
+        for (std::size_t i = 0; i < active_sliders; ++i)
+        {
+            if (vertical_sliders) slider[i].box = {baseline, step, height, width};
+            else                  slider[i].box = {step, baseline, height, width};
+            slider[i].window = window;
+            step += slider_step;
+        }
+    }
+
+    template<typename Interpolators>
+    void change_active_interpolator(int increment, Interpolators& interpolators)
+    {
+        if (increment == num_interpolators) return;
+        _active_interpolator = (_active_interpolator + increment) % num_interpolators;
+        auto set_active_sliders = [&](std::size_t i, auto& tuple)
+        {
+            if (i != _active_interpolator) return;
+            auto& para = std::get<2>(tuple);
+            active_sliders = para[0].size();
+        };
+        unsigned int i = 0;
+        std::apply([&](auto& ... tuples) {((set_active_sliders(i++, tuples)), ...);}, interpolators);
+        update_slider_bounds();
+    }
+
+    void set_grabbed_slider()
+    {
+        if (window.w > window.h) // vertical sliders
+        {
+            grabbed_slider->set_value(
+                      mouse.y() - grabbed_slider->box.bottom
+                    , 0.0f
+                    , grabbed_slider->box.height
+                    );
+        }
+        else
+        {
+            grabbed_slider->set_value(
+                      mouse.x() - grabbed_slider->box.left
+                    , 0.0f
+                    , grabbed_slider->box.width
+                    );
+        }
+    }
 // @/
 ```
 
@@ -115,8 +205,10 @@ window is drawn to and mouse coordinates are not distorted.
         switch (ev.window.event)
         {
         case SDL_WINDOWEVENT_SIZE_CHANGED:
-            shader_state.w = ev.window.data1;
-            shader_state.h = ev.window.data2;
+            window.w = ev.window.data1;
+            window.h = ev.window.data2;
+            for (auto& s : slider) s.window = window;
+            update_slider_bounds();
             redraw = true;
             break;
         case SDL_WINDOWEVENT_CLOSE:
@@ -143,13 +235,13 @@ explanatory.
         case SDLK_LEFT:
             if (ev.type == SDL_KEYUP) break;
             if (ev.key.repeat) break;
-            _active_interpolator = (_active_interpolator - 1) % num_interpolators;
+            change_active_interpolator(-1, interpolators);
             redraw = true;
             break;
         case SDLK_RIGHT:
             if (ev.type == SDL_KEYUP) break;
             if (ev.key.repeat) break;
-            _active_interpolator = (_active_interpolator + 1) % num_interpolators;
+            change_active_interpolator(1, interpolators);
             redraw = true;
             break;
         case SDLK_q:
@@ -196,15 +288,30 @@ explanatory.
 // @='handle mouse events'
     case SDL_MOUSEMOTION:
         set_mouse(ev);
+        if (active_sliders > 0) update_slider_bounds();
         if (grabbed)
         {
             move_grabbed(demo, interpolators);
+            update_slider_bounds();
         }
         else
         {
             auto [demoptr, demoidx] = search_for_selection(demo);
             if (demoptr) hover(demoptr, demoidx);
-            else unhover();
+            else 
+            {
+                unhover();
+                if (grabbed_slider) 
+                {
+                    set_grabbed_slider();
+                }
+                else
+                {
+                    Slider * s = search_for_slider();
+                    if (s) s->hover = true;
+                    else for (auto& s : slider) s.hover = false;
+                }
+            }
         }
         break;
 
@@ -215,13 +322,30 @@ explanatory.
             if (demoptr)
             {
                 grab(demoptr, demoidx);
+                update_slider_bounds();
             }
-            else unselect();
+            else
+            {
+                grabbed_slider = search_for_slider();
+                if (grabbed_slider)
+                {
+                    grabbed_slider->grab = true;
+                    set_grabbed_slider();
+                }
+                else unselect();
+            }
         }
         break;
 
     case SDL_MOUSEBUTTONUP:
+        set_mouse(ev);
         ungrab();
+        if (grabbed_slider)
+        {
+            set_grabbed_slider();
+            grabbed_slider->grab = false;
+            grabbed_slider = nullptr;
+        }
         redraw = true;
         break;
 
@@ -229,3 +353,5 @@ explanatory.
         break;
 // @/
 ```
+
+@[lilit/interactive_demo/sliders.md]

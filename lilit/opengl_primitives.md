@@ -5,6 +5,12 @@
 
 #include "gl_boilerplate.h"
 
+struct WindowSize
+{
+    float w = 720;
+    float h = 720;
+};
+
 @{gl primitives}
 
 #endif

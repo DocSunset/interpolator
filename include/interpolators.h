@@ -25,8 +25,14 @@ struct Para \
     const Scalar& operator[] (std::size_t n) const {return data[n];} \
           Scalar& operator[] (std::size_t n)       {return data[n];} \
     const char * name(std::size_t n) {return Names[n];} \
-    std::size_t size() {return N;} \
-    Scalar data[N];
+    constexpr std::size_t size() {return N;} \
+    Scalar data[N];\
+
+#define INTERPOLATOR_PARAMETER_MIN(N, ...)\
+    Scalar min[N] = {__VA_ARGS__}
+
+#define INTERPOLATOR_PARAMETER_MAX(N, ...)\
+    Scalar max[N] = {__VA_ARGS__}
 
 #define INTERPOLATOR_PARAM_ALIAS(name, idx)\
 const Scalar& name() const {return data[idx];} \
@@ -59,7 +65,7 @@ namespace Interpolators
         const Scalar& operator[] (std::size_t n) const {return zero;}
               Scalar& operator[] (std::size_t n)       {return zero;}
         const char * name(std::size_t n) {return "";}
-        std::size_t size() {return 0;}
+        constexpr std::size_t size() {return 0;}
     private:
         Scalar zero{0};
     };
@@ -205,6 +211,8 @@ namespace Interpolators
         USING_INTERPOLATOR_DEMO_TYPES;
         struct Meta { Scalar d = 0, w = 0; };
         INTERPOLATOR_PARAMETER_STRUCT_START(InverseDistanceNames, 4)
+            INTERPOLATOR_PARAMETER_MIN(4, 0.001, -10, -10.0, -10.0);
+            INTERPOLATOR_PARAMETER_MAX(4, 20, 10, 10, 10);
             INTERPOLATOR_PARAM_ALIAS(power, 0);
             INTERPOLATOR_PARAM_ALIAS(d_min, 1);
             INTERPOLATOR_PARAM_ALIAS(r_min, 2);

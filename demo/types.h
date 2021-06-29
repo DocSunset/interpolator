@@ -8,10 +8,8 @@ using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
-using CIEXYZVec = Eigen::Vector3f;
-using JzAzBzVec = Eigen::Vector3f;
 
-using Demo = Interpolators::Demo<Scalar, ID, Vec2, JzAzBzVec>;
+using Demo = Interpolators::Demo<Scalar, ID, Vec2, RGBVec>;
 using DemoList = std::vector<Demo>;
 template<typename Interpolator>
 using Shadr = ShaderInterpolators::AcceleratedInterpolator<Interpolator>;

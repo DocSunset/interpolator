@@ -3,6 +3,12 @@
 
 #include "gl_boilerplate.h"
 
+struct WindowSize
+{
+    float w = 720;
+    float h = 720;
+};
+
 struct Fullscreen
 {
     static const std::vector<Vec2> vertices;

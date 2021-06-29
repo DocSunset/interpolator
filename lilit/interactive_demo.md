@@ -2,17 +2,8 @@
 
 The starring roles are played by the interpolation algorithms, declared in a
 tuple alongside the lists of metadata and parameters. The source space is
-normalized 2D screen coordinates. The destination space is color.  The colour
-interpolations are performed in [J_zA_zB_z colour
-space](https://doi.org/10.1364/OE.25.015131), a colour representation that is
-designed to provide the best balance of perceptual uniformity and iso-hue
-linearity.  This is meant to ensure that the image produced reflects the
-topology of the interpolation rather than the non-linearity of sRGB colour
-space. The details of the conversion from RGB (assumed sRGB) through CIE XYZ to
-J_zA_zB_z colour space and back are given in the file @[lilit/colour_space.md].
-At the moment, the implementation is being transitioned toward using OpenGL for
-most of the interpolation; during this transition, RGB space is used for its
-convenience.
+2D screen coordinates in pixels, shifted so the origin corresponds to the
+center of the screen. The destination space is RGB colour.  
 
 ```cpp 
 // @#'demo/types.h'
@@ -27,10 +18,8 @@ using Scalar = float;
 using ID = unsigned int;
 using Vec2 = Eigen::Vector2f;
 using RGBVec = Eigen::Vector3f;
-using CIEXYZVec = Eigen::Vector3f;
-using JzAzBzVec = Eigen::Vector3f;
 
-using Demo = Interpolators::Demo<Scalar, ID, Vec2, JzAzBzVec>;
+using Demo = Interpolators::Demo<Scalar, ID, Vec2, RGBVec>;
 using DemoList = std::vector<Demo>;
 template<typename Interpolator>
 using Shadr = ShaderInterpolators::AcceleratedInterpolator<Interpolator>;
@@ -125,6 +114,7 @@ the details of implementation of each is broken out into a seperate file:
 #include <SDL_opengles2.h>
 #include <GLES3/gl3.h>
 #include "types.h"
+#include "slider.h"
 #include "../include/shader_interpolators.h"
 
 @{colour conversions}
@@ -135,8 +125,6 @@ public:
     bool ready_to_quit() const {return quit;}
     bool needs_to_redraw() const {return redraw;}
     std::size_t active_interpolator() const {return _active_interpolator;}
-    unsigned int width() const {return shader_state.w;}
-    unsigned int height() const {return shader_state.h;}
 
     template<typename Interpolators>
     void init(DemoList& demo, Interpolators& interpolators)
@@ -151,8 +139,12 @@ public:
     //    auto& para = std::get<2>(tup);
         auto& shader_program = std::get<4>(tup);
 
+        glViewport(0,0,window.w,window.h);
+
         shader_program.state = shader_state;
+        shader_program.window = window;
         shader_program.run();
+        if (selectd) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
 
         SDL_GL_SwapWindow(sdl.window);
 
@@ -170,13 +162,17 @@ private:
 
     bool quit = false;
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
+    WindowSize window;
     Vec2 mouse = {0, 0};
+    Slider * grabbed_slider = nullptr;
     Demo * grabbed = nullptr;
     Demo * selectd = nullptr;
     Demo * hovered = nullptr;
     const Scalar select_dist = 30.0;
     std::size_t _active_interpolator = 0;
     bool fullscreen = false;
+    std::vector<Slider> slider;
+    std::size_t active_sliders = 0;
 
     @{SDL declarations}
 
