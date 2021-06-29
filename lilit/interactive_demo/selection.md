@@ -53,14 +53,14 @@ union Selection
 // @='handle mouse events'
     case SDL_MOUSEMOTION:
         set_mouse(ev);
-        if (grabbed) move_grabbed(demo, interpolators);
-        else hover(search_for_selection(demo));
+        if (grabbed) move_grabbed();
+        else hover(search_for_selection());
         break;
 
     case SDL_MOUSEBUTTONDOWN:
         set_mouse(ev);
         {
-            auto sel = search_for_selection(demo);
+            auto sel = search_for_selection();
             if (sel) grab(sel);
             else unselect();
         }
@@ -78,13 +78,12 @@ union Selection
 
 ```cpp
 // @='selection handlers'
-template<typename Interpolators>
-void move_grabbed(DemoList& demo, Interpolators& interpolators)
+void move_grabbed()
 {
     if (grabbed.type == SelectionType::Demo)
     {
         grabbed.demo.d->s = mouse;
-        reload_textures(demo, interpolators);
+        reload_textures();
         update_slider_bounds();
         redraw = true;
     }
@@ -95,7 +94,7 @@ void move_grabbed(DemoList& demo, Interpolators& interpolators)
     }
 }
 
-Selection search_for_selection(DemoList& demo)
+Selection search_for_selection()
 {
     Scalar dist, min_dist;
     Selection sel;
@@ -181,6 +180,9 @@ void select(const Selection& sel)
     if (selectd) unselect();
 
     set_slot(sel, selectd, shader_state.selectd_idx);
+
+    if (selectd.type == SelectionType::Demo)
+        update_slider_values();
 }
 
 void hover(const Selection& sel)

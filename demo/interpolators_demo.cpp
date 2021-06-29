@@ -14,25 +14,18 @@
 #include "types.h"
 #include "ui.h"
 
-DemoList demo;
 UserInterface ui;
 
 void loop()
 {
-    ui.poll_event_queue(demo, interpolators);
+    ui.poll_event_queue();
 
-    if (true)//ui.needs_to_redraw())
-    {
-        unsigned int i = 0;
-        auto draw = [](unsigned int& i, auto& tuple)
-                {if (i++ == ui.active_interpolator()) ui.draw(tuple, demo);};
-        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
-    }
+    ui.draw();
 }
 
 int main()
 {
-    ui.init(demo, interpolators);
+    ui.init();
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);

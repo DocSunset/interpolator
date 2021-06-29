@@ -13,8 +13,7 @@
                 };
     }
 
-    template<typename Interpolators>
-    void reload_textures(DemoList& demo, Interpolators& interpolators)
+    void reload_textures()
     {
         auto move = [](auto& demo, auto& tup)
         {
@@ -73,45 +72,49 @@
         redraw = true;
     }
 
-    template<typename Interpolators>
-    void update_slider_values(const DemoList& demo, const Interpolators& interpolators)
+    void update_slider_values()
     {
         if (selectd.type != SelectionType::Demo) return;
 
-        auto do_update = [&](const Demo& d, const auto& p)
+        auto do_update = [&](Demo& d, auto& p)
         {
-            slider[0].set_value(d->s.x() / window.w + 0.5, 0.0, 1.0);
-            slider[1].set_value(d->s.y() / window.h + 0.5, 0.0, 1.0);
-            slider[2].set_value(d->p.x(), 0.0, 1.0);
-            slider[3].set_value(d->p.y(), 0.0, 1.0);
-            slider[4].set_value(d->p.z(), 0.0, 1.0);
-            std::size_t slider_idx = 5;
-            for (std::size_t i = 0; i < active_sliders - 5; ++i)
-                slider[slider_idx++].set_value(p[i], p.min[i], p.max[i]);
+            slider[0].set_value(d.p.x(), 0.0, 1.0);
+            slider[0].link = Slider::Link{0.0, 1.0, d.p.data()};
+            slider[1].set_value(d.p.y(), 0.0, 1.0);
+            slider[1].link = Slider::Link{0.0, 1.0, d.p.data() + 1};
+            slider[2].set_value(d.p.z(), 0.0, 1.0);
+            slider[2].link = Slider::Link{0.0, 1.0, d.p.data() + 2};
+            std::size_t slider_idx = 3;
+            if constexpr (std::remove_reference_t<decltype(p)>::size() > 0)
+            {
+                for (std::size_t i = 0; i < active_sliders - 3; ++i)
+                {
+                    slider[slider_idx].set_value(p[i], p.min[i], p.max[i]);
+                    slider[slider_idx++].link = Slider::Link{p.min[i], p.max[i], &(p[i])};
+                }
+            }
         };
 
-        auto update_outer = [&](std::size_t i, const auto& tuple)
+        auto update_outer = [&](std::size_t i, auto& tuple)
         {
-            if (i != _active_interpolator) return;
+            if (i != active_interpolator) return;
             auto para = std::get<2>(tuple);
-            do_update(demo[selectd.demo.idx], para[selected.demo.idx]);
-        }
+            do_update(demo[selectd.demo.idx], para[selectd.demo.idx]);
+        };
 
+        std::size_t i = 0;
         std::apply([&](auto& ... tuples) {((update_outer(i++, tuples)), ...);}, interpolators);
     }
 
-    template<typename Interpolators>
-    void change_active_interpolator(int increment, Interpolators& interpolators)
+    void change_active_interpolator(int increment)
     {
         if (increment == num_interpolators) return;
-        _active_interpolator = (_active_interpolator + increment) % num_interpolators;
+        active_interpolator = (active_interpolator + increment) % num_interpolators;
         auto set_active_sliders = [&](std::size_t i, auto& tuple)
         {
-            if (i != _active_interpolator) return;
+            if (i != active_interpolator) return;
             auto& para = std::get<2>(tuple);
             active_sliders = para[0].size() + 5;
-            if (selectd.type == SelectionType::Demo)
-                update_slider_values(demo, para);
         };
         unsigned int i = 0;
         std::apply([&](auto& ... tuples) {((set_active_sliders(i++, tuples)), ...);}, interpolators);
@@ -123,11 +126,11 @@
         if (grabbed.type != SelectionType::Slider) return;
         if (window.w > window.h) // vertical sliders
         {
-            grabbed.slider.s->set_value(
-                      mouse.y() - grabbed.slider.s->box.bottom
+            grabbed.slider.s->set_value(mouse.y() - grabbed.slider.s->box.bottom
                     , 0.0f
                     , grabbed.slider.s->box.height
                     );
+            SDL_Log("%f\n", *(grabbed.slider.s->link.dest));
         }
         else
         {
@@ -137,6 +140,7 @@
                     , grabbed.slider.s->box.width
                     );
         }
+        reload_textures();
     }
 // @/
 ```
@@ -183,13 +187,13 @@ explanatory.
         case SDLK_LEFT:
             if (ev.type == SDL_KEYUP) break;
             if (ev.key.repeat) break;
-            change_active_interpolator(-1, interpolators);
+            change_active_interpolator(-1);
             redraw = true;
             break;
         case SDLK_RIGHT:
             if (ev.type == SDL_KEYUP) break;
             if (ev.key.repeat) break;
-            change_active_interpolator(1, interpolators);
+            change_active_interpolator(1);
             redraw = true;
             break;
         case SDLK_q:

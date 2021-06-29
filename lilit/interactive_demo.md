@@ -24,14 +24,6 @@ using DemoList = std::vector<Demo>;
 template<typename Interpolator>
 using Shadr = ShaderInterpolators::AcceleratedInterpolator<Interpolator>;
 
-#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
-auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
-        , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
-        );
-
-const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
-
 #endif
 // @/
 ```
@@ -59,25 +51,18 @@ browser's event loop or the main function loop depending on the platform.
 #include "types.h"
 #include "ui.h"
 
-DemoList demo;
 UserInterface ui;
 
 void loop()
 {
-    ui.poll_event_queue(demo, interpolators);
+    ui.poll_event_queue();
 
-    if (true)//ui.needs_to_redraw())
-    {
-        unsigned int i = 0;
-        auto draw = [](unsigned int& i, auto& tuple)
-                {if (i++ == ui.active_interpolator()) ui.draw(tuple, demo);};
-        std::apply([&](auto& ... tuples) {((draw(i, tuples)), ...);}, interpolators);
-    }
+    ui.draw();
 }
 
 int main()
 {
-    ui.init(demo, interpolators);
+    ui.init();
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop(loop, -1, 1);
@@ -105,6 +90,7 @@ the details of implementation of each is broken out into a seperate file:
 #include <cstddef>
 #include <random>
 #include <chrono>
+#include <type_traits>
 #include <SDL.h>
 #include <SDL_log.h>
 #include <SDL_error.h>
@@ -120,45 +106,64 @@ the details of implementation of each is broken out into a seperate file:
 
 @{colour conversions}
 
+#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
+auto interpolators = std::make_tuple
+        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
+        , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
+        );
+
 class UserInterface
 {
 public:
     bool ready_to_quit() const {return quit;}
-    bool needs_to_redraw() const {return redraw;}
-    std::size_t active_interpolator() const {return _active_interpolator;}
 
-    template<typename Interpolators>
-    void init(DemoList& demo, Interpolators& interpolators)
+    void init()
     {
         @{setup}
     }
 
-    template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
+    void draw() const
     {
-    //    auto& interpolator = std::get<0>(tup);
-    //    auto& meta = std::get<1>(tup);
-    //    auto& para = std::get<2>(tup);
-        auto& shader_program = std::get<4>(tup);
+        auto inner_draw = [&](auto& tup, const DemoList& demo)
+        {
+            //auto& interpolator = std::get<0>(tup);
+            //auto& meta = std::get<1>(tup);
+            //auto& para = std::get<2>(tup);
+            auto& shader_program = std::get<4>(tup);
 
-        glViewport(0,0,window.w,window.h);
+            glViewport(0,0,window.w,window.h);
 
-        shader_program.state = shader_state;
-        shader_program.window = window;
-        shader_program.run();
-        if (selectd) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
+            shader_program.state = shader_state;
+            shader_program.window = window;
+            shader_program.run();
+            if (selectd) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
 
-        SDL_GL_SwapWindow(sdl.window);
+            SDL_GL_SwapWindow(sdl.window);
 
-        redraw = false;
+            redraw = false;
+        };
+
+        if (true)//redraw);
+        {
+            unsigned int i = 0;
+            auto outer_draw = [&](unsigned int& i, auto& tuple)
+            {
+                if (i++ == active_interpolator) inner_draw(tuple, demo);
+            };
+            std::apply([&](auto& ... tuples) {((outer_draw(i, tuples)), ...);}, interpolators);
+        }
     }
 
-    template<typename Interpolators>
-    void poll_event_queue(DemoList& demo, Interpolators& interpolators)
+    void poll_event_queue()
     {
         @{poll event queue and handle events}
     }
 
 private:
+    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
+
+    DemoList demo;
+
     mutable bool redraw = true;
 
     bool quit = false;
@@ -169,7 +174,7 @@ private:
     Selection selectd = Selection::None();
     Selection hovered = Selection::None();
     const Scalar select_dist = 30.0;
-    std::size_t _active_interpolator = 0;
+    std::size_t active_interpolator = 0;
     bool fullscreen = false;
     std::vector<Slider> slider;
     std::size_t active_sliders = 0;

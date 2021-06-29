@@ -45,6 +45,13 @@ public:
 
     bool hover = false;
     bool grab = false;
+
+    struct Link
+    {
+        Scalar min;
+        Scalar max;
+        Scalar * dest;
+    } link{0.0, 1.0, nullptr};
 private:
     std::vector<Vec2> vertices;
     GLuint vao;
@@ -136,7 +143,7 @@ void main()
 // @='slider value'
 float normalized_value = 0.0f;
 
-void set_value(float v, float min, float max)
+void set_value(Scalar v, Scalar min, Scalar max)
 {
     float _min, _max, slope, offset;
     _min = min <= max ? min : max;
@@ -144,6 +151,12 @@ void set_value(float v, float min, float max)
     slope = (_max - _min);
     offset = _min;
     normalized_value = (v - offset) / slope;
+    if (link.dest) *link.dest = normalized_value * (link.max - link.min) + link.min;
+}
+
+void set_value(Scalar v)
+{
+    set_value(v, link.min, link.max);
 }
 
 float get_value(float min, float max) const

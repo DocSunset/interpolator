@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <random>
 #include <chrono>
+#include <type_traits>
 #include <SDL.h>
 #include <SDL_log.h>
 #include <SDL_error.h>
@@ -18,15 +19,18 @@
 #include "../include/shader_interpolators.h"
 
 
+#define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
+auto interpolators = std::make_tuple
+        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
+        , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
+        );
+
 class UserInterface
 {
 public:
     bool ready_to_quit() const {return quit;}
-    bool needs_to_redraw() const {return redraw;}
-    std::size_t active_interpolator() const {return _active_interpolator;}
 
-    template<typename Interpolators>
-    void init(DemoList& demo, Interpolators& interpolators)
+    void init()
     {
         if (SDL_Init(SDL_INIT_VIDEO) != 0)
         {
@@ -95,7 +99,7 @@ public:
         };
         std::apply([&](auto& ... tuples) {((resize_lists(tuples)), ...);}, interpolators);
 
-        poll_event_queue(demo, interpolators); // sets height and width if window was resized immediately, e.g. by a dynamic tiling window manager
+        poll_event_queue(); // sets height and width if window was resized immediately, e.g. by a dynamic tiling window manager
 
         std::size_t max_params = 0;
         auto init_shaders = [&](auto& tup)
@@ -109,30 +113,45 @@ public:
 
         slider.resize(max_params + 5);
         for (auto& s : slider) s.init();
-        active_sliders = 5;
+        active_sliders = 3;
+        slider[0].foreground = {1.0, 0.0, 0.0};
+        slider[1].foreground = {0.0, 1.0, 0.0};
+        slider[2].foreground = {0.0, 0.0, 1.0};
     }
 
-    template<typename Tuple> void draw(Tuple& tup, const DemoList& demo) const
+    void draw() const
     {
-    //    auto& interpolator = std::get<0>(tup);
-    //    auto& meta = std::get<1>(tup);
-    //    auto& para = std::get<2>(tup);
-        auto& shader_program = std::get<4>(tup);
+        auto inner_draw = [&](auto& tup, const DemoList& demo)
+        {
+            //auto& interpolator = std::get<0>(tup);
+            //auto& meta = std::get<1>(tup);
+            //auto& para = std::get<2>(tup);
+            auto& shader_program = std::get<4>(tup);
 
-        glViewport(0,0,window.w,window.h);
+            glViewport(0,0,window.w,window.h);
 
-        shader_program.state = shader_state;
-        shader_program.window = window;
-        shader_program.run();
-        if (selectd) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
+            shader_program.state = shader_state;
+            shader_program.window = window;
+            shader_program.run();
+            if (selectd) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
 
-        SDL_GL_SwapWindow(sdl.window);
+            SDL_GL_SwapWindow(sdl.window);
 
-        redraw = false;
+            redraw = false;
+        };
+
+        if (true)//redraw);
+        {
+            unsigned int i = 0;
+            auto outer_draw = [&](unsigned int& i, auto& tuple)
+            {
+                if (i++ == active_interpolator) inner_draw(tuple, demo);
+            };
+            std::apply([&](auto& ... tuples) {((outer_draw(i, tuples)), ...);}, interpolators);
+        }
     }
 
-    template<typename Interpolators>
-    void poll_event_queue(DemoList& demo, Interpolators& interpolators)
+    void poll_event_queue()
     {
         static SDL_Event ev;
         while (SDL_PollEvent(&ev)) switch (ev.type)
@@ -170,13 +189,13 @@ public:
                 case SDLK_LEFT:
                     if (ev.type == SDL_KEYUP) break;
                     if (ev.key.repeat) break;
-                    change_active_interpolator(-1, interpolators);
+                    change_active_interpolator(-1);
                     redraw = true;
                     break;
                 case SDLK_RIGHT:
                     if (ev.type == SDL_KEYUP) break;
                     if (ev.key.repeat) break;
-                    change_active_interpolator(1, interpolators);
+                    change_active_interpolator(1);
                     redraw = true;
                     break;
                 case SDLK_q:
@@ -219,14 +238,14 @@ public:
 
             case SDL_MOUSEMOTION:
                 set_mouse(ev);
-                if (grabbed) move_grabbed(demo, interpolators);
-                else hover(search_for_selection(demo));
+                if (grabbed) move_grabbed();
+                else hover(search_for_selection());
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
                 set_mouse(ev);
                 {
-                    auto sel = search_for_selection(demo);
+                    auto sel = search_for_selection();
                     if (sel) grab(sel);
                     else unselect();
                 }
@@ -246,6 +265,10 @@ public:
     }
 
 private:
+    const std::size_t num_interpolators = std::tuple_size_v<decltype(interpolators)>;
+
+    DemoList demo;
+
     mutable bool redraw = true;
 
     bool quit = false;
@@ -256,7 +279,7 @@ private:
     Selection selectd = Selection::None();
     Selection hovered = Selection::None();
     const Scalar select_dist = 30.0;
-    std::size_t _active_interpolator = 0;
+    std::size_t active_interpolator = 0;
     bool fullscreen = false;
     std::vector<Slider> slider;
     std::size_t active_sliders = 0;
@@ -280,8 +303,7 @@ private:
                     };
         }
 
-        template<typename Interpolators>
-        void reload_textures(DemoList& demo, Interpolators& interpolators)
+        void reload_textures()
         {
             auto move = [](auto& demo, auto& tup)
             {
@@ -293,13 +315,12 @@ private:
             redraw = true;
         }
 
-        template<typename Interpolators>
-        void move_grabbed(DemoList& demo, Interpolators& interpolators)
+        void move_grabbed()
         {
             if (grabbed.type == SelectionType::Demo)
             {
                 grabbed.demo.d->s = mouse;
-                reload_textures(demo, interpolators);
+                reload_textures();
                 update_slider_bounds();
                 redraw = true;
             }
@@ -310,7 +331,7 @@ private:
             }
         }
 
-        Selection search_for_selection(DemoList& demo)
+        Selection search_for_selection()
         {
             Scalar dist, min_dist;
             Selection sel;
@@ -396,6 +417,9 @@ private:
             if (selectd) unselect();
 
             set_slot(sel, selectd, shader_state.selectd_idx);
+
+            if (selectd.type == SelectionType::Demo)
+                update_slider_values();
         }
 
         void hover(const Selection& sel)
@@ -485,14 +509,47 @@ private:
             redraw = true;
         }
 
-        template<typename Interpolators>
-        void change_active_interpolator(int increment, Interpolators& interpolators)
+        void update_slider_values()
+        {
+            if (selectd.type != SelectionType::Demo) return;
+
+            auto do_update = [&](Demo& d, auto& p)
+            {
+                slider[0].set_value(d.p.x(), 0.0, 1.0);
+                slider[0].link = Slider::Link{0.0, 1.0, d.p.data()};
+                slider[1].set_value(d.p.y(), 0.0, 1.0);
+                slider[1].link = Slider::Link{0.0, 1.0, d.p.data() + 1};
+                slider[2].set_value(d.p.z(), 0.0, 1.0);
+                slider[2].link = Slider::Link{0.0, 1.0, d.p.data() + 2};
+                std::size_t slider_idx = 3;
+                if constexpr (std::remove_reference_t<decltype(p)>::size() > 0)
+                {
+                    for (std::size_t i = 0; i < active_sliders - 3; ++i)
+                    {
+                        slider[slider_idx].set_value(p[i], p.min[i], p.max[i]);
+                        slider[slider_idx++].link = Slider::Link{p.min[i], p.max[i], &(p[i])};
+                    }
+                }
+            };
+
+            auto update_outer = [&](std::size_t i, auto& tuple)
+            {
+                if (i != active_interpolator) return;
+                auto para = std::get<2>(tuple);
+                do_update(demo[selectd.demo.idx], para[selectd.demo.idx]);
+            };
+
+            std::size_t i = 0;
+            std::apply([&](auto& ... tuples) {((update_outer(i++, tuples)), ...);}, interpolators);
+        }
+
+        void change_active_interpolator(int increment)
         {
             if (increment == num_interpolators) return;
-            _active_interpolator = (_active_interpolator + increment) % num_interpolators;
+            active_interpolator = (active_interpolator + increment) % num_interpolators;
             auto set_active_sliders = [&](std::size_t i, auto& tuple)
             {
-                if (i != _active_interpolator) return;
+                if (i != active_interpolator) return;
                 auto& para = std::get<2>(tuple);
                 active_sliders = para[0].size() + 5;
             };
@@ -506,11 +563,11 @@ private:
             if (grabbed.type != SelectionType::Slider) return;
             if (window.w > window.h) // vertical sliders
             {
-                grabbed.slider.s->set_value(
-                          mouse.y() - grabbed.slider.s->box.bottom
+                grabbed.slider.s->set_value(mouse.y() - grabbed.slider.s->box.bottom
                         , 0.0f
                         , grabbed.slider.s->box.height
                         );
+                SDL_Log("%f\n", *(grabbed.slider.s->link.dest));
             }
             else
             {
@@ -520,6 +577,7 @@ private:
                         , grabbed.slider.s->box.width
                         );
             }
+            reload_textures();
         }
 };
 #endif

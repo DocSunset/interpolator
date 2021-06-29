@@ -134,7 +134,7 @@ namespace Interpolators
         const Scalar& operator[] (std::size_t n) const {return zero;}
               Scalar& operator[] (std::size_t n)       {return zero;}
         const char * name(std::size_t n) {return "";}
-        constexpr std::size_t size() {return 0;}
+        static constexpr std::size_t size() {return 0;}
     private:
         Scalar zero{0};
     };
