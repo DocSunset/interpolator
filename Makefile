@@ -1,5 +1,6 @@
 CXX = g++
 CXXFLAGS = -O3 -Wall -std=c++17
+DEBUGFLAGS = -g -O0 -Wall -std=c++17
 EIGEN_INCLUDE = -I/usr/include/eigen3
 OPENGL_LIBS = -lGL -lglut
 
@@ -24,6 +25,10 @@ demo/interpolators_demo.html: ${SOURCES}
 demo/interpolators_demo: ${SOURCES}
 	@echo building $@
 	@g++ ${CXXFLAGS} ${EIGEN_INCLUDE} -I/usr/include/SDL2 -lSDL2 -lGLESv2 -o $@ $@.cpp
+
+demo/interpolators_demo.debug: ${SOURCES}
+	@echo building $@
+	@g++ ${DEBUGFLAGS} ${EIGEN_INCLUDE} -I/usr/include/SDL2 -lSDL2 -lGLESv2 -o $@ demo/interpolators_demo.cpp
 
 ${DOCS}: ${LITERATE_SOURCES} ${DOCS_EXTRAS}
 	@echo weaving $@

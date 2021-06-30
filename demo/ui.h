@@ -475,22 +475,28 @@ private:
             float width  = vertical_sliders ? slider_width  : slider_length;
             float height = vertical_sliders ? slider_length : slider_width; 
 
+            std::size_t start = 0;
+            std::size_t incr = 1;
             float step, baseline;
             float slider_step = spacing + slider_width;
             if (vertical_sliders)
             {
+                baseline = -window.h/2.0 + spacing;
                 if (selectd.demo.d->s.x() < 0)
                 {
+                    start = active_sliders - 1;
+                    incr = -1;
                     slider_step = -slider_step;
                     step = window.w/2.0 - spacing - slider_width;
                 }
                 else step = -window.w/2.0 + spacing;
-                baseline = -window.h/2.0 + spacing;
             }
             else
             {
                 if (selectd.demo.d->s.y() < 0)
                 {
+                    start = active_sliders - 1;
+                    incr = -1;
                     slider_step = -slider_step;
                     step = window.h/2.0 - spacing - slider_width;
                 }
@@ -498,12 +504,14 @@ private:
                 baseline = -window.w/2.0 + spacing;
             }
 
+            std::size_t j = start;
             for (std::size_t i = 0; i < active_sliders; ++i)
             {
-                if (vertical_sliders) slider[i].box = {baseline, step, height, width};
-                else                  slider[i].box = {step, baseline, height, width};
-                slider[i].window = window;
+                if (vertical_sliders) slider[j].box = {baseline, step, height, width};
+                else                  slider[j].box = {step, baseline, height, width};
+                slider[j].window = window;
                 step += slider_step;
+                j += incr;
             }
 
             redraw = true;
@@ -524,10 +532,13 @@ private:
                 std::size_t slider_idx = 3;
                 if constexpr (std::remove_reference_t<decltype(p)>::size() > 0)
                 {
-                    for (std::size_t i = 0; i < active_sliders - 3; ++i)
+                    for (std::size_t i = 0; 
+                         i < std::remove_reference_t<decltype(p)>::size(); 
+                         ++i)
                     {
+                        slider[slider_idx].link = Slider::Link{p.min[i], p.max[i], p.data + i};
                         slider[slider_idx].set_value(p[i], p.min[i], p.max[i]);
-                        slider[slider_idx++].link = Slider::Link{p.min[i], p.max[i], &(p[i])};
+                        slider_idx++;
                     }
                 }
             };
@@ -535,7 +546,7 @@ private:
             auto update_outer = [&](std::size_t i, auto& tuple)
             {
                 if (i != active_interpolator) return;
-                auto para = std::get<2>(tuple);
+                auto& para = std::get<2>(tuple);
                 do_update(demo[selectd.demo.idx], para[selectd.demo.idx]);
             };
 
@@ -551,11 +562,12 @@ private:
             {
                 if (i != active_interpolator) return;
                 auto& para = std::get<2>(tuple);
-                active_sliders = para[0].size() + 5;
+                active_sliders = para[0].size() + 3;
             };
             unsigned int i = 0;
             std::apply([&](auto& ... tuples) {((set_active_sliders(i++, tuples)), ...);}, interpolators);
             update_slider_bounds();
+            update_slider_values();
         }
 
         void set_grabbed_slider()
@@ -566,8 +578,8 @@ private:
                 grabbed.slider.s->set_value(mouse.y() - grabbed.slider.s->box.bottom
                         , 0.0f
                         , grabbed.slider.s->box.height
+                        , grabbed.slider.s->link.dest
                         );
-                SDL_Log("%f\n", *(grabbed.slider.s->link.dest));
             }
             else
             {
@@ -575,6 +587,7 @@ private:
                           mouse.x() - grabbed.slider.s->box.left
                         , 0.0f
                         , grabbed.slider.s->box.width
+                        , grabbed.slider.s->link.dest
                         );
             }
             reload_textures();
