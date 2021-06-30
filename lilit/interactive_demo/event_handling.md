@@ -8,9 +8,11 @@
 
     void set_mouse(SDL_Event ev)
     {
-        mouse = { ev.motion.x - window.w/2.0
-                , window.h/2.0 - ev.motion.y
-                };
+        Vec2 new_mouse = { ev.motion.x - window.w/2.0
+                         , window.h/2.0 - ev.motion.y
+                         };
+        dmouse = new_mouse - mouse;
+        mouse = new_mouse;
     }
 
     void reload_textures()
@@ -29,7 +31,7 @@
 
     void update_slider_bounds()
     {
-        if (selectd.type != SelectionType::Demo) return;
+        if (selectd.front().type != SelectionType::Demo) return;
         bool vertical_sliders = window.w >= window.h;
         constexpr float spacing = 10;
         constexpr float slider_width = 30;
@@ -45,7 +47,7 @@
         if (vertical_sliders)
         {
             baseline = -window.h/2.0 + spacing;
-            if (selectd.demo.d->s.x() < 0)
+            if (selectd.front().demo.d->s.x() < 0)
             {
                 start = active_sliders - 1;
                 incr = -1;
@@ -56,7 +58,7 @@
         }
         else
         {
-            if (selectd.demo.d->s.y() < 0)
+            if (selectd.front().demo.d->s.y() < 0)
             {
                 start = active_sliders - 1;
                 incr = -1;
@@ -82,16 +84,28 @@
 
     void update_slider_values()
     {
-        if (selectd.type != SelectionType::Demo) return;
+        if (selectd.front().type != SelectionType::Demo) return;
 
         auto do_update = [&](Demo& d, auto& p)
         {
-            slider[0].set_value(d.p.x(), 0.0, 1.0);
-            slider[0].link = Slider::Link{0.0, 1.0, d.p.data()};
-            slider[1].set_value(d.p.y(), 0.0, 1.0);
-            slider[1].link = Slider::Link{0.0, 1.0, d.p.data() + 1};
-            slider[2].set_value(d.p.z(), 0.0, 1.0);
-            slider[2].link = Slider::Link{0.0, 1.0, d.p.data() + 2};
+            if (selectd.size() == 1)
+            {
+                slider[0].set_value(d.p.x(), 0.0, 1.0);
+                slider[0].link = Slider::Link{0.0, 1.0, d.p.data()};
+                slider[1].set_value(d.p.y(), 0.0, 1.0);
+                slider[1].link = Slider::Link{0.0, 1.0, d.p.data() + 1};
+                slider[2].set_value(d.p.z(), 0.0, 1.0);
+                slider[2].link = Slider::Link{0.0, 1.0, d.p.data() + 2};
+            }
+            else
+            {
+                slider[0].set_value(0.0, 0.0, 1.0);
+                slider[0].link = Slider::Link{0.0, 1.0, nullptr};
+                slider[1].set_value(0.0, 0.0, 1.0);
+                slider[1].link = Slider::Link{0.0, 1.0, nullptr};
+                slider[2].set_value(0.0, 0.0, 1.0);
+                slider[2].link = Slider::Link{0.0, 1.0, nullptr};
+            }
             std::size_t slider_idx = 3;
             if constexpr (std::remove_reference_t<decltype(p)>::size() > 0)
             {
@@ -110,7 +124,7 @@
         {
             if (i != active_interpolator) return;
             auto& para = std::get<2>(tuple);
-            do_update(demo[selectd.demo.idx], para[selectd.demo.idx]);
+            do_update(demo[selectd.front().demo.idx], para[selectd.front().demo.idx]);
         };
 
         std::size_t i = 0;
@@ -135,23 +149,26 @@
 
     void set_grabbed_slider()
     {
-        if (grabbed.type != SelectionType::Slider) return;
-        if (window.w > window.h) // vertical sliders
+        if (selectd.front().type != SelectionType::Slider) return;
+        for (auto& grabbed : selectd)
         {
-            grabbed.slider.s->set_value(mouse.y() - grabbed.slider.s->box.bottom
-                    , 0.0f
-                    , grabbed.slider.s->box.height
-                    , grabbed.slider.s->link.dest
-                    );
-        }
-        else
-        {
-            grabbed.slider.s->set_value(
-                      mouse.x() - grabbed.slider.s->box.left
-                    , 0.0f
-                    , grabbed.slider.s->box.width
-                    , grabbed.slider.s->link.dest
-                    );
+            if (window.w > window.h) // vertical sliders
+            {
+                grabbed.slider.s->set_value(mouse.y() - grabbed.slider.s->box.bottom
+                        , 0.0f
+                        , grabbed.slider.s->box.height
+                        , grabbed.slider.s->link.dest
+                        );
+            }
+            else
+            {
+                grabbed.slider.s->set_value(
+                          mouse.x() - grabbed.slider.s->box.left
+                        , 0.0f
+                        , grabbed.slider.s->box.width
+                        , grabbed.slider.s->link.dest
+                        );
+            }
         }
         reload_textures();
     }
@@ -195,7 +212,20 @@ explanatory.
         {
         case SDLK_LSHIFT:
         case SDLK_RSHIFT:
-            toggle_drawable_flag(shader_state.enable_contours);
+            if (ev.type == SDL_KEYDOWN) shift = true;
+            else shift = false;
+            break;
+        case SDLK_LALT:
+        case SDLK_RALT:
+            if (ev.type == SDL_KEYDOWN) alt = true;
+            else alt = false;
+            break;
+        case SDLK_LCTRL:
+        case SDLK_RCTRL:
+        case SDLK_LGUI:
+        case SDLK_RGUI:
+            if (ev.type == SDL_KEYDOWN) ctrl = true;
+            else ctrl = false;
             break;
         case SDLK_LEFT:
             if (ev.type == SDL_KEYUP) break;

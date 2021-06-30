@@ -53,17 +53,13 @@ union Selection
 // @='handle mouse events'
     case SDL_MOUSEMOTION:
         set_mouse(ev);
-        if (grabbed) move_grabbed();
+        if (grab) move_grabbed();
         else hover(search_for_selection());
         break;
 
     case SDL_MOUSEBUTTONDOWN:
         set_mouse(ev);
-        {
-            auto sel = search_for_selection();
-            if (sel) grab(sel);
-            else unselect();
-        }
+        select(search_for_selection());
         break;
 
     case SDL_MOUSEBUTTONUP:
@@ -80,14 +76,14 @@ union Selection
 // @='selection handlers'
 void move_grabbed()
 {
-    if (grabbed.type == SelectionType::Demo)
+    if (selectd.front().type == SelectionType::Demo)
     {
-        grabbed.demo.d->s = mouse;
+        for (auto& grabbed : selectd) grabbed.demo.d->s += dmouse;
         reload_textures();
         update_slider_bounds();
         redraw = true;
     }
-    else if (grabbed.type == SelectionType::Slider)
+    else if (selectd.front().type == SelectionType::Slider)
     {
         set_grabbed_slider();
         redraw = true;
@@ -128,47 +124,6 @@ Selection search_for_selection()
     return Selection::None();
 }
 
-void set_slot(const Selection& sel, Selection& slot, int& idx_slot)
-{
-    slot = sel;
-    if (sel.type == SelectionType::Demo)
-    {
-        idx_slot = sel.demo.idx;
-        redraw = true;
-    }
-}
-
-void unset_slot(Selection& sel, int& idx_slot)
-{
-    if (idx_slot >= 0)
-    {
-        idx_slot = -1;
-        redraw = true;
-    }
-    sel = Selection::None();
-}
-
-void grab(const Selection& sel)
-{
-    if (not sel)
-    {
-        ungrab();
-        return;
-    }
-    set_slot(sel, grabbed, shader_state.grabbed_idx);
-    if (sel.type == SelectionType::Demo)
-    {
-        select(sel);
-        update_slider_bounds();
-    }
-    if (sel.type == SelectionType::Slider)
-    {
-        sel.slider.s->grab = true;
-        set_grabbed_slider();
-    }
-    unhover();
-}
-
 void select(const Selection& sel)
 {
     if (not sel)
@@ -177,12 +132,35 @@ void select(const Selection& sel)
         return;
     }
 
-    if (selectd) unselect();
+    if (sel.type == SelectionType::Demo)
+    {
+        if (shift)
+        {
+            auto found = std::find(selectd.begin(), selectd.end(), sel);
+            if (found != selectd.end()) selectd.erase(found);
+            else selectd.push_front(sel);
+        }
+        else
+        {
+            if (selectd.size() != 0) selectd.clear();
+            selectd.push_front(sel);
+        }
+    }
+    else if (sel.type == SelectionType::Slider)
+    {
+        selectd.clear();
+        sel.slider.s->grab = true;
+        selectd.push_front(sel);
+        set_grabbed_slider();
+    }
 
-    set_slot(sel, selectd, shader_state.selectd_idx);
-
-    if (selectd.type == SelectionType::Demo)
+    if (selectd.front().type == SelectionType::Demo)
+    {
         update_slider_values();
+        update_slider_bounds();
+    }
+    unhover();
+    grab = true;
 }
 
 void hover(const Selection& sel)
@@ -193,38 +171,38 @@ void hover(const Selection& sel)
         return;
     }
 
-    if (hovered) unhover();
+    unhover();
 
     if (sel.type == SelectionType::Slider)
         sel.slider.s->hover = true;
 
-    set_slot(sel, hovered, shader_state.hovered_idx);
+    hovered = sel;
 }
 
 void ungrab()   
 {
-    if (not grabbed) return;
-    if (grabbed.type == SelectionType::Slider)
+    if (not grab) return;
+    if (selectd.front().type == SelectionType::Slider)
     {
         set_grabbed_slider();
         grabbed.slider.s->grab = false;
-        hover(grabbed);
+        hover(selectd.front());
     }
-    unset_slot(grabbed, shader_state.grabbed_idx);
+    grab = false;
     redraw = true;
 }
 
 void unselect()
 {
     if (not selectd) return;
-    unset_slot(selectd, shader_state.selectd_idx);
+    selectd.clear();
 }
 
 void unhover()
 {
     if (not hovered) return;
     if (hovered.type == SelectionType::Slider) hovered.slider.s->hover = false;
-    unset_slot(hovered, shader_state.hovered_idx);
+    hovered = Selection::None();
 }
 // @/
 ```

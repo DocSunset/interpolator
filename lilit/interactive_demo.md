@@ -87,6 +87,7 @@ the details of implementation of each is broken out into a seperate file:
 #ifndef UI_H
 #define UI_H
 
+#include <list>
 #include <cstddef>
 #include <random>
 #include <chrono>
@@ -170,8 +171,12 @@ private:
     ShaderInterpolators::ShaderInterpolatorState shader_state = {};
     WindowSize window;
     Vec2 mouse = {0, 0};
-    Selection grabbed = Selection::None();
-    Selection selectd = Selection::None();
+    Vec2 dmouse = {0, 0};
+    bool grab = false;
+    bool ctrl = false;
+    bool shift = false;
+    bool alt = false;
+    std::list<Selection> selectd = Selection::None();
     Selection hovered = Selection::None();
     const Scalar select_dist = 30.0;
     std::size_t active_interpolator = 0;
