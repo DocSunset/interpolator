@@ -244,5 +244,24 @@ namespace Interpolators
         static constexpr const char * name = "Inverse Weighted Distance";
         static constexpr const char * frag = "demo/shaders/inverse_distance.frag";
     };
+    constexpr const char * const BasicLampshadeNames[2] =
+            { "power"
+            , "radius"
+            };
+
+    template<typename Demonstration>
+    struct BasicLampshade
+    {
+        USING_INTERPOLATOR_DEMO_TYPES;
+        struct Meta { Scalar dot, dist, base, loss, w; };
+        INTERPOLATOR_PARAMETER_STRUCT_START(BasicLampshadeNames, 2)
+            INTERPOLATOR_PARAMETER_MIN(2, 0.1, 0.001);
+            INTERPOLATOR_PARAMETER_MAX(2, 10, 1000);
+            INTERPOLATOR_PARAM_ALIAS(power, 0);
+            INTERPOLATOR_PARAM_ALIAS(r, 1);
+        INTERPOLATOR_PARAMETER_STRUCT_END
+        static constexpr const char * name = "Basic Lampshade";
+        static constexpr const char * frag = "demo/shaders/basic_lampshade.frag";
+    };
 };
 #endif

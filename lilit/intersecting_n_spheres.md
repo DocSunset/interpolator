@@ -173,8 +173,6 @@ float circle_circle_intersection_area(
     return a + b - c;
 }
 
-#define pi 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863
-
 float circle_area(in float r)
 {
     return pi * r * r;

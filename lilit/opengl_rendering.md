@@ -42,9 +42,7 @@ struct ShaderInterpolatorState
     bool focus = false;
     bool enable_contours = 0;
     float contours = 10;
-    int grabbed_idx = -1;
-    int selectd_idx = -1;
-    int hovered_idx = -1;
+    int focus_idx = -1;
 };
 
 std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
@@ -109,9 +107,7 @@ public:
             glUniform1f(glGetUniformLocation(program, "contours"), state.contours);
         else
             glUniform1f(glGetUniformLocation(program, "contours"), 0);
-        glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
-        glUniform1i(glGetUniformLocation(program, "selectd_idx"), state.selectd_idx);
-        glUniform1i(glGetUniformLocation(program, "hovered_idx"), state.hovered_idx);
+        glUniform1i(glGetUniformLocation(program, "focus_idx"), state.focus_idx);
         glUniform1f(glGetUniformLocation(program, "w"), window.w);
         glUniform1f(glGetUniformLocation(program, "h"), window.h);
         glUniform1i(glGetUniformLocation(program, "focus"), state.focus);
@@ -281,6 +277,8 @@ here.
 
 ```cpp
 // @='common shader interpolator variables'
+#define pi 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863
+
 struct Demo
 {
     float s[S];
@@ -297,9 +295,7 @@ uniform int rows;
 uniform sampler2D tex_sampler;
 uniform bool focus;
 uniform float contours;
-uniform int grabbed_idx;
-uniform int selectd_idx;
-uniform int hovered_idx;
+uniform int focus_idx;
 uniform float w;
 uniform float h;
 in vec2 position;
@@ -330,17 +326,12 @@ void main()
     }
 
     int loner = -1;
-    if (focus)
-    {
-        if      (grabbed_idx >= 0) loner = grabbed_idx;
-        else if (selectd_idx >= 0) loner = selectd_idx;
-        else if (hovered_idx >= 0) loner = hovered_idx;
-    }
-
+    if (focus && focus_idx >= 0) loner = focus_idx;
     for (int n = 0; n < N; ++n)
     {
         load_demonstration(n);
         weight = calculate_weight(q, n);
+        load_demonstration(n);
         sum_of_weights += weight;
         if (contours <= 0.0)
         {
@@ -353,7 +344,9 @@ void main()
         for (int n = 0; n < N; ++n)
         {
             if (loner >= 0) n = loner;
+            load_demonstration(n);
             weight = calculate_weight(q, n) / sum_of_weights;
+            load_demonstration(n);
             if (weight >= 1.0)
             {
                 weighted_sum = vec3(1.0, 1.0, 1.0);

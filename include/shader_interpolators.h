@@ -13,9 +13,7 @@ namespace ShaderInterpolators
         bool focus = false;
         bool enable_contours = 0;
         float contours = 10;
-        int grabbed_idx = -1;
-        int selectd_idx = -1;
-        int hovered_idx = -1;
+        int focus_idx = -1;
     };
 
     std::size_t ceil(std::size_t x, std::size_t y) {return x/y + (x % y != 0);}
@@ -138,9 +136,7 @@ namespace ShaderInterpolators
                 glUniform1f(glGetUniformLocation(program, "contours"), state.contours);
             else
                 glUniform1f(glGetUniformLocation(program, "contours"), 0);
-            glUniform1i(glGetUniformLocation(program, "grabbed_idx"), state.grabbed_idx);
-            glUniform1i(glGetUniformLocation(program, "selectd_idx"), state.selectd_idx);
-            glUniform1i(glGetUniformLocation(program, "hovered_idx"), state.hovered_idx);
+            glUniform1i(glGetUniformLocation(program, "focus_idx"), state.focus_idx);
             glUniform1f(glGetUniformLocation(program, "w"), window.w);
             glUniform1f(glGetUniformLocation(program, "h"), window.h);
             glUniform1i(glGetUniformLocation(program, "focus"), state.focus);

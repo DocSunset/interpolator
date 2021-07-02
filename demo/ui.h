@@ -22,7 +22,8 @@
 
 #define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
 auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
+        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 100)
+        , INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
         , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
         );
 
@@ -75,7 +76,7 @@ public:
         }
         else SDL_Log("Created GL context\n");
 
-        unsigned int n = 3;
+        unsigned int n = 5;
         unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator (seed);
         std::uniform_real_distribution<Scalar> random(0, 1);
@@ -438,6 +439,7 @@ private:
                 {
                     if (not shift) demo_selection.clear();
                     demo_selection.push_front(sel);
+                    shader_state.focus_idx = sel.demo.idx;
                 }
                 else grab.demo.drop = true;
                 
@@ -454,6 +456,7 @@ private:
         void unselect()
         {
             demo_selection.clear();
+            shader_state.focus_idx = -1;
         }
 
 
@@ -467,7 +470,9 @@ private:
 
             unhover();
 
-            if (sel.type == SelectionType::Slider)
+            if (sel.type == SelectionType::Demo && demo_selection.size() == 0)
+                shader_state.focus_idx = sel.demo.idx;
+            else if (sel.type == SelectionType::Slider)
                 sel.slider.s->hover = true;
 
             hovered = sel;
@@ -509,6 +514,7 @@ private:
         {
             if (not hovered) return;
             if (hovered.type == SelectionType::Slider) hovered.slider.s->hover = false;
+            else if (hovered.type == SelectionType::Demo && demo_selection.size() == 0) shader_state.focus_idx = -1;
             hovered = Selection::None();
         }
 

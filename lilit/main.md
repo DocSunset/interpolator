@@ -149,6 +149,8 @@ namespace Interpolators
 
 @[lilit/inverse_weighted_distance.md]
 
+@[lilit/lampshade.md]
+
 @[lilit/convenience_macros.md]
 
 @[lilit/opengl_rendering.md]
