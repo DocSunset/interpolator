@@ -49,9 +49,9 @@ namespace Interpolators
         using SVector = S_T;
         using PVector = P_T;
 
-        ID id;
         SVector s;
         PVector p;
+        ID id;
     };
 
     template<typename Scalar, std::size_t N>

@@ -38,7 +38,7 @@ while(n-- > 0)
                  , random(generator) * window.h - window.h/2.0
                  };
     auto c = RGBVec{random(generator), random(generator), random(generator)};
-    demo.push_back({n, v, c});
+    demo.push_back({v, c, n});
 }
 // @/
 
@@ -68,11 +68,18 @@ auto init_shaders = [&](auto& tup)
 std::apply([&](auto& ... tuples) {((init_shaders(tuples)), ...);}, interpolators);
 
 slider.resize(max_params + 5);
-for (auto& s : slider) s.init();
-active_sliders = 3;
+for (auto& s : slider) 
+{
+    s.init();
+    s.window = window;
+}
+
 slider[0].foreground = {1.0, 0.0, 0.0};
 slider[1].foreground = {0.0, 1.0, 0.0};
 slider[2].foreground = {0.0, 0.0, 1.0};
+change_active_interpolator(0); // sets active_sliders and inits slider bounds and values
+
+selection_vis.init(demo);
 // @/
 ```
 

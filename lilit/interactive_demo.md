@@ -137,7 +137,8 @@ public:
             shader_program.state = shader_state;
             shader_program.window = window;
             shader_program.run();
-            if (selectd) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
+            selection_vis.run(demo, demo_selection, hovered);
+            if (demo_selection.size() > 0) for (std::size_t i = 0; i < active_sliders; ++i) slider[i].run();
 
             SDL_GL_SwapWindow(sdl.window);
 
@@ -172,17 +173,18 @@ private:
     WindowSize window;
     Vec2 mouse = {0, 0};
     Vec2 dmouse = {0, 0};
-    bool grab = false;
+    Selection grab = Selection::None();
     bool ctrl = false;
     bool shift = false;
     bool alt = false;
-    std::list<Selection> selectd = Selection::None();
+    std::list<Selection> demo_selection;
     Selection hovered = Selection::None();
     const Scalar select_dist = 30.0;
     std::size_t active_interpolator = 0;
     bool fullscreen = false;
     std::vector<Slider> slider;
     std::size_t active_sliders = 0;
+    SelectionVisualizer selection_vis;
 
     @{SDL declarations}
 

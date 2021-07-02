@@ -11,14 +11,10 @@
 class Slider
 {
 public:
-    void set_bounding_box(float left, float top, float width, float height)
-    {
-        @{set slider bounding box}
-    }
-
     void init()
     {
-        @{initialize slider program}
+        initialize_simple_program<Slider>(program);
+        Fullscreen::init();
     }
 
     void run() const
@@ -52,15 +48,16 @@ public:
         Scalar max;
         Scalar * dest;
     } link{0.0, 1.0, nullptr};
+
+    static constexpr const char * name = "slider";
+    static constexpr const char * frag = "demo/shaders/slider.frag";
+    static constexpr const char * vert = "demo/shaders/slider.vert";
+
 private:
     std::vector<Vec2> vertices;
     GLuint vao;
     GLuint vbo;
     static GLuint program;
-
-    static constexpr const char * name = "slider";
-    static constexpr const char * frag = "demo/shaders/slider.frag";
-    static constexpr const char * vert = "demo/shaders/slider.vert";
 };
 GLuint Slider::program = 0;
 
@@ -172,20 +169,6 @@ float get_value(float min, float max) const
 ```
 
 ```cpp
-// @='initialize slider program'
-if (program == 0)
-{
-    std::string vertex_source = load_file(vert);
-    std::string fragment_source = load_file(frag);
-    const char * vsrc =   vertex_source.c_str();
-    const char * fsrc = fragment_source.c_str();
-    GLuint vert = create_shader(name, GL_VERTEX_SHADER, &vsrc, 1);
-    GLuint frag = create_shader(name, GL_FRAGMENT_SHADER, &fsrc, 1);
-    program = create_program(name, vert, frag);
-}
-Fullscreen::init();
-// @/
-
 // @='draw slider'
 glUseProgram(program);
 glUniform2f(glGetUniformLocation(program, "window"), window.w, window.h);

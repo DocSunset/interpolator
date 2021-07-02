@@ -9,22 +9,9 @@
 class Slider
 {
 public:
-    void set_bounding_box(float left, float top, float width, float height)
-    {
-    }
-
     void init()
     {
-        if (program == 0)
-        {
-            std::string vertex_source = load_file(vert);
-            std::string fragment_source = load_file(frag);
-            const char * vsrc =   vertex_source.c_str();
-            const char * fsrc = fragment_source.c_str();
-            GLuint vert = create_shader(name, GL_VERTEX_SHADER, &vsrc, 1);
-            GLuint frag = create_shader(name, GL_FRAGMENT_SHADER, &fsrc, 1);
-            program = create_program(name, vert, frag);
-        }
+        initialize_simple_program<Slider>(program);
         Fullscreen::init();
     }
 
@@ -98,15 +85,16 @@ public:
         Scalar max;
         Scalar * dest;
     } link{0.0, 1.0, nullptr};
+
+    static constexpr const char * name = "slider";
+    static constexpr const char * frag = "demo/shaders/slider.frag";
+    static constexpr const char * vert = "demo/shaders/slider.vert";
+
 private:
     std::vector<Vec2> vertices;
     GLuint vao;
     GLuint vbo;
     static GLuint program;
-
-    static constexpr const char * name = "slider";
-    static constexpr const char * frag = "demo/shaders/slider.frag";
-    static constexpr const char * vert = "demo/shaders/slider.vert";
 };
 GLuint Slider::program = 0;
 

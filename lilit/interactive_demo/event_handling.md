@@ -31,7 +31,7 @@
 
     void update_slider_bounds()
     {
-        if (selectd.front().type != SelectionType::Demo) return;
+        if (demo_selection.size() == 0) return;
         bool vertical_sliders = window.w >= window.h;
         constexpr float spacing = 10;
         constexpr float slider_width = 30;
@@ -40,6 +40,14 @@
         float width  = vertical_sliders ? slider_width  : slider_length;
         float height = vertical_sliders ? slider_length : slider_width; 
 
+        Vec2 centroid = {0,0};
+        float count = 0;
+        for (auto& sel : demo_selection)
+        {
+            centroid += sel.demo.d->s;
+            count += 1;
+        }
+        centroid /= count;
         std::size_t start = 0;
         std::size_t incr = 1;
         float step, baseline;
@@ -47,7 +55,7 @@
         if (vertical_sliders)
         {
             baseline = -window.h/2.0 + spacing;
-            if (selectd.front().demo.d->s.x() < 0)
+            if (centroid.x() < 0)
             {
                 start = active_sliders - 1;
                 incr = -1;
@@ -58,7 +66,7 @@
         }
         else
         {
-            if (selectd.front().demo.d->s.y() < 0)
+            if (centroid.y() < 0)
             {
                 start = active_sliders - 1;
                 incr = -1;
@@ -84,27 +92,27 @@
 
     void update_slider_values()
     {
-        if (selectd.front().type != SelectionType::Demo) return;
+        if (demo_selection.size() == 0) return;
 
         auto do_update = [&](Demo& d, auto& p)
         {
-            if (selectd.size() == 1)
+            if (demo_selection.size() == 1)
             {
                 slider[0].set_value(d.p.x(), 0.0, 1.0);
-                slider[0].link = Slider::Link{0.0, 1.0, d.p.data()};
+                slider[0].link = Slider::Link{0.0, 1.0};
                 slider[1].set_value(d.p.y(), 0.0, 1.0);
-                slider[1].link = Slider::Link{0.0, 1.0, d.p.data() + 1};
+                slider[1].link = Slider::Link{0.0, 1.0};
                 slider[2].set_value(d.p.z(), 0.0, 1.0);
-                slider[2].link = Slider::Link{0.0, 1.0, d.p.data() + 2};
+                slider[2].link = Slider::Link{0.0, 1.0};
             }
             else
             {
                 slider[0].set_value(0.0, 0.0, 1.0);
-                slider[0].link = Slider::Link{0.0, 1.0, nullptr};
+                slider[0].link = Slider::Link{0.0, 1.0};
                 slider[1].set_value(0.0, 0.0, 1.0);
-                slider[1].link = Slider::Link{0.0, 1.0, nullptr};
+                slider[1].link = Slider::Link{0.0, 1.0};
                 slider[2].set_value(0.0, 0.0, 1.0);
-                slider[2].link = Slider::Link{0.0, 1.0, nullptr};
+                slider[2].link = Slider::Link{0.0, 1.0};
             }
             std::size_t slider_idx = 3;
             if constexpr (std::remove_reference_t<decltype(p)>::size() > 0)
@@ -113,7 +121,7 @@
                      i < std::remove_reference_t<decltype(p)>::size(); 
                      ++i)
                 {
-                    slider[slider_idx].link = Slider::Link{p.min[i], p.max[i], p.data + i};
+                    slider[slider_idx].link = Slider::Link{p.min[i], p.max[i]};
                     slider[slider_idx].set_value(p[i], p.min[i], p.max[i]);
                     slider_idx++;
                 }
@@ -124,7 +132,7 @@
         {
             if (i != active_interpolator) return;
             auto& para = std::get<2>(tuple);
-            do_update(demo[selectd.front().demo.idx], para[selectd.front().demo.idx]);
+            do_update(demo[demo_selection.front().demo.idx], para[demo_selection.front().demo.idx]);
         };
 
         std::size_t i = 0;
@@ -133,7 +141,7 @@
 
     void change_active_interpolator(int increment)
     {
-        if (increment == num_interpolators) return;
+        if (increment == static_cast<int>(num_interpolators)) return;
         active_interpolator = (active_interpolator + increment) % num_interpolators;
         auto set_active_sliders = [&](std::size_t i, auto& tuple)
         {
@@ -147,29 +155,42 @@
         update_slider_values();
     }
 
+    void set_parameter_normalized(Scalar value, std::size_t demo_idx, std::size_t para_idx)
+    {
+        auto do_update = [&](Demo& d, auto& p)
+        {
+            if (para_idx < 3) d.p(para_idx) = value;
+            else if constexpr (std::remove_reference_t<decltype(p)>::size() > 0)
+            {
+                para_idx -= 3;
+                p[para_idx] = value * (p.max[para_idx] - p.min[para_idx]) + p.min[para_idx];
+            }
+        };
+
+        auto update_outer = [&](std::size_t i, auto& tuple)
+        {
+            if (i != active_interpolator) return;
+            auto& para = std::get<2>(tuple);
+            do_update(demo[demo_idx], para[demo_idx]);
+        };
+
+        std::size_t i = 0;
+        std::apply([&](auto& ... tuples) {((update_outer(i++, tuples)), ...);}, interpolators);
+    }
+
     void set_grabbed_slider()
     {
-        if (selectd.front().type != SelectionType::Slider) return;
-        for (auto& grabbed : selectd)
-        {
-            if (window.w > window.h) // vertical sliders
-            {
-                grabbed.slider.s->set_value(mouse.y() - grabbed.slider.s->box.bottom
-                        , 0.0f
-                        , grabbed.slider.s->box.height
-                        , grabbed.slider.s->link.dest
-                        );
-            }
-            else
-            {
-                grabbed.slider.s->set_value(
-                          mouse.x() - grabbed.slider.s->box.left
-                        , 0.0f
-                        , grabbed.slider.s->box.width
-                        , grabbed.slider.s->link.dest
-                        );
-            }
-        }
+        if (grab.type != SelectionType::Slider) return;
+        if (demo_selection.size() == 0) return;
+
+        Scalar value;
+        if (window.w > window.h) // vertical sliders
+            value = (mouse.y() - grab.slider.s->box.bottom) / grab.slider.s->box.height;
+        else
+            value = (mouse.x() - grab.slider.s->box.left) / grab.slider.s->box.width;
+
+        grab.slider.s->normalized_value = value;
+        for (auto& s : demo_selection) set_parameter_normalized(value, s.demo.idx, grab.slider.idx);
         reload_textures();
     }
 // @/
@@ -190,6 +211,7 @@ window is drawn to and mouse coordinates are not distorted.
             window.w = ev.window.data1;
             window.h = ev.window.data2;
             for (auto& s : slider) s.window = window;
+            selection_vis.window = window;
             update_slider_bounds();
             redraw = true;
             break;
@@ -241,8 +263,10 @@ explanatory.
             break;
         case SDLK_q:
             if (ev.type == SDL_KEYUP) break;
-            if (ev.key.keysym.mod & KMOD_CTRL) quit = true;
-            if (ev.key.keysym.mod & KMOD_GUI)  quit = true;
+            if (ctrl) quit = true;
+            break;
+        case SDLK_a:
+            if (ctrl) select_all();
             break;
         #ifndef __EMSCRIPTEN__
         case SDLK_f:

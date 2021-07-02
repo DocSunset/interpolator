@@ -369,8 +369,6 @@ void main()
     }
     if (contours <= 0.0) colour = vec4(weighted_sum / sum_of_weights, 1.0);
     else colour = vec4(weighted_sum, 1.0);
-
-    @{draw demo indicators}
 }
 // @/
 ```
@@ -403,36 +401,3 @@ the CPU-based implementation of the interpolators.
 @[lilit/opengl_primitives.md]
 
 @[lilit/opengl_rendering_boilerplate.md]
-
-### Indicators
-
-For convenience, the fragment shader also draws indicators over each
-demonstration.  This is currently hacked on to the end of the interpolator
-shader main function, and should probably be moved to a seperate conceptual
-module, but for now this is the simplest and most convenient place to do this
-drawing.
-
-```cpp
-// @='draw demo indicators'
-bool invert = false;
-for (int n = 0; n < N; ++n)
-{
-    load_demonstration(n);
-    vec2 s = vec2(d.s[0], d.s[1]);
-    float dist = distance(s, q);
-    if (dist <= 5.0) return;
-    float brightness = 0.299 * colour.x + 0.587 * colour.y + 0.114 * colour.z;
-    bool bright = 0.5 < brightness;
-    if (8.0 < dist && dist < 10.0)
-    {
-        colour = vec4(vec3(0.0), 1.0);
-    }
-    else if (dist <= 8.0)
-    {
-        if (n == selectd_idx) colour = vec4(1.0, 0.0, 0.0, 1.0);
-        else if (n == hovered_idx) colour = vec4(1.0, 1.0, 1.0, 1.0);
-        else colour = vec4(0.0, 0.0, 0.0, 1.0);
-    }
-}
-// @/
-```

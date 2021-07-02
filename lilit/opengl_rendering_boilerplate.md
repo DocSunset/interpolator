@@ -99,6 +99,19 @@ GLuint create_program(const char * name, GLuint vert, GLuint frag)
     return program;
 }
 
+template<typename ProgramType>
+void initialize_simple_program(GLuint& program)
+{
+    if (program != 0) return;
+    std::string vertex_source = load_file(ProgramType::vert);
+    std::string fragment_source = load_file(ProgramType::frag);
+    const char * vsrc =   vertex_source.c_str();
+    const char * fsrc = fragment_source.c_str();
+    GLuint vert = create_shader(ProgramType::name, GL_VERTEX_SHADER, &vsrc, 1);
+    GLuint frag = create_shader(ProgramType::name, GL_FRAGMENT_SHADER, &fsrc, 1);
+    program = create_program(ProgramType::name, vert, frag);
+}
+
 template<typename Vertex>
 void create_vertex_objects(const Vertex * vertices, GLuint numVertices, GLuint& vbo, GLuint& vao, GLenum type = GL_STATIC_DRAW)
 {
@@ -120,6 +133,14 @@ void create_vertex_objects(const Vertex * vertices, GLuint numVertices, GLuint& 
         std::cerr << "VBO creation failed with code '" << (unsigned int)err << "'.\n";
         vbo = 0;
     }
+}
+
+template<typename Vertex>
+void update_vertex_buffer(const Vertex * vertices, GLuint numVertices, GLuint vbo)
+{
+    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertex) * numVertices, vertices);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
 bool write_gl_texture(const Texture& mat, GLuint tex)
