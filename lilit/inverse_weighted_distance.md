@@ -8,7 +8,43 @@ International Computer Music Conference, "1-d, 2-d and 3-d interpolation tools
 for max/msp/jitter." Despite the name of their paper, the algorithm naturally
 extends to arbitrary demonstration spaces.
 
+The most basic version of the algorithm is a simplified gravitational model.
+The weight for demonstration $d$ with source point $s$, the weight is simply
+the inverse of the squared distance from the query $q$ to $s$:
 
+$$
+w = \frac{r}{||q - d||^2}
+$$
+
+Where $r$ accounts for the relative mass of the demonstration. A useful
+extension is to allow an arbitrary positive exponent $p$:
+
+$$
+w = \frac{r}{||q - d||^p}
+$$
+
+Todoroff and colleagues also introduce a global $d_{min}$ parameter that serves
+to prevent numerical instability, and $r_{min}$ parameter that allows a region
+around the demonstration to be dedicated to that demonstration.
+
+$$
+w = \frac{r}{max(d_{min}, (||q - d|| - r_{min})^p)}
+$$
+
+Todoroff and colleagues also describe several methods for incorporating a
+background "void" which is interpolated into the mix as a stable field which
+the demonstrations perturb. At this time I have not implemented this extension
+to the basic model.
+
+Finally, Gibson and colleagues introduced a simple but quite useful extension
+where only demonstrations within a given radius are considered for
+interpolation. This allows the user to control the amount of locality of the
+algorithm, defining a sphere of influence outside of which distant
+demonstrations do not affect the output of the interpolator. The
+sphere-of-influence extension can be disabled by setting the sphere radius to a
+negative number.
+
+## Implementation
 
 ```cpp
 // @+'interpolators'
@@ -21,15 +57,18 @@ struct InverseDistance
     INTERPOLATOR_PARAMETER_STRUCT_START( "power"
                                        , "minimum_distance"
                                        , "minimum_radius"
-                                       , "gravity"
+                                       , "mass"
                                        )
         INTERPOLATOR_PARAMETER_MIN(0.1, -1000, -1000, 0.1);
-        INTERPOLATOR_PARAMETER_MAX( 10,  1000,  1000,  10);
+        INTERPOLATOR_PARAMETER_MAX( 3,  1000,  1000,  10);
         INTERPOLATOR_PARAM_ALIAS(power, 0);
         INTERPOLATOR_PARAM_ALIAS(d_min, 1);
         INTERPOLATOR_PARAM_ALIAS(r_min, 2);
         INTERPOLATOR_PARAM_ALIAS(r, 3);
     INTERPOLATOR_PARAMETER_STRUCT_END
+    
+    bool neighbour_extension = false;
+    Scalar sphere_of_influence = -1;
 
     template<typename DemoList, typename MetaList, typename ParaList>
     PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
@@ -43,11 +82,21 @@ struct InverseDistance
         for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
         for (i=0; i<N; ++i)  
         { 
-            auto base = std::max(meta[i].d - para[i].r_min(), para[i].d_min());
-            meta[i].w = para[i].r() / pow( base, para[i].power());
+            auto powr = pow( meta[i].d - para[i].r_min(), para[i].power()*para[i].power());
+            meta[i].w = para[i].r() / std::max(powr, para[i].d_min());
         }
-        for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
-        for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
+        for (i=0; i<N; ++i)
+        {
+            if (   sphere_of_influence < 0 
+               ||  meta[i].d < sphere_of_influence
+               )
+            {
+                weighted_sum = weighted_sum + meta[i].w * demo[i].p;
+                sum_of_weights = sum_of_weights + meta[i].w;
+            }
+            // else don't add meta[i] to the mix
+        }
+
         for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
 
         return weighted_sum = (1 / sum_of_weights) * weighted_sum;
@@ -62,7 +111,12 @@ struct InverseDistance
 #define POWER 0
 #define D_MIN 1
 #define R_MIN 2
-#define RDIUS 3
+#define RADIUS 3
+
+// uniform float sphere_of_influence;
+// uniform bool neighbour_extension;
+float sphere_of_influence = 500.0;
+bool neighbour_extension = true;
 
 @{common shader interpolator variables}
 
@@ -74,10 +128,14 @@ float calculate_weight(in vec2 q, in int n)
 {
     load_demonstration(n);
     vec2 s = vec2(d.s[0], d.s[1]);
-    vec3 p = vec3(d.p[0], d.p[1], d.p[2]);
     float dist = distance(q, s);
-    float base = max(dist - r[R_MIN], r[D_MIN]);
-    return r[RDIUS] / pow(base, r[POWER]);
+    if (   sphere_of_influence < 0.0
+        ||  dist < sphere_of_influence)
+    {
+        float powr = pow(dist - r[R_MIN], r[POWER] * r[POWER]);
+        return r[RADIUS] / max(powr, 0.0000001);
+    }
+    else return 0.0;
 }
 
 @{shader main}

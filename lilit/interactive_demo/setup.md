@@ -28,7 +28,7 @@ poll_event_queue(); // sets height and width if window was resized immediately, 
 
 ```cpp
 // @='initialize random demonstrations'
-unsigned int n = 5;
+unsigned int n = 3;
 unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
 std::default_random_engine generator (seed);
 std::uniform_real_distribution<Scalar> random(0, 1);

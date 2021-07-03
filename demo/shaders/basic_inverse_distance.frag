@@ -1,12 +1,5 @@
 #define POWER 0
-#define D_MIN 1
-#define R_MIN 2
-#define RADIUS 3
-
-// uniform float sphere_of_influence;
-// uniform bool neighbour_extension;
-float sphere_of_influence = 500.0;
-bool neighbour_extension = true;
+#define MASS 1
 
 #define pi 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863
 
@@ -64,14 +57,10 @@ float calculate_weight(in vec2 q, in int n)
 {
     load_demonstration(n);
     vec2 s = vec2(d.s[0], d.s[1]);
+    float nearest = 999999999.999;
     float dist = distance(q, s);
-    if (   sphere_of_influence < 0.0
-        ||  dist < sphere_of_influence)
-    {
-        float powr = pow(dist - r[R_MIN], r[POWER] * r[POWER]);
-        return r[RADIUS] / max(powr, 0.0000001);
-    }
-    else return 0.0;
+    float powr = pow(dist, r[POWER] * r[POWER]);
+    return r[MASS] / max(powr, 0.0000001);
 }
 
 void main()

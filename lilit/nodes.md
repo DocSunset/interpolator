@@ -65,12 +65,17 @@ struct Nodes
         if (N < 1) return weighted_sum;
         if (N != meta.size()) return weighted_sum;
 
+        Scalar max_weight = 0;
         std::size_t weights;
         for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
         for (i=0; i<N; ++i)  
         {
             meta[i].w = std::max(0, 1 - meta[i].d / para[i].nsize());
-            if (meta[i].w > 0) ++weights;
+            if (meta[i].w > 0)
+            {
+                ++weights;
+                max_weight = meta[i].w;
+            }
         }
         if (weights > 1)
         {

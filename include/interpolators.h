@@ -208,15 +208,18 @@ namespace Interpolators
         INTERPOLATOR_PARAMETER_STRUCT_START( "power"
                                            , "minimum_distance"
                                            , "minimum_radius"
-                                           , "gravity"
+                                           , "mass"
                                            )
             INTERPOLATOR_PARAMETER_MIN(0.1, -1000, -1000, 0.1);
-            INTERPOLATOR_PARAMETER_MAX( 10,  1000,  1000,  10);
+            INTERPOLATOR_PARAMETER_MAX( 3,  1000,  1000,  10);
             INTERPOLATOR_PARAM_ALIAS(power, 0);
             INTERPOLATOR_PARAM_ALIAS(d_min, 1);
             INTERPOLATOR_PARAM_ALIAS(r_min, 2);
             INTERPOLATOR_PARAM_ALIAS(r, 3);
         INTERPOLATOR_PARAMETER_STRUCT_END
+        
+        bool neighbour_extension = false;
+        Scalar sphere_of_influence = -1;
 
         template<typename DemoList, typename MetaList, typename ParaList>
         PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
@@ -230,11 +233,21 @@ namespace Interpolators
             for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
             for (i=0; i<N; ++i)  
             { 
-                auto base = std::max(meta[i].d - para[i].r_min(), para[i].d_min());
-                meta[i].w = para[i].r() / pow( base, para[i].power());
+                auto powr = pow( meta[i].d - para[i].r_min(), para[i].power()*para[i].power());
+                meta[i].w = para[i].r() / std::max(powr, para[i].d_min());
             }
-            for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
-            for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
+            for (i=0; i<N; ++i)
+            {
+                if (   sphere_of_influence < 0 
+                   ||  meta[i].d < sphere_of_influence
+                   )
+                {
+                    weighted_sum = weighted_sum + meta[i].w * demo[i].p;
+                    sum_of_weights = sum_of_weights + meta[i].w;
+                }
+                // else don't add meta[i] to the mix
+            }
+
             for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
 
             return weighted_sum = (1 / sum_of_weights) * weighted_sum;
@@ -286,12 +299,17 @@ namespace Interpolators
             if (N < 1) return weighted_sum;
             if (N != meta.size()) return weighted_sum;
 
+            Scalar max_weight = 0;
             std::size_t weights;
             for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
             for (i=0; i<N; ++i)  
             {
                 meta[i].w = std::max(0, 1 - meta[i].d / para[i].nsize());
-                if (meta[i].w > 0) ++weights;
+                if (meta[i].w > 0)
+                {
+                    ++weights;
+                    max_weight = meta[i].w;
+                }
             }
             if (weights > 1)
             {
@@ -310,6 +328,62 @@ namespace Interpolators
 
         static constexpr const char * name = "Nodes";
         static constexpr const char * frag = "demo/shaders/nodes.frag";
+    };
+    // after e.g. Todoroff 2009 ICMC
+    template<typename Demonstration>
+    struct SecondNearest
+    {
+        USING_INTERPOLATOR_DEMO_TYPES;
+        struct Meta { Scalar d = 0, w = 0; };
+        INTERPOLATOR_PARAMETER_STRUCT_START( "power"
+                                           , "mass"
+                                           )
+            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1);
+            INTERPOLATOR_PARAMETER_MAX( 3,  10);
+            INTERPOLATOR_PARAM_ALIAS(power, 0);
+            INTERPOLATOR_PARAM_ALIAS(mass, 1);
+        INTERPOLATOR_PARAMETER_STRUCT_END
+
+        Scalar nearest;
+        Scalar second;
+
+        template<typename DemoList, typename MetaList, typename ParaList>
+        PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
+                MetaList& meta, PVector& weighted_sum)
+        {
+            Scalar sum_of_weights = 0;
+            std::size_t i, N = demo.size();
+            if (N < 1) return weighted_sum;
+            if (N != meta.size()) return weighted_sum;
+
+            for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
+
+            nearest = std::numeric_limits<Scalar>::max();
+            second = std::numeric_limits<Scalar>::max();
+
+            for (Meta& m : meta) if (m.d < nearest)
+            {
+                second = nearest;
+                nearest = m.d;
+            }
+            for (i=0; i<N; ++i)
+            {
+                if (meta[i].d < second)
+                {
+                    auto powr = pow( meta[i].d - para[i].r_min(), para[i].power()*para[i].power());
+                    meta[i].w = para[i].r() / std::max(powr, para[i].d_min());
+                    weighted_sum = weighted_sum + meta[i].w * demo[i].p;
+                    sum_of_weights = sum_of_weights + meta[i].w;
+                }
+                // else don't add meta[i] to the mix
+            }
+            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
+
+            return weighted_sum = (1 / sum_of_weights) * weighted_sum;
+        }
+
+        static constexpr const char * name = "Second Nearest";
+        static constexpr const char * frag = "demo/shaders/second_nearest.frag";
     };
 };
 #endif
