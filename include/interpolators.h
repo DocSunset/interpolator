@@ -200,10 +200,6 @@ namespace Interpolators
         static constexpr const char * frag = "demo/shaders/intersecting_n-spheres.frag";
     };
     // after e.g. Todoroff 2009 ICMC
-    constexpr const char * const InverseDistanceNames[] =
-            { 
-            };
-
     template<typename Demonstration>
     struct InverseDistance
     {
@@ -266,6 +262,54 @@ namespace Interpolators
         INTERPOLATOR_PARAMETER_STRUCT_END
         static constexpr const char * name = "Basic Lampshade";
         static constexpr const char * frag = "demo/shaders/basic_lampshade.frag";
+    };
+    // after e.g. Todoroff 2009 ICMC
+    template<typename Demonstration>
+    struct Nodes
+    {
+        USING_INTERPOLATOR_DEMO_TYPES;
+        struct Meta { Scalar d, w = 0; };
+        INTERPOLATOR_PARAMETER_STRUCT_START("nsize")
+            INTERPOLATOR_PARAMETER_MIN(0);
+            INTERPOLATOR_PARAMETER_MAX(1000);
+            INTERPOLATOR_PARAM_ALIAS(nsize, 0);
+        INTERPOLATOR_PARAMETER_STRUCT_END
+
+        Demonstration background{};
+
+        template<typename DemoList, typename MetaList, typename ParaList>
+        PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
+                MetaList& meta, PVector& weighted_sum)
+        {
+            Scalar sum_of_weights = 0;
+            std::size_t i, N = demo.size();
+            if (N < 1) return weighted_sum;
+            if (N != meta.size()) return weighted_sum;
+
+            std::size_t weights;
+            for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
+            for (i=0; i<N; ++i)  
+            {
+                meta[i].w = std::max(0, 1 - meta[i].d / para[i].nsize());
+                if (meta[i].w > 0) ++weights;
+            }
+            if (weights > 1)
+            {
+                for (i=0; i<N; ++i)  { weighted_sum = weighted_sum + meta[i].w * demo[i].p; }
+                for (Meta& m : meta) { sum_of_weights = sum_of_weights + m.w; }
+                for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
+                return weighted_sum = (1 / sum_of_weights) * weighted_sum;
+            }
+            else if (weights == 0) return background.p;
+            else // (weights == 1)
+            {
+                for (Meta& m : meta) if (m.w > 0)
+                    return weighted_sum + ( (1-max_weight) * background.p );
+            }
+        }
+
+        static constexpr const char * name = "Nodes";
+        static constexpr const char * frag = "demo/shaders/nodes.frag";
     };
 };
 #endif

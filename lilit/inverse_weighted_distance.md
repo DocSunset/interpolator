@@ -2,11 +2,13 @@
 
 Another simple interpolation algorithm is presented here. This algorithm is one
 of the earliest proposed in the literature, with roots in the early 1980s with
-the SYTER system developed at GRM. The implementation below follows the presentation
-by Todoroff and colleagues in their 2009 paper at the International Computer
-Music Conference, "1-d, 2-d and 3-d interpolation tools for max/msp/jitter."
-Despite the name of their paper, the algorithm naturally extends to arbitrary
-source and destination spatial dimensions.
+the SYTER system developed at GRM. The implementation below follows the
+presentation by Todoroff and colleagues in their 2009 paper at the
+International Computer Music Conference, "1-d, 2-d and 3-d interpolation tools
+for max/msp/jitter." Despite the name of their paper, the algorithm naturally
+extends to arbitrary demonstration spaces.
+
+
 
 ```cpp
 // @+'interpolators'

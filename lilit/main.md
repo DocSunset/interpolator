@@ -151,6 +151,8 @@ namespace Interpolators
 
 @[lilit/lampshade.md]
 
+@[lilit/nodes.md]
+
 @[lilit/convenience_macros.md]
 
 @[lilit/opengl_rendering.md]

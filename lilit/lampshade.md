@@ -147,7 +147,13 @@ float calculate_weight(in vec2 q, in int m)
         vec2 k = s + u_n * diff;
         d_n = distance(s_n, k);
         float l = min(1.0, d_n / r[RADIUS]);
-        if (u_n > 1.0) l = max(l, min(1.0, distance(k, q) / r[THICKNESS]));
+        if (u_n > 1.0)
+        {
+            float h = min(1.0, distance(k, q) / r[THICKNESS]);
+            h = -0.5 * cos(pi * h) + 0.5;
+            l = max(l, h);
+        }
+        l = -0.5 * cos(pi * l) + 0.5;
         loss = loss * l;
     }
     return loss / base;
