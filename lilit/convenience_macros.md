@@ -42,24 +42,26 @@ I'm open to suggestions on better ways of achieving this...
 
 ```cpp
 // @+'interpolator convenience macros'
-#define INTERPOLATOR_PARAMETER_STRUCT_START(Names, N) \
+template <typename T, size_t N> constexpr size_t countof(T(&)[N]) { return N; }
+
+#define INTERPOLATOR_PARAMETER_STRUCT_START(...) \
 struct Para \
 { \
     const Scalar& operator[] (std::size_t n) const {return data[n];} \
           Scalar& operator[] (std::size_t n)       {return data[n];} \
-    const char * name(std::size_t n) {return Names[n];} \
-    static constexpr std::size_t size() {return N;} \
-    Scalar data[N];\
+    static constexpr const char * const names[] = {__VA_ARGS__};\
+    static constexpr std::size_t size() {return countof(names);} \
+    Scalar data[countof(names)];\
 
-#define INTERPOLATOR_PARAMETER_MIN(N, ...)\
-    Scalar min[N] = {__VA_ARGS__}
+#define INTERPOLATOR_PARAMETER_MIN(...)\
+    Scalar min[countof(names)] = {__VA_ARGS__}
 
-#define INTERPOLATOR_PARAMETER_MAX(N, ...)\
-    Scalar max[N] = {__VA_ARGS__}
+#define INTERPOLATOR_PARAMETER_MAX(...)\
+    Scalar max[countof(names)] = {__VA_ARGS__}
 
-#define INTERPOLATOR_PARAM_ALIAS(name, idx)\
-const Scalar& name() const {return data[idx];} \
-      Scalar& name()       {return data[idx];}
+#define INTERPOLATOR_PARAM_ALIAS(alias, idx)\
+const Scalar& alias() const {return data[idx];} \
+      Scalar& alias()       {return data[idx];}
 
 #define INTERPOLATOR_PARAMETER_STRUCT_END };
 // @/

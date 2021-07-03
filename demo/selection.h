@@ -47,6 +47,25 @@ union Selection
     }
 
     operator bool() const {return not (type == SelectionType::None);}
+    bool operator==(const Selection& other) const
+    {
+        if (type != other.type) return false;
+        switch (type)
+        {
+        case SelectionType::Demo:
+            if (demo.idx == other.demo.idx) return true;
+            break;
+        case SelectionType::Slider:
+            if (slider.idx == other.slider.idx) return true;
+            break;
+        case SelectionType::None:
+            return true;
+        default:
+            assert(false); // unknown SelectionType
+        }
+        return false;
+    }
+    bool operator!=(const Selection& other) const {return not *this == other;}
 };
 
 class SelectionVisualizer

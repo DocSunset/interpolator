@@ -17,47 +17,61 @@ occludes the light cast by other demonstrations, casting shadows.
 
 It is easiest to consider the calculation of a single weight `w` related to the
 demonstration `d` with coordinates `s` in source space. The base weight is
-given by the inverse of the distance from `s` to the query point `q` raised
-to some power, exactly as in a simple IWD algorithm.
+given by the inverse of the distance from `s` to the query point `q` raised to
+some power, exactly as in a simple IWD algorithm.  The demonstration $d$ casts
+a ray of light towards $q$. Its brightness decreases proportionate to the
+distance between them.  
 
 $$
 w_{base} = \frac{1}{||q - s||}
 $$
 
-The demonstration $d$ casts a ray of light towards $q$. Its brightness
-decreases proportionate to the distance between them.  The base weight is then
-reduced by a factor depending on how much $d$'s light it is occluded by the
-shades centered on the other demonstrations. The shades are modelled as
-hyperspheres, and the occlusion factor is given by a simplified function that
-depends only on the distance from the center of the shade $s_n$ to the ray cast
-from $s$ to $q$. To calculate the distance, first determine the orthogonal
-projection $o$ of the line from $s$ to $s_n$ onto the line from $s$ to $q$:
+The base weight is then reduced by a factor depending on how much $d$'s light
+is occluded by the shades centered on the other demonstrations. A variety of
+approaches could be adopted to model the way the shades reduce the brightness
+of the ray from $s$ to $q$. In my experiments I have arbitrarily opted to
+imagine a translucent lens located at the occluding demonstration's coordinate
+in source space $s_n$.  The lens has a radius $r_n$ and a thickness $h_n$, and
+the lens is always oriented so that it is orthogonal to $q$ with its front face
+closer to $q$ and its back face centered on $s_n$. It is completely opaque at
+its center, and linearly transitions to completely transparent at its outer
+edge.
+
+The loss factor imposed by the lens at $s_n$ on the base weight for $d$ is
+given by these equations:
 
 $$
-u_n = \frac{(q - s) \dot (s_n - s)}{||q - s||^2}
-o = s + u_n * (q - s)
+u_n = \frac{||s||^2 + ||s_n||^2 - 2(s_n \dot s)}{(s_n - s) \dot (q - s)}
+k = s + u_n * (q - s)
+d_n = ||s_n - k||
+l_rn = min(1, d_n / r_n)
 $$
 
-The distance to the center of the shade is given by the distance from $s_n$ to
-the orthogonal projection:
+Where $u_n$ is the factor that scales the direction vector $(q - s)$ so that it
+intersects the plane defined by the back face of the lens at points $k$. In
+case $u_n$ is negative, this implies that the lens is behind $s$ and therefore
+has no influence on the ray from $s$ to $q$. If $0 < u_n < 1$, the back plane
+is in between $q$ and $s$, and the distance to the center of the lense is given
+by $d_n$. The loss factor in this case is based on the ratio $d_n / r_n$ with
+a minimum 1 boundary condition specified, such that the loss factor varies from
+0 when $d_n = 0$ (i.e. the center of the lens is directly in the path of the
+ray and completely occluded), to 1 when $d_n = r$ (i.e. the ray intersects the
+lens at its edge.
+
+If $u_n$ is greater than one, this implies that the back plane is behind $q$.
+In this case the loss factor is adjusted empirically as follows:
 
 $$
-d_n = ||s_n - o||
+l = min(1, max(l, ||q - k|| / h_n))
 $$
 
-If $u$ is less than zero than it is behind the demonstration. If $u$ is greater
-than one, then it is behind the query point. In either case it does not cast a
-shadow. Otherwise, when $0 < u < 1$ then the demonstration associated with
-$s_n$ occludes the ray cast by $s$, and its base weight is reduced by
-multiplying it with the occlusion factor $l$. The occlusion factor can be
-determined in myriad ways. A very simple model is given by the following
-equation; some variations are discussed shortly.
+Where the ratio $||q - k|| / h_n$ roughly models the lens having some amount
+of thickness so that even when its back plane is behind $q$ it may still
+partially occlude the ray if $q$ is inside the lens. This "thickness" adjustment
+can also be omitted, but leads to the interpolator having discontinuous changes
+in its topology at certain boundaries where the lens rotates so that $q$ is
+suddenly occluded by an opaque part of the lens.
 
-$$
-l_n = min(1, d_n / r_n)
-$$
-
-Where $r_n$ is the radius of the shade associated with the $nth$ demonstration.
 The final weight $w$ is given by multiplying the base weight with the occlusion
 factor given by each other demonstration:
 
@@ -73,21 +87,22 @@ algorithm, and no query function is defined yet.
 
 ```cpp
 // @+'interpolators'
-constexpr const char * const BasicLampshadeNames[2] =
-        { "power"
-        , "radius"
-        };
-
 template<typename Demonstration>
 struct BasicLampshade
 {
     USING_INTERPOLATOR_DEMO_TYPES;
     struct Meta { Scalar dot, dist, base, loss, w; };
-    INTERPOLATOR_PARAMETER_STRUCT_START(BasicLampshadeNames, 2)
-        INTERPOLATOR_PARAMETER_MIN(2, 0.1, 0.001);
-        INTERPOLATOR_PARAMETER_MAX(2, 10, 1000);
+    INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
+                                       , "brightness"
+                                       , "lens radius"
+                                       , "lens thickness"
+                                       )
+        INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001, 0.001);
+        INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000,  1000);
         INTERPOLATOR_PARAM_ALIAS(power, 0);
-        INTERPOLATOR_PARAM_ALIAS(r, 1);
+        INTERPOLATOR_PARAM_ALIAS(brightness, 1);
+        INTERPOLATOR_PARAM_ALIAS(radius, 2);
+        INTERPOLATOR_PARAM_ALIAS(thickness, 3);
     INTERPOLATOR_PARAMETER_STRUCT_END
     static constexpr const char * name = "Basic Lampshade";
     static constexpr const char * frag = "demo/shaders/basic_lampshade.frag";
@@ -96,7 +111,9 @@ struct BasicLampshade
 
 // @#'demo/shaders/basic_lampshade.frag'
 #define POWER 0
-#define RDIUS 1
+#define BRIGHTNESS 1
+#define RADIUS 2
+#define THICKNESS 3
 
 @{common shader interpolator variables}
 
@@ -110,10 +127,10 @@ float calculate_weight(in vec2 q, in int m)
     vec2 diff = q - s;
     float dotd = dot(diff, diff);
     float dist = sqrt(dotd);
-    float base = pow(dist, 4.0);//r[POWER]);
-    float loss = 1.0;
+    float base = pow(dist, r[POWER] * r[POWER]);
+    float loss = r[BRIGHTNESS];
     float u_n = -1.0;
-    float d_n = r[RDIUS];
+    float d_n = r[RADIUS];
     for (int n = 0; n < N; ++n)
     {
         if (m == n) continue;
@@ -123,31 +140,18 @@ float calculate_weight(in vec2 q, in int m)
         float dots  = dot(  s,   s);
         float snots = dot(s_n,   s);
         float dotn  = dot(s_n, s_n);
-        u_n = (dots + dotn - 2.0 * snots) / dot(snifs, diff); // this one works pretty intuitively, but the lens snaps on abruptly and discontinuously when points are close together. It would be nice if it eased in a bit
+        u_n = (dots + dotn - 2.0 * snots) / dot(snifs, diff);
 
         if (u_n <= 0.0) continue;
 
         vec2 k = s + u_n * diff;
         d_n = distance(s_n, k);
-        float l = min(1.0, d_n / r[RDIUS]);
-        if (u_n > 1.0) l = max(l, min(1.0, distance(k, q) / (r[POWER]*10.0)));
+        float l = min(1.0, d_n / r[RADIUS]);
+        if (u_n > 1.0) l = max(l, min(1.0, distance(k, q) / r[THICKNESS]));
         loss = loss * l;
     }
     return loss / base;
-    //return vec4(float(0.0 < v_n && v_n < 1.0), float(0.0 < u_n), float(d_n < r[RDIUS]) * d.p[2], 1.0);//base * loss;
 }
-
-//void main()
-//{
-//    vec2 q = vec2(position.x * w/2.0, position.y * h/2.0);
-//    load_demonstration(0);
-//    colour = calculate_weight(q, 0);
-//    //load_demonstration(1);
-//    //float sm = weight + calculate_weight(q, 1);
-//    //load_demonstration(0);
-//    //weight = weight / sm;
-//    //colour = vec4(weight * d.p[0], weight * d.p[1], weight * d.p[2], 1.0);
-//}
 
 @{shader main}
 // @/

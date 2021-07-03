@@ -11,21 +11,18 @@ source and destination spatial dimensions.
 ```cpp
 // @+'interpolators'
 // after e.g. Todoroff 2009 ICMC
-constexpr const char * const InverseDistanceNames[4] =
-        { "power"
-        , "minimum_distance"
-        , "minimum_radius"
-        , "gravity"
-        };
-
 template<typename Demonstration>
 struct InverseDistance
 {
     USING_INTERPOLATOR_DEMO_TYPES;
     struct Meta { Scalar d = 0, w = 0; };
-    INTERPOLATOR_PARAMETER_STRUCT_START(InverseDistanceNames, 4)
-        INTERPOLATOR_PARAMETER_MIN(4, 0.1, -1000, -1000, 0.1);
-        INTERPOLATOR_PARAMETER_MAX(4, 10, 1000, 1000, 10);
+    INTERPOLATOR_PARAMETER_STRUCT_START( "power"
+                                       , "minimum_distance"
+                                       , "minimum_radius"
+                                       , "gravity"
+                                       )
+        INTERPOLATOR_PARAMETER_MIN(0.1, -1000, -1000, 0.1);
+        INTERPOLATOR_PARAMETER_MAX( 10,  1000,  1000,  10);
         INTERPOLATOR_PARAM_ALIAS(power, 0);
         INTERPOLATOR_PARAM_ALIAS(d_min, 1);
         INTERPOLATOR_PARAM_ALIAS(r_min, 2);

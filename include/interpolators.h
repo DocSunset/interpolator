@@ -19,24 +19,26 @@ using SVector = typename Interpolator::SVector; \
 using PVector = typename Interpolator::PVector; \
 using Meta = typename Interpolator::Meta; \
 using Para = typename Interpolator::Para
-#define INTERPOLATOR_PARAMETER_STRUCT_START(Names, N) \
+template <typename T, size_t N> constexpr size_t countof(T(&)[N]) { return N; }
+
+#define INTERPOLATOR_PARAMETER_STRUCT_START(...) \
 struct Para \
 { \
     const Scalar& operator[] (std::size_t n) const {return data[n];} \
           Scalar& operator[] (std::size_t n)       {return data[n];} \
-    const char * name(std::size_t n) {return Names[n];} \
-    static constexpr std::size_t size() {return N;} \
-    Scalar data[N];\
+    static constexpr const char * const names[] = {__VA_ARGS__};\
+    static constexpr std::size_t size() {return countof(names);} \
+    Scalar data[countof(names)];\
 
-#define INTERPOLATOR_PARAMETER_MIN(N, ...)\
-    Scalar min[N] = {__VA_ARGS__}
+#define INTERPOLATOR_PARAMETER_MIN(...)\
+    Scalar min[countof(names)] = {__VA_ARGS__}
 
-#define INTERPOLATOR_PARAMETER_MAX(N, ...)\
-    Scalar max[N] = {__VA_ARGS__}
+#define INTERPOLATOR_PARAMETER_MAX(...)\
+    Scalar max[countof(names)] = {__VA_ARGS__}
 
-#define INTERPOLATOR_PARAM_ALIAS(name, idx)\
-const Scalar& name() const {return data[idx];} \
-      Scalar& name()       {return data[idx];}
+#define INTERPOLATOR_PARAM_ALIAS(alias, idx)\
+const Scalar& alias() const {return data[idx];} \
+      Scalar& alias()       {return data[idx];}
 
 #define INTERPOLATOR_PARAMETER_STRUCT_END };
 
@@ -198,11 +200,8 @@ namespace Interpolators
         static constexpr const char * frag = "demo/shaders/intersecting_n-spheres.frag";
     };
     // after e.g. Todoroff 2009 ICMC
-    constexpr const char * const InverseDistanceNames[4] =
-            { "power"
-            , "minimum_distance"
-            , "minimum_radius"
-            , "gravity"
+    constexpr const char * const InverseDistanceNames[] =
+            { 
             };
 
     template<typename Demonstration>
@@ -210,9 +209,13 @@ namespace Interpolators
     {
         USING_INTERPOLATOR_DEMO_TYPES;
         struct Meta { Scalar d = 0, w = 0; };
-        INTERPOLATOR_PARAMETER_STRUCT_START(InverseDistanceNames, 4)
-            INTERPOLATOR_PARAMETER_MIN(4, 0.1, -1000, -1000, 0.1);
-            INTERPOLATOR_PARAMETER_MAX(4, 10, 1000, 1000, 10);
+        INTERPOLATOR_PARAMETER_STRUCT_START( "power"
+                                           , "minimum_distance"
+                                           , "minimum_radius"
+                                           , "gravity"
+                                           )
+            INTERPOLATOR_PARAMETER_MIN(0.1, -1000, -1000, 0.1);
+            INTERPOLATOR_PARAMETER_MAX( 10,  1000,  1000,  10);
             INTERPOLATOR_PARAM_ALIAS(power, 0);
             INTERPOLATOR_PARAM_ALIAS(d_min, 1);
             INTERPOLATOR_PARAM_ALIAS(r_min, 2);
@@ -244,21 +247,22 @@ namespace Interpolators
         static constexpr const char * name = "Inverse Weighted Distance";
         static constexpr const char * frag = "demo/shaders/inverse_distance.frag";
     };
-    constexpr const char * const BasicLampshadeNames[2] =
-            { "power"
-            , "radius"
-            };
-
     template<typename Demonstration>
     struct BasicLampshade
     {
         USING_INTERPOLATOR_DEMO_TYPES;
         struct Meta { Scalar dot, dist, base, loss, w; };
-        INTERPOLATOR_PARAMETER_STRUCT_START(BasicLampshadeNames, 2)
-            INTERPOLATOR_PARAMETER_MIN(2, 0.1, 0.001);
-            INTERPOLATOR_PARAMETER_MAX(2, 10, 1000);
+        INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
+                                           , "brightness"
+                                           , "lens radius"
+                                           , "lens thickness"
+                                           )
+            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001, 0.001);
+            INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000,  1000);
             INTERPOLATOR_PARAM_ALIAS(power, 0);
-            INTERPOLATOR_PARAM_ALIAS(r, 1);
+            INTERPOLATOR_PARAM_ALIAS(brightness, 1);
+            INTERPOLATOR_PARAM_ALIAS(radius, 2);
+            INTERPOLATOR_PARAM_ALIAS(thickness, 3);
         INTERPOLATOR_PARAMETER_STRUCT_END
         static constexpr const char * name = "Basic Lampshade";
         static constexpr const char * frag = "demo/shaders/basic_lampshade.frag";

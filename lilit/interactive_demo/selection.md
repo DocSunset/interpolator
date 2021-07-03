@@ -49,6 +49,25 @@ union Selection
     }
 
     operator bool() const {return not (type == SelectionType::None);}
+    bool operator==(const Selection& other) const
+    {
+        if (type != other.type) return false;
+        switch (type)
+        {
+        case SelectionType::Demo:
+            if (demo.idx == other.demo.idx) return true;
+            break;
+        case SelectionType::Slider:
+            if (slider.idx == other.slider.idx) return true;
+            break;
+        case SelectionType::None:
+            return true;
+        default:
+            assert(false); // unknown SelectionType
+        }
+        return false;
+    }
+    bool operator!=(const Selection& other) const {return not *this == other;}
 };
 
 class SelectionVisualizer
@@ -329,12 +348,14 @@ void select(const Selection& sel)
         grab.slider.s->grab = true;
         set_grabbed_slider();
     }
+    redraw = true;
 }
 
 void unselect()
 {
     demo_selection.clear();
     shader_state.focus_idx = -1;
+    redraw = true;
 }
 
 
@@ -346,6 +367,8 @@ void hover(const Selection& sel)
         return;
     }
 
+    if (hovered == sel) return;
+
     unhover();
 
     if (sel.type == SelectionType::Demo && demo_selection.size() == 0)
@@ -354,6 +377,7 @@ void hover(const Selection& sel)
         sel.slider.s->hover = true;
 
     hovered = sel;
+    redraw = true;
 }
 
 void ungrab()   
@@ -394,6 +418,7 @@ void unhover()
     if (hovered.type == SelectionType::Slider) hovered.slider.s->hover = false;
     else if (hovered.type == SelectionType::Demo && demo_selection.size() == 0) shader_state.focus_idx = -1;
     hovered = Selection::None();
+    redraw = true;
 }
 // @/
 ```

@@ -22,7 +22,7 @@
 
 #define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
 auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 100)
+        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 1, 100, 100)
         , INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
         , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 4, 0.001, 0.0, 1.0)
         );
@@ -150,7 +150,7 @@ public:
             redraw = false;
         };
 
-        if (true)//redraw);
+        if (redraw)
         {
             unsigned int i = 0;
             auto outer_draw = [&](unsigned int& i, auto& tuple)
@@ -451,12 +451,14 @@ private:
                 grab.slider.s->grab = true;
                 set_grabbed_slider();
             }
+            redraw = true;
         }
 
         void unselect()
         {
             demo_selection.clear();
             shader_state.focus_idx = -1;
+            redraw = true;
         }
 
 
@@ -468,6 +470,8 @@ private:
                 return;
             }
 
+            if (hovered == sel) return;
+
             unhover();
 
             if (sel.type == SelectionType::Demo && demo_selection.size() == 0)
@@ -476,6 +480,7 @@ private:
                 sel.slider.s->hover = true;
 
             hovered = sel;
+            redraw = true;
         }
 
         void ungrab()   
@@ -516,6 +521,7 @@ private:
             if (hovered.type == SelectionType::Slider) hovered.slider.s->hover = false;
             else if (hovered.type == SelectionType::Demo && demo_selection.size() == 0) shader_state.focus_idx = -1;
             hovered = Selection::None();
+            redraw = true;
         }
 
         void update_slider_bounds()
