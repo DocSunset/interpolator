@@ -276,6 +276,25 @@ namespace Interpolators
         static constexpr const char * name = "Basic Lampshade";
         static constexpr const char * frag = "demo/shaders/basic_lampshade.frag";
     };
+    template<typename Demonstration>
+    struct SphereLampshade
+    {
+        USING_INTERPOLATOR_DEMO_TYPES;
+        struct Meta { Scalar dot, dist, base, loss, w; };
+        INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
+                                           , "brightness"
+                                           , "lens radius"
+                                           , "lens thickness"
+                                           )
+            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001, 0.001);
+            INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000,  1000);
+            INTERPOLATOR_PARAM_ALIAS(power, 0);
+            INTERPOLATOR_PARAM_ALIAS(brightness, 1);
+            INTERPOLATOR_PARAM_ALIAS(radius, 2);
+        INTERPOLATOR_PARAMETER_STRUCT_END
+        static constexpr const char * name = "Sphere Lampshade";
+        static constexpr const char * frag = "demo/shaders/sphere_lampshade.frag";
+    };
     // after e.g. Todoroff 2009 ICMC
     template<typename Demonstration>
     struct Nodes
@@ -328,62 +347,6 @@ namespace Interpolators
 
         static constexpr const char * name = "Nodes";
         static constexpr const char * frag = "demo/shaders/nodes.frag";
-    };
-    // after e.g. Todoroff 2009 ICMC
-    template<typename Demonstration>
-    struct SecondNearest
-    {
-        USING_INTERPOLATOR_DEMO_TYPES;
-        struct Meta { Scalar d = 0, w = 0; };
-        INTERPOLATOR_PARAMETER_STRUCT_START( "power"
-                                           , "mass"
-                                           )
-            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1);
-            INTERPOLATOR_PARAMETER_MAX( 3,  10);
-            INTERPOLATOR_PARAM_ALIAS(power, 0);
-            INTERPOLATOR_PARAM_ALIAS(mass, 1);
-        INTERPOLATOR_PARAMETER_STRUCT_END
-
-        Scalar nearest;
-        Scalar second;
-
-        template<typename DemoList, typename MetaList, typename ParaList>
-        PVector query(const SVector& q, const DemoList& demo, const ParaList& para,
-                MetaList& meta, PVector& weighted_sum)
-        {
-            Scalar sum_of_weights = 0;
-            std::size_t i, N = demo.size();
-            if (N < 1) return weighted_sum;
-            if (N != meta.size()) return weighted_sum;
-
-            for (i=0; i<N; ++i)  { meta[i].d = (demo[i].s - q).norm(); }
-
-            nearest = std::numeric_limits<Scalar>::max();
-            second = std::numeric_limits<Scalar>::max();
-
-            for (Meta& m : meta) if (m.d < nearest)
-            {
-                second = nearest;
-                nearest = m.d;
-            }
-            for (i=0; i<N; ++i)
-            {
-                if (meta[i].d < second)
-                {
-                    auto powr = pow( meta[i].d - para[i].r_min(), para[i].power()*para[i].power());
-                    meta[i].w = para[i].r() / std::max(powr, para[i].d_min());
-                    weighted_sum = weighted_sum + meta[i].w * demo[i].p;
-                    sum_of_weights = sum_of_weights + meta[i].w;
-                }
-                // else don't add meta[i] to the mix
-            }
-            for (Meta& m : meta) { m.w = m.w / sum_of_weights; }
-
-            return weighted_sum = (1 / sum_of_weights) * weighted_sum;
-        }
-
-        static constexpr const char * name = "Second Nearest";
-        static constexpr const char * frag = "demo/shaders/second_nearest.frag";
     };
 };
 #endif

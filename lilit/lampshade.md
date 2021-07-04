@@ -155,6 +155,106 @@ float calculate_weight(in vec2 q, in int m)
         }
         l = -0.5 * cos(pi * l) + 0.5;
         loss = loss * l;
+
+    }
+    return loss / base;
+}
+
+@{shader main}
+// @/
+```
+
+## Variation
+
+Here's a variation where the shades are modelled as hyperspheres:
+
+At this time, only a glsl implementation is given for this algorithm. The C++
+part below only defines the parameters and metadata associated with the
+algorithm, and no query function is defined yet.
+
+```cpp
+// @+'interpolators'
+template<typename Demonstration>
+struct SphereLampshade
+{
+    USING_INTERPOLATOR_DEMO_TYPES;
+    struct Meta { Scalar dot, dist, base, loss, w; };
+    INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
+                                       , "brightness"
+                                       , "lens radius"
+                                       , "lens thickness"
+                                       )
+        INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001, 0.001);
+        INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000,  1000);
+        INTERPOLATOR_PARAM_ALIAS(power, 0);
+        INTERPOLATOR_PARAM_ALIAS(brightness, 1);
+        INTERPOLATOR_PARAM_ALIAS(radius, 2);
+    INTERPOLATOR_PARAMETER_STRUCT_END
+    static constexpr const char * name = "Sphere Lampshade";
+    static constexpr const char * frag = "demo/shaders/sphere_lampshade.frag";
+};
+// @/
+
+// @#'demo/shaders/sphere_lampshade.frag'
+#define POWER 0
+#define BRIGHTNESS 1
+#define RADIUS 2
+
+@{common shader interpolator variables}
+
+@{shader functions}
+
+void setup(in vec2 q) {}
+
+float calculate_weight(in vec2 q, in int m)
+{
+    vec2 s = vec2(d.s[0], d.s[1]);
+    vec2 qms = q - s;
+    float q2s2 = dot(qms, qms);
+    float q2s  = sqrt(q2s2);
+    float base = pow(q2s, r[POWER] * r[POWER]);
+    float loss = r[BRIGHTNESS];
+    for (int n = 0; n < N; ++n)
+    {
+        if (m == n) continue;
+        load_demonstration(n);
+        vec2 s_n = vec2(d.s[0], d.s[1]);
+        vec2 nms = s_n - s;
+        float u = dot(nms, qms) / q2s2;
+        vec2 k = s + u * qms;
+
+        float k2n2 = dot((s_n - k), (s_n - k));
+        float r2 = r[RADIUS] * r[RADIUS];
+        if (r2 < k2n2) continue;
+
+        float q2n2 = dot( (s_n - q), (s_n - q) );
+        float s2n2 = dot( (s_n - s), (s_n - s) );
+        bool q_inside = q2n2 < r2;
+        bool s_inside = s2n2 < r2;
+
+        float secant;
+        if (q_inside && s_inside) secant = q2s;
+        else if (q_inside)
+        {
+            //if (u < 0.0) panic because that should never happen
+            if (u < 1.0) secant = sqrt(r2 - k2n2) + sqrt(q2n2 - k2n2);
+            else secant = sqrt(r2 - k2n2) - sqrt(q2n2 - k2n2);
+        }
+        else if (s_inside)
+        {
+            if (u < 0.0) secant = sqrt(r2 - k2n2) - sqrt(s2n2 - k2n2);
+            else if (u < 1.0) secant = sqrt(r2 - k2n2) + sqrt(s2n2 - k2n2);
+            //else panic because that should never happen
+        }
+        else if (0.0 < u && u < 1.0)
+        {
+            secant = 2.0 * sqrt(r2 - k2n2);
+        }
+        else continue;
+        float l = 1.0 - (secant / (2.0 * r[RADIUS]));
+        l = -0.5 * cos(pi * l) + 0.5;
+
+        loss = loss * l;
     }
     return loss / base;
 }

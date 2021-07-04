@@ -1,7 +1,6 @@
 #define POWER 0
 #define BRIGHTNESS 1
 #define RADIUS 2
-#define THICKNESS 3
 
 #define pi 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863
 
@@ -55,41 +54,61 @@ void load_demonstration(int n)
 
 void setup(in vec2 q) {}
 
+//void main()
+//{
+//    //vec2 q = vec2( 0.0,0.0 );
+//    vec2 q = vec2(position.x * w/2.0, position.y * h/2.0);
+//    int m = 0;
+//    load_demonstration(m);
 float calculate_weight(in vec2 q, in int m)
 {
     vec2 s = vec2(d.s[0], d.s[1]);
-    vec2 diff = q - s;
-    float dotd = dot(diff, diff);
-    float dist = sqrt(dotd);
-    float base = pow(dist, r[POWER] * r[POWER]);
+    vec2 qms = q - s;
+    float q2s2 = dot(qms, qms);
+    float q2s  = sqrt(q2s2);
+    float base = pow(q2s, r[POWER] * r[POWER]);
     float loss = r[BRIGHTNESS];
-    float u_n = -1.0;
-    float d_n = r[RADIUS];
     for (int n = 0; n < N; ++n)
     {
         if (m == n) continue;
         load_demonstration(n);
         vec2 s_n = vec2(d.s[0], d.s[1]);
-        vec2 snifs = s_n - s;
-        float dots  = dot(  s,   s);
-        float snots = dot(s_n,   s);
-        float dotn  = dot(s_n, s_n);
-        u_n = (dots + dotn - 2.0 * snots) / dot(snifs, diff);
+        vec2 nms = s_n - s;
+        float u = dot(nms, qms) / q2s2;
+        vec2 k = s + u * qms;
 
-        if (u_n <= 0.0) continue;
+        float k2n2 = dot((s_n - k), (s_n - k));
+        float r2 = r[RADIUS] * r[RADIUS];
+        if (r2 < k2n2) continue;
 
-        vec2 k = s + u_n * diff;
-        d_n = distance(s_n, k);
-        float l = min(1.0, d_n / r[RADIUS]);
-        if (u_n > 1.0)
+        float q2n2 = dot( (s_n - q), (s_n - q) );
+        float s2n2 = dot( (s_n - s), (s_n - s) );
+        bool q_inside = q2n2 < r2;
+        bool s_inside = s2n2 < r2;
+
+        float secant;
+        if (q_inside && s_inside) secant = q2s;
+        else if (q_inside)
         {
-            float h = min(1.0, distance(k, q) / r[THICKNESS]);
-            h = -0.5 * cos(pi * h) + 0.5;
-            l = max(l, h);
+            //if (u < 0.0) panic because that should never happen
+            if (u < 1.0) secant = sqrt(r2 - k2n2) + sqrt(q2n2 - k2n2);
+            else secant = sqrt(r2 - k2n2) - sqrt(q2n2 - k2n2);
         }
+        else if (s_inside)
+        {
+            if (u < 0.0) secant = sqrt(r2 - k2n2) - sqrt(s2n2 - k2n2);
+            else if (u < 1.0) secant = sqrt(r2 - k2n2) + sqrt(s2n2 - k2n2);
+            //else panic because that should never happen
+        }
+        else if (0.0 < u && u < 1.0)
+        {
+            secant = 2.0 * sqrt(r2 - k2n2);
+        }
+        else continue;
+        float l = 1.0 - (secant / (2.0 * r[RADIUS]));
         l = -0.5 * cos(pi * l) + 0.5;
-        loss = loss * l;
 
+        loss = loss * l;
     }
     return loss / base;
 }
