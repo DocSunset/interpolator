@@ -182,10 +182,9 @@ struct SphereLampshade
     INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
                                        , "brightness"
                                        , "lens radius"
-                                       , "lens thickness"
                                        )
-        INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001, 0.001);
-        INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000,  1000);
+        INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001);
+        INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000);
         INTERPOLATOR_PARAM_ALIAS(power, 0);
         INTERPOLATOR_PARAM_ALIAS(brightness, 1);
         INTERPOLATOR_PARAM_ALIAS(radius, 2);
@@ -242,7 +241,7 @@ float calculate_weight(in vec2 q, in int m)
         }
         else if (s_inside)
         {
-            if (u < 0.0) secant = sqrt(r2 - k2n2) - sqrt(s2n2 - k2n2);
+            if (u <= 0.0) secant = sqrt(r2 - k2n2) - sqrt(s2n2 - k2n2);
             else if (u < 1.0) secant = sqrt(r2 - k2n2) + sqrt(s2n2 - k2n2);
             //else panic because that should never happen
         }
@@ -251,7 +250,10 @@ float calculate_weight(in vec2 q, in int m)
             secant = 2.0 * sqrt(r2 - k2n2);
         }
         else continue;
-        float l = 1.0 - (secant / (2.0 * r[RADIUS]));
+
+        secant = (secant / (2.0 * r[RADIUS]));
+        //float l = secant;
+        float l = sqrt(1.0 - secant * secant);
         l = -0.5 * cos(pi * l) + 0.5;
 
         loss = loss * l;

@@ -54,12 +54,6 @@ void load_demonstration(int n)
 
 void setup(in vec2 q) {}
 
-//void main()
-//{
-//    //vec2 q = vec2( 0.0,0.0 );
-//    vec2 q = vec2(position.x * w/2.0, position.y * h/2.0);
-//    int m = 0;
-//    load_demonstration(m);
 float calculate_weight(in vec2 q, in int m)
 {
     vec2 s = vec2(d.s[0], d.s[1]);
@@ -96,7 +90,7 @@ float calculate_weight(in vec2 q, in int m)
         }
         else if (s_inside)
         {
-            if (u < 0.0) secant = sqrt(r2 - k2n2) - sqrt(s2n2 - k2n2);
+            if (u <= 0.0) secant = sqrt(r2 - k2n2) - sqrt(s2n2 - k2n2);
             else if (u < 1.0) secant = sqrt(r2 - k2n2) + sqrt(s2n2 - k2n2);
             //else panic because that should never happen
         }
@@ -105,7 +99,10 @@ float calculate_weight(in vec2 q, in int m)
             secant = 2.0 * sqrt(r2 - k2n2);
         }
         else continue;
-        float l = 1.0 - (secant / (2.0 * r[RADIUS]));
+
+        secant = (secant / (2.0 * r[RADIUS]));
+        //float l = secant;
+        float l = sqrt(1.0 - secant * secant);
         l = -0.5 * cos(pi * l) + 0.5;
 
         loss = loss * l;

@@ -284,10 +284,9 @@ namespace Interpolators
         INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
                                            , "brightness"
                                            , "lens radius"
-                                           , "lens thickness"
                                            )
-            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001, 0.001);
-            INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000,  1000);
+            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001);
+            INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000);
             INTERPOLATOR_PARAM_ALIAS(power, 0);
             INTERPOLATOR_PARAM_ALIAS(brightness, 1);
             INTERPOLATOR_PARAM_ALIAS(radius, 2);
