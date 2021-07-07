@@ -190,7 +190,7 @@ WASM-based web application.
 A detailed presentation of the implementation of the demo program can be found
 by reading its literate source code in the file linked here:
 
-@[lilit/interactive_demo.md]
+@[lilit/interactive_demo/main.md]
 
 ## Installation
 
