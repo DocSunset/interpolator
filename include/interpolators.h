@@ -218,7 +218,6 @@ namespace Interpolators
             INTERPOLATOR_PARAM_ALIAS(r, 3);
         INTERPOLATOR_PARAMETER_STRUCT_END
         
-        bool neighbour_extension = false;
         Scalar sphere_of_influence = -1;
 
         template<typename DemoList, typename MetaList, typename ParaList>
@@ -275,24 +274,6 @@ namespace Interpolators
         INTERPOLATOR_PARAMETER_STRUCT_END
         static constexpr const char * name = "Basic Lampshade";
         static constexpr const char * frag = "demo/shaders/basic_lampshade.frag";
-    };
-    template<typename Demonstration>
-    struct SphereLampshade
-    {
-        USING_INTERPOLATOR_DEMO_TYPES;
-        struct Meta { Scalar dot, dist, base, loss, w; };
-        INTERPOLATOR_PARAMETER_STRUCT_START( "dropoff power"
-                                           , "brightness"
-                                           , "lens radius"
-                                           )
-            INTERPOLATOR_PARAMETER_MIN(0.1, 0.1, 0.001);
-            INTERPOLATOR_PARAMETER_MAX( 10,  10,  1000);
-            INTERPOLATOR_PARAM_ALIAS(power, 0);
-            INTERPOLATOR_PARAM_ALIAS(brightness, 1);
-            INTERPOLATOR_PARAM_ALIAS(radius, 2);
-        INTERPOLATOR_PARAMETER_STRUCT_END
-        static constexpr const char * name = "Sphere Lampshade";
-        static constexpr const char * frag = "demo/shaders/sphere_lampshade.frag";
     };
     // after e.g. Todoroff 2009 ICMC
     template<typename Demonstration>

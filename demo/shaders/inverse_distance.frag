@@ -3,10 +3,7 @@
 #define R_MIN 2
 #define RADIUS 3
 
-// uniform float sphere_of_influence;
-// uniform bool neighbour_extension;
-float sphere_of_influence = 500.0;
-bool neighbour_extension = true;
+float sphere_of_influence = -1.0;
 
 #define pi 3.14159265358979323846264338327950288419716939937510582097494459230781640628620899863
 

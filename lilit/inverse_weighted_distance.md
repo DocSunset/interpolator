@@ -67,7 +67,6 @@ struct InverseDistance
         INTERPOLATOR_PARAM_ALIAS(r, 3);
     INTERPOLATOR_PARAMETER_STRUCT_END
     
-    bool neighbour_extension = false;
     Scalar sphere_of_influence = -1;
 
     template<typename DemoList, typename MetaList, typename ParaList>
@@ -113,10 +112,7 @@ struct InverseDistance
 #define R_MIN 2
 #define RADIUS 3
 
-// uniform float sphere_of_influence;
-// uniform bool neighbour_extension;
-float sphere_of_influence = 500.0;
-bool neighbour_extension = true;
+float sphere_of_influence = -1.0;
 
 @{common shader interpolator variables}
 
