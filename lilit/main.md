@@ -37,7 +37,7 @@ intermedia artistic practices.
 # Theory
 
 The basic operating principle of many preset interpolation algorithms,
-including the one presented here, is for the user to specify pairs of
+including the ones presented here, is for the user to specify pairs of
 source-to-destination associations in the form of presets in these two spaces.
 As a concrete example, the user might be exploring the space of sounds produced
 by a synthesizer with possibly a very large number of parameters. They might

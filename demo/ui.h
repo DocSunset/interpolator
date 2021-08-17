@@ -22,9 +22,9 @@
 
 #define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
 auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 1, 100, 100)
-        , INTERPOLATOR(Interpolators::Nodes<Demo>, 500)
-        , INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
+//        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 1, 100, 100)
+//        , INTERPOLATOR(Interpolators::Nodes<Demo>, 500)
+        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
         , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 2, 0.001, 0.0, 1.0)
         );
 
@@ -77,7 +77,7 @@ public:
         }
         else SDL_Log("Created GL context\n");
 
-        unsigned int n = 3;
+        unsigned int n = 5;
         unsigned int seed = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine generator (seed);
         std::uniform_real_distribution<Scalar> random(0, 1);
@@ -270,6 +270,11 @@ public:
                 break;
 
             case SDL_MOUSEBUTTONDOWN:
+                if (ev.button.clicks == 2)
+                {
+                    add_demo();
+                    break;
+                }
                 set_mouse(ev);
                 select(search_for_selection());
                 break;
@@ -342,6 +347,47 @@ private:
                 shader.reload(demo, para);
             };
             std::apply([&](auto& ... tuples) {((move(demo, tuples)), ...);}, interpolators);
+            redraw = true;
+        }
+
+        RGBVec get_current_interpolator_output()
+        {
+            RGBVec out = {0, 0, 0};
+            auto inner_query = [&](const DemoList& demo, auto& tup)
+            {
+                auto& interpolator = std::get<0>(tup);
+                auto& meta = std::get<1>(tup);
+                auto& para = std::get<2>(tup);
+                interpolator.query(mouse, demo, para, meta, out);
+            };
+
+            unsigned int i = 0;
+            auto outer_query = [&](unsigned int& i, auto& tup)
+            {
+                if (i++ == active_interpolator) inner_query(demo, tup);
+            };
+
+            std::apply([&](auto& ... tuples) {((outer_query(i, tuples)), ... );}, interpolators);
+
+            return out;
+        }
+
+        void add_demo()
+        {
+            // get demo value at current mouse position
+            // push back with default parameters and meta
+            demo.push_back(Demo{mouse, get_current_interpolator_output()});
+            auto resize = [](auto& demo, auto& tup)
+            {
+                auto& meta = std::get<1>(tup);
+                auto& para = std::get<2>(tup);
+                auto& default_para = std::get<3>(tup);
+                meta.emplace_back();
+                para.push_back(default_para);
+                auto& shader = std::get<4>(tup);
+                shader.resize(demo, para);
+            };
+            std::apply([&](auto& ... tuples) {((resize(demo, tuples)), ...);}, interpolators);
             redraw = true;
         }
 

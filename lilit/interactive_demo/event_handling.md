@@ -27,6 +27,47 @@
         redraw = true;
     }
 
+    RGBVec get_current_interpolator_output()
+    {
+        RGBVec out = {0, 0, 0};
+        auto inner_query = [&](const DemoList& demo, auto& tup)
+        {
+            auto& interpolator = std::get<0>(tup);
+            auto& meta = std::get<1>(tup);
+            auto& para = std::get<2>(tup);
+            interpolator.query(mouse, demo, para, meta, out);
+        };
+
+        unsigned int i = 0;
+        auto outer_query = [&](unsigned int& i, auto& tup)
+        {
+            if (i++ == active_interpolator) inner_query(demo, tup);
+        };
+
+        std::apply([&](auto& ... tuples) {((outer_query(i, tuples)), ... );}, interpolators);
+
+        return out;
+    }
+
+    void add_demo()
+    {
+        // get demo value at current mouse position
+        // push back with default parameters and meta
+        demo.push_back(Demo{mouse, get_current_interpolator_output()});
+        auto resize = [](auto& demo, auto& tup)
+        {
+            auto& meta = std::get<1>(tup);
+            auto& para = std::get<2>(tup);
+            auto& default_para = std::get<3>(tup);
+            meta.emplace_back();
+            para.push_back(default_para);
+            auto& shader = std::get<4>(tup);
+            shader.resize(demo, para);
+        };
+        std::apply([&](auto& ... tuples) {((resize(demo, tuples)), ...);}, interpolators);
+        redraw = true;
+    }
+
     @{selection handlers}
 
     void update_slider_bounds()

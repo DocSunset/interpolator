@@ -225,6 +225,11 @@ void main()
         break;
 
     case SDL_MOUSEBUTTONDOWN:
+        if (ev.button.clicks == 2)
+        {
+            add_demo();
+            break;
+        }
         set_mouse(ev);
         select(search_for_selection());
         break;

@@ -109,9 +109,9 @@ the details of implementation of each is broken out into a seperate file:
 
 #define INTERPOLATOR(type, ...) std::make_tuple(type{}, std::vector<type::Meta>{}, std::vector<type::Para>{}, type::Para{__VA_ARGS__}, Shadr<type>{})
 auto interpolators = std::make_tuple
-        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 1, 100, 100)
-        , INTERPOLATOR(Interpolators::Nodes<Demo>, 500)
-        , INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
+//        ( INTERPOLATOR(Interpolators::BasicLampshade<Demo>, 2, 1, 100, 100)
+//        , INTERPOLATOR(Interpolators::Nodes<Demo>, 500)
+        ( INTERPOLATOR(Interpolators::IntersectingNSpheres<Demo>)
         , INTERPOLATOR(Interpolators::InverseDistance<Demo>, 2, 0.001, 0.0, 1.0)
         );
 
