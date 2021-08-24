@@ -15,7 +15,7 @@ the methods of the system:
 #pragma once
 
 #include <entt/entt.hpp>
-#include "../system.h"
+#include "system.h"
 
 namespace System
 {
@@ -26,7 +26,7 @@ namespace System
     {
         PlatformImplementation* pimpl;
     public:
-        Platform();
+        Platform(entt::registry&);
         ~Platform();
         void run(entt::registry&) override;
     };
@@ -46,15 +46,16 @@ to keep this information out of the header file.
 #include "platform.h"
 
 #include <SDL.h>
+#include "components/quit_flag.h"
 
 namespace System
 {
 
     @{PlatformImplementation definition}
     
-    Platform::Platform()
+    Platform::Platform(entt::registry& registry)
     {
-        pimpl = new PlatformImplementation;
+        pimpl = new PlatformImplementation(registry);
     }
     
     Platform::~Platform()
@@ -83,7 +84,7 @@ class PlatformImplementation
 
 public:
     // standard SDL setup boilerplate
-    PlatformImplementation()
+    PlatformImplementation(entt::registry& registry)
     {
         // no audio yet...
         if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -137,8 +138,30 @@ public:
     // this should arguably delete the window and so on, but since the app is quitting...
     ~PlatformImplementation() { }
 
+    void quit(entt::registry& registry)
+    {
+        registry.set<Component::QuitFlag>(true);
+    }
+
     void run(entt::registry& registry)
     {
+        SDL_Event ev;
+        while (SDL_PollEvent(&ev)) switch (ev.type)
+        {
+        case SDL_QUIT:
+        case SDL_APP_TERMINATING:
+        case SDL_APP_LOWMEMORY:
+            quit(registry);
+            break;
+        case SDL_WINDOWEVENT:
+            switch (ev.window.event)
+            {
+            case SDL_WINDOWEVENT_CLOSE:
+                quit(registry);
+                break;
+            }
+            break;
+        }
     }
 };
 // @/

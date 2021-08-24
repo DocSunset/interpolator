@@ -32,7 +32,7 @@ be defined inline in the header file.
 #include <vector>
 #include <memory>
 #include <entt/entt.hpp>
-#include "system.h"
+#include "systems/system.h"
 #include "components/quit_flag.h"
 #include "systems/platform.h"
 
@@ -54,7 +54,7 @@ public:
     App()
     {
         // (2) system constructor order == execution order
-        systems.push_back(std::make_unique<System::Platform>());
+        systems.push_back(std::make_unique<System::Platform>(registry));
     }
 
     ~App()
@@ -66,7 +66,7 @@ public:
     bool ready_to_quit() const
     {
         // (4) quit condition is signalled by QuitFlag in registry context
-        auto* quit = registry.try_ctx<QuitFlag>();
+        auto* quit = registry.try_ctx<Component::QuitFlag>();
         if (quit != nullptr && static_cast<bool>(*quit) == true) 
              return true;
         else return false;
@@ -83,7 +83,7 @@ virtual and has no actual functionality, there is no need for an implementation
 file.
 
 ```cpp
-// @#'demo/interpolators/system.h'
+// @#'demo/interpolators/systems/system.h'
 #pragma once
 
 #include <entt/entt.hpp>
@@ -93,6 +93,7 @@ namespace System
     class System
     {
     public:
+        virtual ~System() = default;
         virtual void run(entt::registry&) = 0;
     };
 }
