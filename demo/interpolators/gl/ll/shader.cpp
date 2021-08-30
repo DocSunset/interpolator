@@ -29,7 +29,7 @@ namespace GL::LL
         if (handle == 0)
         {
             error_print("Error in Shader constructor");
-            auto error = last_error();
+            any_error();
         }
 #endif
     }
@@ -128,8 +128,7 @@ namespace GL::LL
         GLint length_again;
         glGetShaderSource(handle, source_length, &length_again, source);
 #ifdef DEBUG
-        auto error = last_error();
-        if (error != Error::NO_ERROR)
+        if (any_error())
             error_print("Shader::source got unexpected errors.\n");
 #endif
         return source;
@@ -168,8 +167,7 @@ namespace GL::LL
         std::cerr << "Shader info log:\n    " << log;
         free(log);
 #ifdef DEBUG
-        auto error = last_error();
-        if (error != Error::NO_ERROR)
+        if (any_error())
             error_print("Shader::compile_status got unexpected errors.\n");
 #endif
         return;

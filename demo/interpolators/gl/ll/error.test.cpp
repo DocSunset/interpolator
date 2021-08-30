@@ -34,6 +34,34 @@ TEST_CASE("Error reporting", "[gl][error]")
         REQUIRE(err == Error::INVALID_VALUE);
     }
 
+    SECTION("last_error flushes all errors.")
+    {
+        glCompileShader(42); // GL_INVALID_VALUE
+        glCompileShader(42); // GL_INVALID_VALUE
+        glCompileShader(42); // GL_INVALID_VALUE
+        last_error();
+        REQUIRE(last_error() == Error::NO_ERROR);
+    }
+
+    SECTION("any_error returns true if there have been any errors.")
+    {
+        glCompileShader(42); // GL_INVALID_VALUE
+        REQUIRE(any_error());
+        glCreateProgram();
+        glCompileShader(42); // GL_INVALID_VALUE
+        glCreateProgram();
+        REQUIRE(any_error());
+    }
+
+    SECTION("any_error flushes all errors.")
+    {
+        glCompileShader(42); // GL_INVALID_VALUE
+        glCompileShader(42); // GL_INVALID_VALUE
+        glCompileShader(42); // GL_INVALID_VALUE
+        any_error();
+        REQUIRE(not any_error());
+    }
+
 
 }
 #endif

@@ -97,4 +97,19 @@ namespace GL::LL
         return;
 #endif
     }
+
+    bool any_error()
+    {
+#ifdef DEBUG
+        auto error = get_error();
+        if (error == Error::NO_ERROR) return false;
+        else
+        {
+            last_error();
+            return true;
+        }
+#else
+        return false;
+#endif
+    }
 }

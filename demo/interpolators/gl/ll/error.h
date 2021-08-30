@@ -23,4 +23,6 @@ namespace GL::LL
     void unspecified_error_print(const char * message);
 
     void error_print(const char * message);
+
+    bool any_error();
 }
