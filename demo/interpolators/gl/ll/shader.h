@@ -8,7 +8,6 @@ namespace GL::LL
     class Shader
     {
         GLuint handle;
-        Shader(GLuint other);
     public:
         enum class Type
         {
@@ -17,10 +16,12 @@ namespace GL::LL
         };
 
         Shader(Type shader_type);
-        void delete_handle();
-        operator bool() const;
+        Shader() = delete;
+        Shader(const Shader& other) = delete;
+        Shader(Shader&& other);
+        ~Shader();
 
-        // not yet implemented
+        operator bool() const;
 
         //bool is_shader() const;
         void set_source(const GLchar *); // glShaderSource

@@ -33,5 +33,7 @@ TEST_CASE("Error reporting", "[gl][error]")
         auto err = last_error();
         REQUIRE(err == Error::INVALID_VALUE);
     }
+
+
 }
 #endif

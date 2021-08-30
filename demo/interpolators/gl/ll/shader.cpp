@@ -5,14 +5,6 @@
 
 namespace GL::LL
 {
-    /* This constructor is private so that we can ensure only valid shaders
-     * are passed in here.
-     */
-    Shader::Shader(GLuint other)
-        : handle{other}
-    {
-    }
-
     /* according to the spec, glCreateShader can fail if an invalid enum is
      * given, which is not possible since our Shader::Type enum only supports
      * Vertex or Fragment as values.
@@ -36,43 +28,30 @@ namespace GL::LL
 #ifdef DEBUG
         if (handle == 0)
         {
+            error_print("Error in Shader constructor");
             auto error = last_error();
-            if (error == Error::INVALID_ENUM)
-            {
-                unspecified_error_print("glCreateShader argument type should be valid!\n");
-            }
-            else if (error != Error::NO_ERROR)
-            {
-                unspecified_error_print("glCreateShader failed with unspecified error!\n");
-            }
-            else
-            {
-                unspecified_error_print("glCreateShader failed with no error!\n");
-            }
         }
 #endif
+    }
+
+    Shader::Shader(Shader&& other)
+    {
+        this->handle = other.handle;
     }
 
     /* It is assumed that the shader handle is valid or zero (which is silently ignored).
      *
      * Consequently, no errors should be possible.
      */
-    void Shader::delete_handle()
+    Shader::~Shader()
     {
-#ifdef DEBUG
-        if (not *this)
-        {
-            error_print("Shader::delete_handle called on invalid shader.\n");
-            return;
-        }
-#endif
         glDeleteShader(handle);
         handle = 0;
 #ifdef DEBUG
         auto error = last_error();
         if (error != Error::NO_ERROR)
         {
-            unspecified_error_print("glDeleteShader received unspecified GL error code!\n");
+            error_print("glDeleteShader received unexpected GL error code!\n");
         }
 #endif
     }
@@ -102,7 +81,7 @@ namespace GL::LL
                 return true;
         }
 #else
-        return handle != 0;
+        return true;
 #endif
     }
 
@@ -114,11 +93,6 @@ namespace GL::LL
      */
     void Shader::set_source(const GLchar * source)
     {
-        if (not *this)
-        {
-            error_print("Shader::set_source called on invalid shader.\n");
-            return;
-        }
         GLsizei count = 1;
         const GLchar ** sources = &source;
         const GLint* lengths = nullptr;
@@ -142,51 +116,49 @@ namespace GL::LL
 #endif
     }
 
+    /* As above, handle must be a valid shader handle, and all enums are valid,
+     * so no errors should be possible
+     */
     GLchar * Shader::source() const
     {
-        if (not *this)
-        {
-            error_print("Shader::source called on invalid shader.\n");
-            return nullptr;
-        }
         GLint source_length;
         glGetShaderiv(handle, GL_SHADER_SOURCE_LENGTH, &source_length);
         if (source_length <= 0) return nullptr;
         GLchar * source = (GLchar *)malloc(source_length);
         GLint length_again;
         glGetShaderSource(handle, source_length, &length_again, source);
+#ifdef DEBUG
+        auto error = last_error();
+        if (error != Error::NO_ERROR)
+            error_print("Shader::source got unexpected errors.\n");
+#endif
         return source;
     }
 
     void Shader::compile()
     {
-        if (not *this)
-        {
-            error_print("Shader::compile called on invalid shader.\n");
-            return;
-        }
         glCompileShader(handle);
+#ifdef DEBUG
+        auto error = last_error();
+        if (error != Error::NO_ERROR)
+            error_print("Shader::compile got unexpected errors.\n");
+#endif
     }
 
     bool Shader::compile_status() const
     {
-        if (not *this)
-        {
-            error_print("Shader::compile_status called on invalid shader. \n");
-            return false;
-        }
         GLint status;
         glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
+#ifdef DEBUG
+        auto error = last_error();
+        if (error != Error::NO_ERROR)
+            error_print("Shader::compile_status got unexpected errors.\n");
+#endif
         return status == GL_TRUE;
     }
 
     void Shader::print_info_log() const
     {
-        if (not *this)
-        {
-            error_print("Shader::print_info_log called on invalid shader. \n");
-            return;
-        }
         GLint log_length;
         glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &log_length);
         if (log_length <= 0) return;
@@ -195,6 +167,11 @@ namespace GL::LL
         glGetShaderInfoLog(handle, log_length, &length_again, log);
         std::cerr << "Shader info log:\n    " << log;
         free(log);
+#ifdef DEBUG
+        auto error = last_error();
+        if (error != Error::NO_ERROR)
+            error_print("Shader::compile_status got unexpected errors.\n");
+#endif
         return;
     }
 }

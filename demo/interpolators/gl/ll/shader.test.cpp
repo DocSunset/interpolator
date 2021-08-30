@@ -41,13 +41,6 @@ TEST_CASE("Shader", "[gl][shader]")
         REQUIRE(sh);
     }
 
-    SECTION("Deleting the shader handle invalidates the shader")
-    {
-        Shader sh{Shader::Type::Vertex};
-        sh.delete_handle();
-        REQUIRE(not sh);
-    }
-
     SECTION("Set source / get source match")
     {
         Shader sh{Shader::Type::Vertex};

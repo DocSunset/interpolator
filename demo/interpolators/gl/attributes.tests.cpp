@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include "test/common.h"
-#include "gl/shader.h"
-#include "gl/program.h"
+#include "gl/ll/shader.h"
+#include "gl/ll/program.h"
 #include "gl/attributes.h"
 
 const char * vertex_shader = R"GLSL(
@@ -56,9 +56,10 @@ TEST_CASE("Attributes" "[gl][attribute]")
     PLATFORM_SETUP();
 
     // compile a program
-    GLuint vert = GL::Boilerplate::create_shader_from_source("vert", GL_VERTEX_SHADER, &vertex_shader, 1);
-    GLuint frag = GL::Boilerplate::create_shader_from_source("frag", GL_FRAGMENT_SHADER, &fragment_shader, 1);
-    GLuint prog = GL::Boilerplate::create_program("prog", vert, frag);
+//    GLuint vert = GL::Boilerplate::create_shader_from_source("vert", GL_VERTEX_SHADER, &vertex_shader, 1);
+//    GLuint frag = GL::Boilerplate::create_shader_from_source("frag", GL_FRAGMENT_SHADER, &fragment_shader, 1);
+//    GLuint prog = GL::Boilerplate::create_program("prog", vert, frag);
+    GLuint prog = 0;
 
     // make an attribute manifest from the program
     using GL::Attribute;
