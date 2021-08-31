@@ -79,15 +79,56 @@ TEST_CASE("Program linking", "[gl][program]")
             Program p{};
             VertexShader v{};
             FragmentShader f{};
+
+            CHECK(p.attach_vertex_shader(v));
+            CHECK(p.attach_fragment_shader(f));
+            CHECK(p.attached_shaders() == 2);
+
             v.set_source(vertex_source);
             v.compile();
+            CHECK(v.compile_status());
+
             f.set_source(fragment_source);
             f.compile();
+            CHECK(f.compile_status());
             f.print_info_log();
+
             p.link();
             p.print_info_log();
+            REQUIRE(p.link_status());
             return p;
         };
+        auto p1 = make_ready_program();
+        auto p2 = make_ready_program();
+    }
+
+    SECTION("Multiple programs can share shaders")
+    {
+        VertexShader v{};
+        FragmentShader f{};
+
+        v.set_source(vertex_source);
+        v.compile();
+        CHECK(v.compile_status());
+
+        f.set_source(fragment_source);
+        f.compile();
+        CHECK(f.compile_status());
+        f.print_info_log();
+
+        auto make_ready_program = [&]()
+        {
+            Program p{};
+            p.attach_vertex_shader(v);
+            p.attach_fragment_shader(f);
+            CHECK(p.attached_shaders() == 2);
+
+            p.link();
+            p.print_info_log();
+            REQUIRE(p.link_status());
+            return p;
+        };
+
         auto p1 = make_ready_program();
         auto p2 = make_ready_program();
     }
