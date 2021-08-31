@@ -15,8 +15,7 @@ namespace
 
 namespace GL::LL
 {
-    Shader::Shader() : handle{0} { } // only used in move constructor of derived friends
-
+    Shader::Shader() : handle{0} { } // only used in move constructor of derived classes
     /* according to the spec, glCreateShader can fail if an invalid enum is
      * given, which is not possible since our Shader::Type enum only supports
      * Vertex or Fragment as values.

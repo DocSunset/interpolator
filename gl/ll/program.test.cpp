@@ -36,4 +36,8 @@ TEST_CASE("Program", "[gl][program]")
         p.attach_vertex_shader(v);
         REQUIRE(p.attach_vertex_shader(v));
     }
+
+    SECTION("Program links successfully given compiled shaders.")
+    {
+    }
 }
