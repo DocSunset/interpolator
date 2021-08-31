@@ -66,4 +66,20 @@ TEST_CASE("Shader", "[gl][shader]")
         REQUIRE(sh.compile_status() == false);
         sh.print_info_log();
     }
+
+    SECTION("Shaders can be move constructed")
+    {
+        auto make_shader = [](){ return Shader{Shader::Type::Vertex}; };
+        Shader sh{make_shader()};
+        REQUIRE(sh);
+    }
+
+    SECTION("Shaders can be move assigned")
+    {
+        auto make_shader = [](){ return Shader{Shader::Type::Vertex}; };
+        Shader sh{Shader::Type::Fragment};
+        sh = make_shader();
+        REQUIRE(sh);
+    }
+
 }
