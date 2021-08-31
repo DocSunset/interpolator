@@ -119,7 +119,11 @@ namespace GL::LL
      */
     void Shader::set_source(const GLchar * source)
     {
-        if (handle == 0) return;
+        if (handle == 0) 
+        {
+            error_print("Invalid shader.\n");
+            return;
+        }
         GLsizei count = 1;
         const GLchar ** sources = &source;
         const GLint* lengths = nullptr;
@@ -148,7 +152,11 @@ namespace GL::LL
      */
     GLchar * Shader::source() const
     {
-        if (handle == 0) return nullptr;
+        if (handle == 0) 
+        {
+            error_print("Invalid shader.\n");
+            return nullptr;
+        }
         GLint source_length;
         glGetShaderiv(handle, GL_SHADER_SOURCE_LENGTH, &source_length);
         if (source_length <= 0) return nullptr;
@@ -164,7 +172,11 @@ namespace GL::LL
 
     void Shader::compile()
     {
-        if (handle == 0) return;
+        if (handle == 0) 
+        {
+            error_print("Invalid shader.\n");
+            return;
+        }
         glCompileShader(handle);
 #ifdef DEBUG
         auto error = last_error();
@@ -175,7 +187,11 @@ namespace GL::LL
 
     bool Shader::compile_status() const
     {
-        if (handle == 0) return false;
+        if (handle == 0) 
+        {
+            error_print("Invalid shader.\n");
+            return false;
+        }
         GLint status;
         glGetShaderiv(handle, GL_COMPILE_STATUS, &status);
 #ifdef DEBUG
@@ -188,14 +204,18 @@ namespace GL::LL
 
     void Shader::print_info_log() const
     {
-        if (handle == 0) return;
+        if (handle == 0) 
+        {
+            error_print("Invalid shader.\n");
+            return;
+        }
         GLint log_length;
         glGetShaderiv(handle, GL_INFO_LOG_LENGTH, &log_length);
         if (log_length <= 0) return;
         GLchar * log = (GLchar *)malloc(log_length);
         GLint length_again;
         glGetShaderInfoLog(handle, log_length, &length_again, log);
-        std::cerr << "Shader info log:\n    " << log;
+        std::cerr << "\n!!! Shader info log:\n    " << log << "\n";
         free(log);
 #ifdef DEBUG
         if (any_error())

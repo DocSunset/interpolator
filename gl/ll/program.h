@@ -25,10 +25,19 @@ namespace GL::LL
         Program(const Program& other) = delete;
         Program& operator=(const Program& other) = delete;
 
+        ~Program();
+
         bool attach_vertex_shader(const VertexShader& shader);
         bool attach_fragment_shader(const FragmentShader& shader);
 
-        ~Program();
+        int attached_shaders() const;
 
+        void link();
+        bool link_status() const;
+
+        void validate();
+        bool validation_status() const;
+
+        void print_info_log() const;
     };
 }

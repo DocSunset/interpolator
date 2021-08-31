@@ -1,20 +1,8 @@
 #include <string>
 #include <catch2/catch.hpp>
 #include "test/common.h"
+#include "test/shader_sources.h"
 #include "gl/ll/shader.h"
-
-static const GLchar * source = R"GLSL(
-#version 300 es
-
-in vec2 pos;
-out vec2 position;
-
-void main()
-{
-    gl_Position = vec4(pos, 0.0, 1.0);
-    position = vec2(pos[0], pos[1]);
-}
-)GLSL";
 
 static const GLchar * bad_source = R"GLSL(
 #version 300 es
@@ -44,16 +32,16 @@ TEST_CASE("Shader", "[gl][shader]")
     SECTION("Set source / get source match")
     {
         Shader sh{Shader::Type::Vertex};
-        sh.set_source(source);
+        sh.set_source(vertex_source);
         GLchar * source_ = sh.source();
-        REQUIRE(std::string(source) == std::string(source_));
+        REQUIRE(std::string(vertex_source) == std::string(source_));
         free(source_);
     }
 
     SECTION("Compile succeeds")
     {
         Shader sh{Shader::Type::Vertex};
-        sh.set_source(source);
+        sh.set_source(vertex_source);
         sh.compile();
         REQUIRE(sh.compile_status() == true);
     }
