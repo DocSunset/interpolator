@@ -167,3 +167,14 @@ TEST_CASE("Program validation", "[gl][program]")
         REQUIRE(p.validation_status());
     }
 }
+
+TEST_CASE("Valid program from valid shader sources", "[gl][program][shader]")
+{
+    PLATFORM_SETUP();
+    
+    using namespace GL::LL;
+
+    Program p{vertex_source, fragment_source};
+
+    REQUIRE(p);
+}

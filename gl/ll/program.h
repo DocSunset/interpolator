@@ -18,6 +18,7 @@ namespace GL::LL
         GLuint fragment_shader;
     public:
         Program();
+        Program(const char * vertex_source, const char * fragment_source);
 
         Program(Program&& other);
         Program& operator=(Program&& other);
@@ -35,11 +36,13 @@ namespace GL::LL
         void link();
         bool link_status() const;
 
-        void validate();
+        void validate() const;
         bool validation_status() const;
 
         void print_info_log() const;
 
         void use() const;
+
+        operator bool() const;
     };
 }

@@ -83,7 +83,7 @@ namespace GL::LL
         return attached;
     }
 
-    void Program::validate()
+    void Program::validate() const
     {
         glValidateProgram(handle);
 #ifdef DEBUG
@@ -191,4 +191,41 @@ namespace GL::LL
         }
 #endif
     }
+
+    Program::Program(const char * vertex_source, const char * fragment_source)
+        : Program{}
+    {
+        bool failed = false;
+
+        VertexShader v{};
+        v.set_source(vertex_source);
+        v.compile();
+        v.print_info_log();
+        if (not v.compile_status()) failed = true;
+
+        FragmentShader f{};
+        f.set_source(fragment_source);
+        f.compile();
+        f.print_info_log();
+        if (not f.compile_status()) failed = true;
+
+        if (failed) return;
+
+        attach_vertex_shader(v);
+        attach_fragment_shader(f);
+        link();
+        print_info_log();
+        if (not link_status()) return;
+
+        validate();
+        print_info_log();
+    }
+
+    Program::operator bool() const
+    {
+        validate();
+        print_info_log();
+        return validation_status();
+    }
+
 }
