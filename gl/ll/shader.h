@@ -19,6 +19,7 @@ namespace GL::LL
      */
     class Shader
     {
+        friend class Program;
         friend class VertexShader;
         friend class FragmentShader;
         GLuint handle;
