@@ -41,3 +41,5 @@ target_link_libraries(interpolators-tests PRIVATE interpolators-objects)
 include(CTest)
 include(Catch)
 catch_discover_tests(interpolators-tests)
+
+add_subdirectory(docs)
