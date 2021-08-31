@@ -1,6 +1,38 @@
 #include "program.h"
 #include "error.h"
 
+namespace
+{
+    bool attach_shader(GLuint& program, GLuint& current_shader, const GLuint& new_shader)
+    {
+        if (current_shader != 0) 
+        {
+            if (current_shader == new_shader) 
+                return true;
+            glDetachShader(program, current_shader);
+        }
+#ifdef DEBUG
+        Error = last_error();
+        if (last_error != Error::NO_ERROR)
+        {
+            error_print("Unexpected error after glDetachShader in Program::attach_vertex_shader.\n");
+            return false;
+        }
+#endif
+        glAttachShader(program, new_shader);
+        current_shader = new_shader;
+#ifdef DEBUG
+        Error = last_error();
+        if (last_error != Error::NO_ERROR)
+        {
+            error_print("Unexpected error after glAttachShader in Program::attach_vertex_shader.\n");
+            return false;
+        }
+#endif
+        return true;
+    }
+}
+
 namespace GL::LL
 {
     Program::Program()
@@ -35,49 +67,11 @@ namespace GL::LL
 
     bool Program::attach_vertex_shader(const VertexShader& shader)
     {
-        if (vertex_shader != 0) glDetachShader(handle, vertex_shader);
-#ifdef DEBUG
-        Error = last_error();
-        if (last_error != Error::NO_ERROR)
-        {
-            error_print("Unexpected error after glDetachShader in Program::attach_vertex_shader.\n");
-            return false;
-        }
-#endif
-        glAttachShader(handle, shader);
-        vertex_shader = shader.handle;
-#ifdef DEBUG
-        Error = last_error();
-        if (last_error != Error::NO_ERROR)
-        {
-            error_print("Unexpected error after glAttachShader in Program::attach_vertex_shader.\n");
-            return false;
-        }
-#endif
-        return true;
+        return attach_shader(handle, vertex_shader, shader.handle);
     }
 
     bool Program::attach_fragment_shader(const FragmentShader& shader)
     {
-        if (fragment_shader != 0) glDetachShader(handle, fragment_shader);
-#ifdef DEBUG
-        Error = last_error();
-        if (last_error != Error::NO_ERROR)
-        {
-            error_print("Unexpected error after glDetachShader in Program::attach_vertex_shader.\n");
-            return false;
-        }
-#endif
-        glAttachShader(handle, shader);
-        fragment_shader = shader.handle;
-#ifdef DEBUG
-        Error = last_error();
-        if (last_error != Error::NO_ERROR)
-        {
-            error_print("Unexpected error after glAttachShader in Program::attach_vertex_shader.\n");
-            return false;
-        }
-#endif
-        return true;
+        return attach_shader(handle, fragment_shader, shader.handle);
     }
 }
