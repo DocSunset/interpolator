@@ -83,6 +83,39 @@ namespace GL::LL
         return attached;
     }
 
+    void Program::validate()
+    {
+        glValidateProgram(handle);
+#ifdef DEBUG
+        auto error = last_error();
+        if (last_error == Error::INVALID_OPERATION)
+        {
+            error_print("Program::link, glLinkProgram, called on active program while transform feedback mode is active.\n");
+        }
+        else if (last_error != Error::NO_ERROR)
+        {
+            error_print("glLinkProgram in Program::link generated unexpected error.\n")
+        }
+#endif
+    }
+
+    bool Program::validation_status() const
+    {
+        if (handle == 0) 
+        {
+            error_print("Invalid program.\n");
+            return false;
+        }
+        GLint status;
+        glGetProgramiv(handle, GL_VALIDATE_STATUS, &status);
+#ifdef DEBUG
+        auto error = last_error();
+        if (error != Error::NO_ERROR)
+            error_print("Program::link_status got unexpected errors.\n");
+#endif
+        return status == GL_TRUE;
+    }
+
     void Program::link()
     {
         glLinkProgram(handle);
@@ -136,5 +169,26 @@ namespace GL::LL
             error_print("Program::link_status got unexpected errors.\n");
 #endif
         return;
+    }
+
+    void Program::use() const
+    {
+        if (handle == 0) 
+        {
+            error_print("Invalid program.\n");
+            return;
+        }
+        glUseProgram(handle);
+#ifdef DEBUG
+        auto error = last_error();
+        if (error == Error::INVALID_OPERATION)
+        {
+            error_print("Program could not be made part of current state, or transform feedback mode is active and not paused.\n");
+        }
+        else if (error != Error::NO_ERROR)
+        {
+            error_print("Program::use got unexpected errors.\n");
+        }
+#endif
     }
 }

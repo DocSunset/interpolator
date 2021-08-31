@@ -39,5 +39,7 @@ namespace GL::LL
         bool validation_status() const;
 
         void print_info_log() const;
+
+        void use() const;
     };
 }

@@ -4,7 +4,7 @@
 #include "gl/ll/program.h"
 #include "gl/ll/shader.h"
 
-TEST_CASE("Program", "[gl][program]")
+TEST_CASE("Program attaching shaders", "[gl][program]")
 {
     PLATFORM_SETUP();
 
@@ -131,5 +131,39 @@ TEST_CASE("Program linking", "[gl][program]")
 
         auto p1 = make_ready_program();
         auto p2 = make_ready_program();
+    }
+}
+
+TEST_CASE("Program validation", "[gl][program]")
+{
+    PLATFORM_SETUP();
+    
+    using namespace GL::LL;
+
+    SECTION("Valid program validates successfully")
+    {
+        Program p{};
+        VertexShader v{};
+        FragmentShader f{};
+
+        CHECK(p.attach_vertex_shader(v));
+        CHECK(p.attach_fragment_shader(f));
+        CHECK(p.attached_shaders() == 2);
+
+        v.set_source(vertex_source);
+        v.compile();
+        CHECK(v.compile_status());
+
+        f.set_source(fragment_source);
+        f.compile();
+        CHECK(f.compile_status());
+        f.print_info_log();
+
+        p.link();
+        p.print_info_log();
+        CHECK(p.link_status());
+        p.validate();
+        p.print_info_log();
+        REQUIRE(p.validation_status());
     }
 }
