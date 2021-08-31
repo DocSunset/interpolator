@@ -67,9 +67,28 @@ TEST_CASE("Program linking", "[gl][program]")
         CHECK(f.compile_status());
         f.print_info_log();
 
-        
         p.link();
         p.print_info_log();
         REQUIRE(p.link_status());
+    }
+
+    SECTION("Multiple programs can coexist")
+    {
+        auto make_ready_program = []()
+        {
+            Program p{};
+            VertexShader v{};
+            FragmentShader f{};
+            v.set_source(vertex_source);
+            v.compile();
+            f.set_source(fragment_source);
+            f.compile();
+            f.print_info_log();
+            p.link();
+            p.print_info_log();
+            return p;
+        };
+        auto p1 = make_ready_program();
+        auto p2 = make_ready_program();
     }
 }
