@@ -3,8 +3,20 @@
 #include <cstdlib>
 #include <iostream>
 
+namespace
+{
+    void move(GLuint& to, GLuint& from)
+    {
+        glDeleteShader(to);
+        to = from;
+        from = 0;
+    }
+}
+
 namespace GL::LL
 {
+    Shader::Shader() : handle{0} { } // only used in move constructor of derived friends
+
     /* according to the spec, glCreateShader can fail if an invalid enum is
      * given, which is not possible since our Shader::Type enum only supports
      * Vertex or Fragment as values.
@@ -34,20 +46,25 @@ namespace GL::LL
 #endif
     }
 
-    Shader::Shader(Shader&& other)
-    {
-        glDeleteShader(handle);
-        this->handle = other.handle;
-        other.handle = 0;
+#define SHADER_MOVE_CONSTRUCTOR_ASSIGNMENT(SHADER) \
+    SHADER::SHADER(SHADER&& other)\
+    {\
+        move(this->handle, other.handle);\
+    }\
+\
+    SHADER& SHADER::operator=(SHADER&& other)\
+    {\
+        move(this->handle, other.handle);\
+        return *this;\
     }
 
-    Shader& Shader::operator=(Shader&& other)
-    {
-        glDeleteShader(handle);
-        this->handle = other.handle;
-        other.handle = 0;
-        return *this;
-    }
+    SHADER_MOVE_CONSTRUCTOR_ASSIGNMENT(Shader)
+
+    SHADER_MOVE_CONSTRUCTOR_ASSIGNMENT(VertexShader)
+
+    SHADER_MOVE_CONSTRUCTOR_ASSIGNMENT(FragmentShader)
+
+#undef SHADER_MOVE_CONSTRUCTOR_ASSIGNMENT
 
     /* It is assumed that the shader handle is valid or zero (which is silently ignored).
      *

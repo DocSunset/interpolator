@@ -81,5 +81,4 @@ TEST_CASE("Shader", "[gl][shader]")
         sh = make_shader();
         REQUIRE(sh);
     }
-
 }

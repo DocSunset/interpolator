@@ -19,7 +19,10 @@ namespace GL::LL
      */
     class Shader
     {
+        friend class VertexShader;
+        friend class FragmentShader;
         GLuint handle;
+        Shader();
     public:
         enum class Type
         {
@@ -28,11 +31,11 @@ namespace GL::LL
         };
 
         Shader(Type shader_type);
-        Shader() = delete;
         Shader(const Shader& other) = delete;
         Shader(Shader&& other);
         ~Shader();
 
+        Shader& operator=(const Shader& other) = delete;
         Shader& operator=(Shader&& other);
 
         operator bool() const;
@@ -53,6 +56,23 @@ namespace GL::LL
     {
     public:
         VertexShader() : Shader(Shader::Type::Vertex) {}
+
         VertexShader(VertexShader&& other);
+        VertexShader& operator=(VertexShader&& other);
+
+        VertexShader(const VertexShader& other) = delete;
+        VertexShader& operator=(const VertexShader& other) = delete;
+    };
+
+    class FragmentShader : public Shader
+    {
+    public:
+        FragmentShader() : Shader(Shader::Type::Fragment) {}
+
+        FragmentShader(FragmentShader&& other);
+        FragmentShader& operator=(FragmentShader&& other);
+
+        FragmentShader(const FragmentShader& other) = delete;
+        FragmentShader& operator=(const FragmentShader& other) = delete;
     };
 }
