@@ -228,4 +228,11 @@ namespace GL::LL
         return validation_status();
     }
 
+    Attribute Program::attributes() const
+    {
+        char * namebuf = (char *)malloc(128);
+        auto a = Attribute(handle, 0, namebuf, 128);
+        free(namebuf);
+        return a;
+    }
 }

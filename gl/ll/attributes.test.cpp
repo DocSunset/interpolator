@@ -3,6 +3,7 @@
 #include "gl/ll/shader.h"
 #include "gl/ll/program.h"
 #include "gl/ll/attributes.h"
+#include "test/shader_sources.h"
 
 const char * vertex_shader = R"GLSL(
 #version 300 es
@@ -121,6 +122,18 @@ TEST_CASE("Attributes" "[gl][attribute]")
             REQUIRE(std::string(move.name()) == name);
             REQUIRE(move.type() == type);
         }
+    }
+
+    SECTION("Attributes can be constructed from programs")
+    {
+        Program p{vertex_source, fragment_source};
+        CHECK(p);
+
+        auto expected = Attribute("pos", Attribute::Type::VEC2);
+        auto returned = p.attributes();
+        CHECK(std::string(returned.name()) == std::string("pos"));
+        CHECK(Attribute::Type::VEC2 == returned.type());
+        REQUIRE(returned == expected);
     }
 }
 

@@ -2,6 +2,8 @@
 
 #include <GLES3/gl3.h>
 #include "shader.h"
+#include "attributes.h"
+#include <vector>
 
 namespace GL::LL
 {
@@ -44,5 +46,7 @@ namespace GL::LL
         void use() const;
 
         operator bool() const;
+
+        Attribute attributes() const;
     };
 }

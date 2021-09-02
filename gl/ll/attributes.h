@@ -19,6 +19,7 @@ namespace GL::LL
         };
 
     private:
+        friend class Program;
         Attribute(GLuint program, GLuint index, char * name_buffer, GLint buffer_size);
         std::string _name;
         Type _type;
