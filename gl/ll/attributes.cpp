@@ -12,6 +12,13 @@ namespace GL::LL
     {
     }
 
+    bool Attribute::operator==(const Attribute& other) const
+    {
+        if (_name != other._name) return false;
+        if (_type != other._type) return false;
+        return true;
+    }
+
     const char * Attribute::name() const {return _name.c_str();}
     Attribute::Type Attribute::type() const {return _type;}
 }

@@ -74,6 +74,14 @@ TEST_CASE("Attributes" "[gl][attribute]")
             REQUIRE(a.type() == type);
         }
     }
+
+    SECTION("Attributes with the same name and type compare equal")
+    {
+        Attribute a{"foo", Attribute::Type::FLOAT};
+        Attribute b{"foo", Attribute::Type::FLOAT};
+
+        REQUIRE(a == b);
+    }
 }
 
 //    std::vector<Attribute> expected_attributes;

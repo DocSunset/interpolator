@@ -32,6 +32,8 @@ namespace GL::LL
         Attribute& operator=(const Attribute& copy);
         Attribute& operator=(Attribute&& move);
 
+        bool operator==(const Attribute& other) const;
+
         const char * name() const;
         Type type() const;
     };
