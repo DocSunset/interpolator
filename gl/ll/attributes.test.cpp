@@ -100,6 +100,28 @@ TEST_CASE("Attributes" "[gl][attribute]")
             REQUIRE(copy == orig);
         }
     }
+
+    SECTION("Attributes can be moved")
+    {
+        std::string name = "foo";
+        auto type = Attribute::Type::FLOAT;
+        auto make_attrib = [&](){return Attribute(name.c_str(), type);};
+
+        SECTION("By constructor")
+        {
+            Attribute move{make_attrib()};
+            REQUIRE(std::string(move.name()) == name);
+            REQUIRE(move.type() == type);
+        }
+
+        SECTION("By assignment")
+        {
+            Attribute move{"bar", Attribute::Type::INT};
+            move = make_attrib();
+            REQUIRE(std::string(move.name()) == name);
+            REQUIRE(move.type() == type);
+        }
+    }
 }
 
 //    std::vector<Attribute> expected_attributes;
