@@ -16,6 +16,7 @@ namespace GL::LL
             MAT2,   MAT2x3, MAT2x4,
             MAT3x2, MAT3,   MAT3x4,
             MAT4x2, MAT4x3, MAT4,
+            UNKNOWN,
         };
 
     private:

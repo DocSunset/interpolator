@@ -31,7 +31,8 @@ namespace
             case GL_UNSIGNED_INT_VEC3: return Attribute::Type::UVEC3;
             case GL_UNSIGNED_INT_VEC4: return Attribute::Type::UVEC4;
             default:
-                error_print("Encountered unknown attribute type");
+                error_print("Encountered unknown attribute type\n");
+                return Attribute::Type::UNKNOWN;
         }
     }
 }
@@ -45,16 +46,17 @@ namespace GL::LL
 
     Attribute::Attribute(GLuint program, GLuint index, char * name_buffer, GLint buffer_size)
     {
-        GLint size;
-        GLenum type;
+        GLint size = 0;
+        GLenum type = 0;
         glGetActiveAttrib(program, index, buffer_size, nullptr, &size, &type, name_buffer);
 #ifdef DEBUG
         auto error = last_error();
-        if (error != Error::NO_ERROR) error_print("glGetActiveAttrib returned unexpected error");
+        if (error != Error::NO_ERROR) error_print("glGetActiveAttrib returned unexpected error\n");
 #endif
         _name = name_buffer;
         _type = gl_to_attrib_type(type);
-        error_print(std::to_string(size).c_str());
+        error_print("HEY!!!!! In this thing on?\n");
+        error_print((std::to_string(size) + std::string("\n")).c_str());
     }
 
     bool Attribute::operator==(const Attribute& other) const

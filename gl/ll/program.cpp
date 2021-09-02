@@ -4,6 +4,7 @@
 
 namespace
 {
+    using namespace GL::LL;
     bool attach_shader(GLuint& program, GLuint& current_shader, const GLuint& new_shader)
     {
         if (current_shader != 0) 
@@ -11,19 +12,19 @@ namespace
             if (current_shader == new_shader) 
                 return true;
             glDetachShader(program, current_shader);
-        }
 #ifdef DEBUG
-        Error = last_error();
-        if (last_error != Error::NO_ERROR)
-        {
-            error_print("Unexpected error after glDetachShader in Program::attach_vertex_shader.\n");
-            return false;
-        }
+            auto error = last_error();
+            if (error != Error::NO_ERROR)
+            {
+                error_print("Unexpected error after glDetachShader in Program::attach_vertex_shader.\n");
+                return false;
+            }
 #endif
+        }
         glAttachShader(program, new_shader);
 #ifdef DEBUG
-        Error = last_error();
-        if (last_error != Error::NO_ERROR)
+        auto error = last_error();
+        if (error != Error::NO_ERROR)
         {
             error_print("Unexpected error after glAttachShader in Program::attach_vertex_shader.\n");
             return false;
@@ -37,6 +38,9 @@ namespace
 namespace GL::LL
 {
     Program::Program()
+        : handle{glCreateProgram()}
+        , vertex_shader{0}
+        , fragment_shader{0}
     {
         handle = glCreateProgram();
 #ifdef DEBUG
@@ -49,6 +53,8 @@ namespace GL::LL
     {
         glDeleteProgram(handle);
         handle = other.handle;
+        vertex_shader = other.vertex_shader;
+        fragment_shader = other.fragment_shader;
         other.handle = 0;
     }
 
@@ -56,6 +62,8 @@ namespace GL::LL
     {
         glDeleteProgram(handle);
         handle = other.handle;
+        vertex_shader = other.vertex_shader;
+        fragment_shader = other.fragment_shader;
         other.handle = 0;
         return *this;
     }
@@ -88,13 +96,13 @@ namespace GL::LL
         glValidateProgram(handle);
 #ifdef DEBUG
         auto error = last_error();
-        if (last_error == Error::INVALID_OPERATION)
+        if (error == Error::INVALID_OPERATION)
         {
             error_print("Program::link, glLinkProgram, called on active program while transform feedback mode is active.\n");
         }
-        else if (last_error != Error::NO_ERROR)
+        else if (error != Error::NO_ERROR)
         {
-            error_print("glLinkProgram in Program::link generated unexpected error.\n")
+            error_print("glLinkProgram in Program::link generated unexpected error.\n");
         }
 #endif
     }
@@ -121,13 +129,13 @@ namespace GL::LL
         glLinkProgram(handle);
 #ifdef DEBUG
         auto error = last_error();
-        if (last_error == Error::INVALID_OPERATION)
+        if (error == Error::INVALID_OPERATION)
         {
             error_print("Program::link, glLinkProgram, called on active program while transform feedback mode is active.\n");
         }
-        else if (last_error != Error::NO_ERROR)
+        else if (error != Error::NO_ERROR)
         {
-            error_print("glLinkProgram in Program::link generated unexpected error.\n")
+            error_print("glLinkProgram in Program::link generated unexpected error.\n");
         }
 #endif
     }
@@ -193,7 +201,7 @@ namespace GL::LL
     }
 
     Program::Program(const char * vertex_source, const char * fragment_source)
-        : Program{}
+        : Program()
     {
         bool failed = false;
 
