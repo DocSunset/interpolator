@@ -2,8 +2,7 @@
 
 #include <GLES3/gl3.h>
 #include "shader.h"
-#include "attributes.h"
-#include <vector>
+#include "attribute_manifest.h"
 
 namespace GL::LL
 {
@@ -15,9 +14,12 @@ namespace GL::LL
      */
     class Program
     {
+    protected:
+        friend class AttributeManifest;
         GLuint handle;
         GLuint vertex_shader;
         GLuint fragment_shader;
+        AttributeManifest _attributes;
     public:
         Program();
         Program(const char * vertex_source, const char * fragment_source);
@@ -47,6 +49,8 @@ namespace GL::LL
 
         operator bool() const;
 
-        Attribute attributes() const;
+        void get_attributes();
+
+        const AttributeManifest& attributes() const;
     };
 }

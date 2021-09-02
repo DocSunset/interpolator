@@ -41,6 +41,7 @@ namespace GL::LL
         : handle{glCreateProgram()}
         , vertex_shader{0}
         , fragment_shader{0}
+        , _attributes{}
     {
         handle = glCreateProgram();
 #ifdef DEBUG
@@ -55,6 +56,7 @@ namespace GL::LL
         handle = other.handle;
         vertex_shader = other.vertex_shader;
         fragment_shader = other.fragment_shader;
+        _attributes = std::move(other._attributes);
         other.handle = 0;
     }
 
@@ -64,6 +66,7 @@ namespace GL::LL
         handle = other.handle;
         vertex_shader = other.vertex_shader;
         fragment_shader = other.fragment_shader;
+        _attributes = std::move(other._attributes);
         other.handle = 0;
         return *this;
     }
@@ -225,8 +228,7 @@ namespace GL::LL
         print_info_log();
         if (not link_status()) return;
 
-        validate();
-        print_info_log();
+        get_attributes();
     }
 
     Program::operator bool() const
@@ -236,11 +238,13 @@ namespace GL::LL
         return validation_status();
     }
 
-    Attribute Program::attributes() const
+    const AttributeManifest& Program::attributes() const
     {
-        char * namebuf = (char *)malloc(128);
-        auto a = Attribute(handle, 0, namebuf, 128);
-        free(namebuf);
-        return a;
+        return _attributes;
+    }
+
+    void Program::get_attributes()
+    {
+        _attributes = AttributeManifest(*this);
     }
 }

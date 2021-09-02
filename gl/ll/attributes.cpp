@@ -52,11 +52,10 @@ namespace GL::LL
 #ifdef DEBUG
         auto error = last_error();
         if (error != Error::NO_ERROR) error_print("glGetActiveAttrib returned unexpected error\n");
+        if (size != 1) error_print("glGetActiveAttrib returned a size other than 1:"), error_print(std::to_string(size).c_str()), error_print("\n");
 #endif
         _name = name_buffer;
         _type = gl_to_attrib_type(type);
-        error_print("HEY!!!!! In this thing on?\n");
-        error_print((std::to_string(size) + std::string("\n")).c_str());
     }
 
     bool Attribute::operator==(const Attribute& other) const

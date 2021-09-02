@@ -3,6 +3,7 @@ target_sources(interpolators-objects PRIVATE
     shader.h shader.cpp
     program.h program.cpp
     attributes.h attributes.cpp
+    attribute_manifest.h attribute_manifest.cpp
     )
 
 target_sources(interpolators-tests PRIVATE
@@ -10,4 +11,5 @@ target_sources(interpolators-tests PRIVATE
     shader.test.cpp
     program.test.cpp
     attributes.test.cpp
+    attribute_manifest.test.cpp
     )
