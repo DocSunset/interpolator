@@ -26,12 +26,6 @@ namespace GL::LL
     public:
         Attribute(const char * name, Type type);
 
-        Attribute(const Attribute& copy);
-        Attribute(Attribute&& move);
-
-        Attribute& operator=(const Attribute& copy);
-        Attribute& operator=(Attribute&& move);
-
         bool operator==(const Attribute& other) const;
 
         const char * name() const;

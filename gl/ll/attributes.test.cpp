@@ -82,6 +82,24 @@ TEST_CASE("Attributes" "[gl][attribute]")
 
         REQUIRE(a == b);
     }
+
+    SECTION("Attributes can be copied")
+    {
+        Attribute orig{"foo", Attribute::Type::FLOAT};
+
+        SECTION("By constructor")
+        {
+            Attribute copy{orig};
+            REQUIRE(copy == orig);
+        }
+
+        SECTION("By assignment")
+        {
+            Attribute copy{"bar", Attribute::Type::INT};
+            copy = orig;
+            REQUIRE(copy == orig);
+        }
+    }
 }
 
 //    std::vector<Attribute> expected_attributes;
