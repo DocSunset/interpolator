@@ -80,28 +80,19 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
     SECTION("The manifest has exactly all the expected attributes")
     {
         std::vector<Attribute> expected;
-        expected.emplace_back("f", Attribute::Type::FLOAT);
-        expected.emplace_back("f2", Attribute::Type::VEC2);
-        expected.emplace_back("f3", Attribute::Type::VEC3);
-        expected.emplace_back("f4", Attribute::Type::VEC4);
-        expected.emplace_back("m2", Attribute::Type::MAT2);
-        expected.emplace_back("m3", Attribute::Type::MAT3);
-        expected.emplace_back("m4", Attribute::Type::MAT4);
-        expected.emplace_back("i", Attribute::Type::INT);
-        expected.emplace_back("i2", Attribute::Type::IVEC2);
-        expected.emplace_back("i3", Attribute::Type::IVEC3);
+        expected.emplace_back("f", AttributeType::FLOAT);
+        expected.emplace_back("f2", AttributeType::VEC2);
+        expected.emplace_back("f3", AttributeType::VEC3);
+        expected.emplace_back("f4", AttributeType::VEC4);
+        expected.emplace_back("m2", AttributeType::MAT2);
+        expected.emplace_back("m3", AttributeType::MAT3);
+        expected.emplace_back("m4", AttributeType::MAT4);
+        expected.emplace_back("i", AttributeType::INT);
+        expected.emplace_back("i2", AttributeType::IVEC2);
+        expected.emplace_back("i3", AttributeType::IVEC3);
         for (const auto& attr : expected)
         {
             CHECK(returned.has(attr));
         }
     }
 }
-    
-
-//
-//    SECTION("The attributes have the expected types")
-//    {
-//        for (const auto& expect : expected_attributes)
-//        {
-//            auto out = am.find(expect.name())
-//}

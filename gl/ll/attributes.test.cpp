@@ -16,7 +16,7 @@ TEST_CASE("Attributes" "[gl][attribute]")
     SECTION("Given an attribute constructed by name and type")
     {
         std::string name = "test";
-        auto type = Attribute::Type::FLOAT;
+        auto type = AttributeType::FLOAT;
         Attribute a{name.c_str(), type};
 
         SECTION("name matches name")
@@ -32,15 +32,15 @@ TEST_CASE("Attributes" "[gl][attribute]")
 
     SECTION("Attributes with the same name and type compare equal")
     {
-        Attribute a{"foo", Attribute::Type::FLOAT};
-        Attribute b{"foo", Attribute::Type::FLOAT};
+        Attribute a{"foo", AttributeType::FLOAT};
+        Attribute b{"foo", AttributeType::FLOAT};
 
         REQUIRE(a == b);
     }
 
     SECTION("Attributes can be copied")
     {
-        Attribute orig{"foo", Attribute::Type::FLOAT};
+        Attribute orig{"foo", AttributeType::FLOAT};
 
         SECTION("By constructor")
         {
@@ -50,7 +50,7 @@ TEST_CASE("Attributes" "[gl][attribute]")
 
         SECTION("By assignment")
         {
-            Attribute copy{"bar", Attribute::Type::INT};
+            Attribute copy{"bar", AttributeType::INT};
             copy = orig;
             REQUIRE(copy == orig);
         }
@@ -59,7 +59,7 @@ TEST_CASE("Attributes" "[gl][attribute]")
     SECTION("Attributes can be moved")
     {
         std::string name = "foo";
-        auto type = Attribute::Type::FLOAT;
+        auto type = AttributeType::FLOAT;
         auto make_attrib = [&](){return Attribute(name.c_str(), type);};
 
         SECTION("By constructor")
@@ -71,7 +71,7 @@ TEST_CASE("Attributes" "[gl][attribute]")
 
         SECTION("By assignment")
         {
-            Attribute move{"bar", Attribute::Type::INT};
+            Attribute move{"bar", AttributeType::INT};
             move = make_attrib();
             REQUIRE(std::string(move.name()) == name);
             REQUIRE(move.type() == type);
@@ -83,11 +83,11 @@ TEST_CASE("Attributes" "[gl][attribute]")
         Program p{vertex_source, fragment_source};
         CHECK(p);
 
-        auto expected = Attribute("pos", Attribute::Type::VEC2);
+        auto expected = Attribute("pos", AttributeType::VEC2);
         auto attributes = AttributeManifest(p);
         auto returned = attributes[0];
         CHECK(std::string(returned.name()) == std::string("pos"));
-        CHECK(Attribute::Type::VEC2 == returned.type());
+        CHECK(AttributeType::VEC2 == returned.type());
         REQUIRE(returned == expected);
     }
 }

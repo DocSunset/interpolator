@@ -26,6 +26,8 @@ namespace GL::LL
         const Attribute& operator[](GLuint i);
               Attribute& operator[](GLuint i) const;
 
+        void set(const char * name, float val);
+
         GLint size() const;
 
         bool has(const Attribute& a) const;

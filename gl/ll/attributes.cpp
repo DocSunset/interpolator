@@ -5,41 +5,41 @@
 namespace
 {
     using namespace GL::LL;
-    Attribute::Type gl_to_attrib_type(GLenum type)
+    AttributeType gl_to_attrib_type(GLenum type)
     {
         switch(type)
         {
-            case GL_FLOAT: return Attribute::Type::FLOAT;
-            case GL_FLOAT_VEC2: return Attribute::Type::VEC2;
-            case GL_FLOAT_VEC3: return Attribute::Type::VEC3;
-            case GL_FLOAT_VEC4: return Attribute::Type::VEC4;
-            case GL_FLOAT_MAT2: return Attribute::Type::MAT2;
-            case GL_FLOAT_MAT3: return Attribute::Type::MAT3;
-            case GL_FLOAT_MAT4: return Attribute::Type::MAT4;
-            case GL_FLOAT_MAT2x3: return Attribute::Type::MAT2x3;
-            case GL_FLOAT_MAT2x4: return Attribute::Type::MAT2x4;
-            case GL_FLOAT_MAT3x2: return Attribute::Type::MAT3x2;
-            case GL_FLOAT_MAT3x4: return Attribute::Type::MAT3x4;
-            case GL_FLOAT_MAT4x2: return Attribute::Type::MAT4x2;
-            case GL_FLOAT_MAT4x3: return Attribute::Type::MAT4x3;
-            case GL_INT: return Attribute::Type::INT;
-            case GL_INT_VEC2: return Attribute::Type::IVEC2;
-            case GL_INT_VEC3: return Attribute::Type::IVEC3;
-            case GL_INT_VEC4: return Attribute::Type::IVEC4;
-            case GL_UNSIGNED_INT: return Attribute::Type::UINT;
-            case GL_UNSIGNED_INT_VEC2: return Attribute::Type::UVEC2;
-            case GL_UNSIGNED_INT_VEC3: return Attribute::Type::UVEC3;
-            case GL_UNSIGNED_INT_VEC4: return Attribute::Type::UVEC4;
+            case GL_FLOAT: return AttributeType::FLOAT;
+            case GL_FLOAT_VEC2: return AttributeType::VEC2;
+            case GL_FLOAT_VEC3: return AttributeType::VEC3;
+            case GL_FLOAT_VEC4: return AttributeType::VEC4;
+            case GL_FLOAT_MAT2: return AttributeType::MAT2;
+            case GL_FLOAT_MAT3: return AttributeType::MAT3;
+            case GL_FLOAT_MAT4: return AttributeType::MAT4;
+            case GL_FLOAT_MAT2x3: return AttributeType::MAT2x3;
+            case GL_FLOAT_MAT2x4: return AttributeType::MAT2x4;
+            case GL_FLOAT_MAT3x2: return AttributeType::MAT3x2;
+            case GL_FLOAT_MAT3x4: return AttributeType::MAT3x4;
+            case GL_FLOAT_MAT4x2: return AttributeType::MAT4x2;
+            case GL_FLOAT_MAT4x3: return AttributeType::MAT4x3;
+            case GL_INT: return AttributeType::INT;
+            case GL_INT_VEC2: return AttributeType::IVEC2;
+            case GL_INT_VEC3: return AttributeType::IVEC3;
+            case GL_INT_VEC4: return AttributeType::IVEC4;
+            case GL_UNSIGNED_INT: return AttributeType::UINT;
+            case GL_UNSIGNED_INT_VEC2: return AttributeType::UVEC2;
+            case GL_UNSIGNED_INT_VEC3: return AttributeType::UVEC3;
+            case GL_UNSIGNED_INT_VEC4: return AttributeType::UVEC4;
             default:
                 error_print("Encountered unknown attribute type\n");
-                return Attribute::Type::UNKNOWN;
+                return AttributeType::UNKNOWN;
         }
     }
 }
 
 namespace GL::LL
 {
-    Attribute::Attribute(const char * name, Attribute::Type type)
+    Attribute::Attribute(const char * name, AttributeType type)
         : _name{name}, _type{type}
     {
     }
@@ -71,5 +71,5 @@ namespace GL::LL
     }
 
     const char * Attribute::name() const {return _name.c_str();}
-    Attribute::Type Attribute::type() const {return _type;}
+    AttributeType Attribute::type() const {return _type;}
 }

@@ -2,6 +2,7 @@ target_sources(interpolators-objects PRIVATE
     error.h error.cpp
     shader.h shader.cpp
     program.h program.cpp
+    attribute_type.h
     attributes.h attributes.cpp
     attribute_manifest.h attribute_manifest.cpp
     )
