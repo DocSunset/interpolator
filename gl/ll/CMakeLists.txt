@@ -5,6 +5,7 @@ target_sources(interpolators-objects PRIVATE
     attribute_type.h
     attributes.h attributes.cpp
     attribute_manifest.h attribute_manifest.cpp
+    buffer.h buffer.cpp
     )
 
 target_sources(interpolators-tests PRIVATE
@@ -13,4 +14,5 @@ target_sources(interpolators-tests PRIVATE
     program.test.cpp
     attributes.test.cpp
     attribute_manifest.test.cpp
+    buffer.test.cpp
     )
