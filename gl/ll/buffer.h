@@ -49,7 +49,7 @@ namespace GL::LL
             DYNAMIC_COPY
         };
     private:
-        friend class Bind;
+        friend class BufferBinding;
         GLuint handle;
         GLenum target;
         GLenum usage;
@@ -63,11 +63,11 @@ namespace GL::LL
 
     // `Bind` provides scoped access to buffer API calls that operate on
     // currently bound buffers.
-    class Bind
+    class BufferBinding
     {
         const Buffer& b;
     public:
-        Bind(const Buffer&);
+        BufferBinding(const Buffer&);
 
         // The user is responsible for ensuring that size is non-negative,
         // and that data is nullptr or valid.

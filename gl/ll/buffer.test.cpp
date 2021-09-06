@@ -14,7 +14,7 @@ TEST_CASE("Buffer Objects", "[gl][buffer]")
 
         SECTION("Buffer is valid after first binding.")
         {
-            auto bind = Bind(b);
+            auto bind = BufferBinding(b);
             REQUIRE(b);
 
             SECTION("Buffering data sets a buffer's memory usage hint and size.")

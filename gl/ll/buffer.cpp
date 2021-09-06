@@ -118,25 +118,25 @@ namespace GL::LL
 #endif
     }
 
-    Bind::Bind(const Buffer& buffer)
+    BufferBinding::BufferBinding(const Buffer& buffer)
         : b{buffer}
     {
         glBindBuffer(b.target, b.handle);
     }
 
-    void Bind::buffer_data(GLsizeiptr size, const void * data)
+    void BufferBinding::buffer_data(GLsizeiptr size, const void * data)
     {
         glBufferData(b.target, size, data, b.usage);
     }
 
-    GLint Bind::parameter(Buffer::Parameter param)
+    GLint BufferBinding::parameter(Buffer::Parameter param)
     {
         GLint out = 0;
         glGetBufferParameteriv(b.target, parameter_to_gl(param), &out);
         return out;
     }
 
-    GLint64 Bind::parameter(Buffer::Parameter64 param)
+    GLint64 BufferBinding::parameter(Buffer::Parameter64 param)
     {
         GLint64 out = 0;
         glGetBufferParameteri64v(b.target, parameter_to_gl(param), &out);
