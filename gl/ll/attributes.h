@@ -29,6 +29,7 @@ namespace GL::LL
         Attribute(const char * name, Type type);
 
         bool operator==(const Attribute& other) const;
+        bool operator!=(const Attribute& other) const;
 
         const char * name() const;
         Type type() const;

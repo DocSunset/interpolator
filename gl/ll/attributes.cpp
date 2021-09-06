@@ -65,6 +65,11 @@ namespace GL::LL
         return true;
     }
 
+    bool Attribute::operator!=(const Attribute& other) const
+    {
+        return not (*this == other);
+    }
+
     const char * Attribute::name() const {return _name.c_str();}
     Attribute::Type Attribute::type() const {return _type;}
 }

@@ -26,10 +26,19 @@ namespace GL::LL
             }
             free(namebuf);
         }
-        void insert(const Attribute& a) {}
-        void insert(Attribute&& a) {}
         const Attribute& at(GLuint i) const {return attributes[i];}
               Attribute& at(GLuint i)       {return attributes[i];}
+
+        bool operator==(const Implementation& other) const
+        {
+            if (attributes.size() != other.attributes.size()) return false;
+            for (GLint i = 0; i < attributes.size(); ++i)
+            {
+                if (attributes[i] != other.attributes[i]) return false;
+            }
+            return true;
+        }
+
         bool has(const Attribute& a)
         {
             for (auto& b : attributes)
@@ -62,6 +71,11 @@ namespace GL::LL
     {
         pimpl = std::move(move.pimpl);
         return *this;
+    }
+
+    bool AttributeManifest::operator==(const AttributeManifest& other) const
+    {
+        return *pimpl == *other.pimpl;
     }
 
     const Attribute& AttributeManifest::operator[](GLuint i)       { return pimpl->at(i); }

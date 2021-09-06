@@ -49,23 +49,29 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
     Program p{all_attribs_vertex_source, all_attribs_fragment_source};
     CHECK(p);
 
-    std::vector<Attribute> expected;
-    expected.emplace_back("f", Attribute::Type::FLOAT);
-    expected.emplace_back("f2", Attribute::Type::VEC2);
-    expected.emplace_back("f3", Attribute::Type::VEC3);
-    expected.emplace_back("f4", Attribute::Type::VEC4);
-    expected.emplace_back("m2", Attribute::Type::MAT2);
-    expected.emplace_back("m3", Attribute::Type::MAT3);
-    expected.emplace_back("m4", Attribute::Type::MAT4);
-    expected.emplace_back("i", Attribute::Type::INT);
-    expected.emplace_back("i2", Attribute::Type::IVEC2);
-    expected.emplace_back("i3", Attribute::Type::IVEC3);
-
     auto returned = p.attributes();
     CHECK(p);
 
+    SECTION("The manifest can be copied")
+    {
+        AttributeManifest b = p.attributes();
+        b = returned;
+        REQUIRE(b == returned);
+    }
+
     SECTION("The manifest has exactly all the expected attributes")
     {
+        std::vector<Attribute> expected;
+        expected.emplace_back("f", Attribute::Type::FLOAT);
+        expected.emplace_back("f2", Attribute::Type::VEC2);
+        expected.emplace_back("f3", Attribute::Type::VEC3);
+        expected.emplace_back("f4", Attribute::Type::VEC4);
+        expected.emplace_back("m2", Attribute::Type::MAT2);
+        expected.emplace_back("m3", Attribute::Type::MAT3);
+        expected.emplace_back("m4", Attribute::Type::MAT4);
+        expected.emplace_back("i", Attribute::Type::INT);
+        expected.emplace_back("i2", Attribute::Type::IVEC2);
+        expected.emplace_back("i3", Attribute::Type::IVEC3);
         for (const auto& attr : expected)
         {
             CHECK(returned.has(attr));

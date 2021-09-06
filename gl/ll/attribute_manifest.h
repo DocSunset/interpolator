@@ -21,6 +21,9 @@ namespace GL::LL
         AttributeManifest(AttributeManifest&& move);
         AttributeManifest& operator=(AttributeManifest&& move);
 
+        bool operator==(const AttributeManifest& other) const;
+        bool operator!=(const AttributeManifest& other) const;
+
         const Attribute& operator[](GLuint i);
               Attribute& operator[](GLuint i) const;
 
