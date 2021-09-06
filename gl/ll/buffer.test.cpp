@@ -17,9 +17,10 @@ TEST_CASE("Buffer Objects", "[gl][buffer]")
             auto bind = Bind(b);
             REQUIRE(b);
 
-            SECTION("Buffering data sets a buffer's memory usage hint.")
+            SECTION("Buffering data sets a buffer's memory usage hint and size.")
             {
                 bind.buffer_data(128, nullptr);
+                CHECK(bind.parameter(Buffer::Parameter::SIZE) == 128);
                 REQUIRE(bind.parameter(Buffer::Parameter::USAGE) == GL_DYNAMIC_DRAW);
             }
         }
