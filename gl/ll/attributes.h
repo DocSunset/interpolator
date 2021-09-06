@@ -22,5 +22,6 @@ namespace GL::LL
 
         const char * name() const;
         AttributeType type() const;
+
     };
 }

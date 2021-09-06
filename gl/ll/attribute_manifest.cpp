@@ -26,8 +26,25 @@ namespace GL::LL
             }
             free(namebuf);
         }
+
         const Attribute& at(GLuint i) const {return attributes[i];}
               Attribute& at(GLuint i)       {return attributes[i];}
+
+        const Attribute& at(const std::string& name) const
+        {
+            for (const auto& a : attributes)
+                if (a._name == std::string(name)) return a;
+            error_print("Could not find attribute \""); error_print(name.c_str()); error_print("\".\n");
+            return attributes[0];
+        }
+
+        Attribute& at(const std::string& name)
+        {
+            for (auto& a : attributes)
+                if (a._name == std::string(name)) return a;
+            error_print("Could not find attribute \""); error_print(name.c_str()); error_print("\".\n");
+            return attributes[0];
+        }
 
         GLint size() const {return static_cast<GLint>(attributes.size());}
 
@@ -91,6 +108,9 @@ namespace GL::LL
 
     const Attribute& AttributeManifest::operator[](GLuint i)       { return pimpl->at(i); }
           Attribute& AttributeManifest::operator[](GLuint i) const { return pimpl->at(i); }
+
+    const Attribute& AttributeManifest::operator[](const std::string& name)       { return pimpl->at(name); }
+          Attribute& AttributeManifest::operator[](const std::string& name) const { return pimpl->at(name); }
 
     bool AttributeManifest::has(const Attribute& a) const { return pimpl->has(a); }
 

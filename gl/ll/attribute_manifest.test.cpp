@@ -112,4 +112,12 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
 
         REQUIRE(expected == returned);
     }
+
+    SECTION("Attributes can be retrieved by name")
+    {
+        auto a = Attribute("f", AttributeType::FLOAT);
+        auto b = returned["f"];
+
+        REQUIRE(a == b);
+    }
 }
