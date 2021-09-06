@@ -1,28 +1,40 @@
 #include "attribute_manifest.h"
 #include "program.h"
 #include "error.h"
+#include <vector>
 
 namespace GL::LL
 {
     struct AttributeManifest::Implementation
     {
-        Attribute _a = Attribute("foo", Attribute::Type::FLOAT);
+        std::vector<Attribute> attributes;
 
         Implementation() {}
         Implementation(const Program& p)
         {
-            if (not p) error_print("AttributeManifest constructed with invalid program.\n");
-            char * namebuf = (char *)malloc(128);
-            _a = Attribute(p.handle, 0, namebuf, 128);
+            GLint bufsize = p.max_attribute_name_length();
+            GLint active_attributes = p.active_attributes();
+            if (active_attributes == 0)
+            {
+                error_print("No active attributes in AttributeManifest.\n");
+                return;
+            }
+            char * namebuf = (char *)malloc(bufsize);
+            for (GLint i = 0; i < active_attributes; ++i)
+            {
+                attributes.push_back(Attribute(p.handle, i, namebuf, bufsize));
+            }
             free(namebuf);
         }
         void insert(const Attribute& a) {}
         void insert(Attribute&& a) {}
-        const Attribute& at(GLuint i) const {return _a;}
-              Attribute& at(GLuint i)       {return _a;}
+        const Attribute& at(GLuint i) const {return attributes[i];}
+              Attribute& at(GLuint i)       {return attributes[i];}
         bool has(const Attribute& a)
         {
-            return a == _a;
+            for (auto& b : attributes)
+                if (a == b) return true;
+            return false;
         }
         GLuint size() const {return 0;}
     };
@@ -51,9 +63,6 @@ namespace GL::LL
         pimpl = std::move(move.pimpl);
         return *this;
     }
-
-    void AttributeManifest::insert(const Attribute& a) { pimpl->insert(a); }
-    void AttributeManifest::insert(Attribute&& a)      { pimpl->insert(a); }
 
     const Attribute& AttributeManifest::operator[](GLuint i)       { return pimpl->at(i); }
           Attribute& AttributeManifest::operator[](GLuint i) const { return pimpl->at(i); }

@@ -13,19 +13,16 @@ in vec4 f4;
 in mat2 m2;
 in mat3 m3;
 in mat4 m4;
-in mat2x3 m2x3;
-in mat2x4 m2x4;
-in mat3x2 m3x2;
-in mat3x4 m3x4;
-in mat4x2 m4x2;
-in mat4x3 m4x3;
 in int i;
 in ivec2 i2;
 in ivec3 i3;
 
 void main()
 {
-    gl_Position = vec4(0.0, 0.0, 0.0, 1.0);
+    float a = f + f2[0] + f3[0] + f4[0]
+            + m2[0][0] + m3[0][0] + m4[0][0];
+    int b = i + i2[0] + i3[0];
+    gl_Position = vec4(a, float(b), 0.0, 1.0);
 }
 )GLSL";
 
@@ -60,12 +57,6 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
     expected.emplace_back("m2", Attribute::Type::MAT2);
     expected.emplace_back("m3", Attribute::Type::MAT3);
     expected.emplace_back("m4", Attribute::Type::MAT4);
-    expected.emplace_back("m2x3", Attribute::Type::MAT2x3);
-    expected.emplace_back("m2x4", Attribute::Type::MAT2x4);
-    expected.emplace_back("m3x2", Attribute::Type::MAT3x2);
-    expected.emplace_back("m3x4", Attribute::Type::MAT3x4);
-    expected.emplace_back("m4x2", Attribute::Type::MAT4x2);
-    expected.emplace_back("m4x3", Attribute::Type::MAT4x3);
     expected.emplace_back("i", Attribute::Type::INT);
     expected.emplace_back("i2", Attribute::Type::IVEC2);
     expected.emplace_back("i3", Attribute::Type::IVEC3);

@@ -21,9 +21,6 @@ namespace GL::LL
         AttributeManifest(AttributeManifest&& move);
         AttributeManifest& operator=(AttributeManifest&& move);
 
-        void insert(const Attribute& a);
-        void insert(Attribute&& a);
-
         const Attribute& operator[](GLuint i);
               Attribute& operator[](GLuint i) const;
 
