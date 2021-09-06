@@ -50,6 +50,7 @@ namespace GL::LL
         operator bool() const;
 
         GLint active_attributes() const;
+        GLint max_attribute_name_length() const;
 
         void get_attributes();
 

@@ -191,4 +191,9 @@ TEST_CASE("Get Attribute data", "[gl][program][attribute]")
     {
         REQUIRE(p.active_attributes() == 1);
     }
+
+    SECTION("Max attribute name length")
+    {
+        REQUIRE(p.max_attribute_name_length() == 4);
+    }
 }

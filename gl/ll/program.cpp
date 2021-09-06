@@ -33,6 +33,16 @@ namespace
         current_shader = new_shader;
         return true;
     }
+
+    GLint get_program_iv(GLuint handle, GLenum param)
+    {
+        GLint out;
+        glGetProgramiv(handle, param, &out);
+#ifdef DEBUG
+        if (any_error()) error_print("glGetProgramiv got unexpected error.\n");
+#endif
+        return out;
+    }
 }
 
 namespace GL::LL
@@ -250,11 +260,11 @@ namespace GL::LL
 
     GLint Program::active_attributes() const
     {
-        GLint attrs;
-        glGetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attrs);
-#ifdef DEBUG
-        if (any_error()) error_print("glGetProgramiv got unexpected error.\n");
-#endif
-        return attrs;
+        return get_program_iv(handle, GL_ACTIVE_ATTRIBUTES);
+    }
+
+    GLint Program::max_attribute_name_length() const
+    {
+        return get_program_iv(handle, GL_ACTIVE_ATTRIBUTE_MAX_LENGTH);
     }
 }
