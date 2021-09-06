@@ -2,6 +2,8 @@
 #include "test/common.h"
 #include "gl/ll/shader.h"
 #include "gl/ll/program.h"
+#include "gl/ll/attributes.h"
+#include "gl/ll/attribute_manifest.h"
 
 const char * all_attribs_vertex_source = R"GLSL(
 #version 300 es
@@ -49,14 +51,21 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
     Program p{all_attribs_vertex_source, all_attribs_fragment_source};
     CHECK(p);
 
-    auto returned = p.attributes();
-    CHECK(p);
+    auto returned = AttributeManifest(p);
 
     SECTION("The manifest can be copied")
     {
-        AttributeManifest b = p.attributes();
-        b = returned;
-        REQUIRE(b == returned);
+        SECTION("By constructor")
+        {
+            AttributeManifest b{returned};
+            REQUIRE(b == returned);
+        }
+        SECTION("By operator")
+        {
+            AttributeManifest b{};
+            b = returned;
+            REQUIRE(b == returned);
+        }
     }
 
     SECTION("The manifest can be moved")

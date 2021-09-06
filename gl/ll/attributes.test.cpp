@@ -1,6 +1,8 @@
 #include <catch2/catch.hpp>
 #include "test/common.h"
 #include "gl/ll/shader.h"
+#include "gl/ll/attributes.h"
+#include "gl/ll/attribute_manifest.h"
 #include "gl/ll/program.h"
 #include "test/shader_sources.h"
 
@@ -82,7 +84,8 @@ TEST_CASE("Attributes" "[gl][attribute]")
         CHECK(p);
 
         auto expected = Attribute("pos", Attribute::Type::VEC2);
-        auto returned = p.attributes()[0];
+        auto attributes = AttributeManifest(p);
+        auto returned = attributes[0];
         CHECK(std::string(returned.name()) == std::string("pos"));
         CHECK(Attribute::Type::VEC2 == returned.type());
         REQUIRE(returned == expected);

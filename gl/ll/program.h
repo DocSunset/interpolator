@@ -2,7 +2,6 @@
 
 #include <GLES3/gl3.h>
 #include "shader.h"
-#include "attribute_manifest.h"
 
 namespace GL::LL
 {
@@ -19,7 +18,6 @@ namespace GL::LL
         GLuint handle;
         GLuint vertex_shader;
         GLuint fragment_shader;
-        AttributeManifest _attributes;
     public:
         Program();
         Program(const char * vertex_source, const char * fragment_source);
@@ -51,9 +49,5 @@ namespace GL::LL
 
         GLint active_attributes() const;
         GLint max_attribute_name_length() const;
-
-        void get_attributes();
-
-        const AttributeManifest& attributes() const;
     };
 }

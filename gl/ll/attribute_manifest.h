@@ -1,13 +1,12 @@
 #pragma once
 
+#include "program.h"
 #include "attributes.h"
 #include <GLES3/gl3.h>
 #include <memory>
 
 namespace GL::LL
 {
-    class Program;
-
     class AttributeManifest
     {
         struct Implementation;
