@@ -27,8 +27,8 @@ namespace GL::LL
         const Attribute& operator[](GLuint i);
               Attribute& operator[](GLuint i) const;
 
-        bool has(const Attribute& a) const;
+        GLint size() const;
 
-        GLuint size() const;
+        bool has(const Attribute& a) const;
     };
 }

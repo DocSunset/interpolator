@@ -59,6 +59,15 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
         REQUIRE(b == returned);
     }
 
+    SECTION("The manifest can be moved")
+    {
+        GLint size = returned.size();
+        auto a = returned[0];
+        AttributeManifest b = std::move(returned);
+        CHECK(b.size() == size);
+        CHECK(a == b[0]);
+    }
+
     SECTION("The manifest has exactly all the expected attributes")
     {
         std::vector<Attribute> expected;

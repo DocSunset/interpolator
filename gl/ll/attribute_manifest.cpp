@@ -29,6 +29,8 @@ namespace GL::LL
         const Attribute& at(GLuint i) const {return attributes[i];}
               Attribute& at(GLuint i)       {return attributes[i];}
 
+        GLint size() const {return static_cast<GLint>(attributes.size());}
+
         bool operator==(const Implementation& other) const
         {
             if (attributes.size() != other.attributes.size()) return false;
@@ -45,7 +47,6 @@ namespace GL::LL
                 if (a == b) return true;
             return false;
         }
-        GLuint size() const {return 0;}
     };
 
     AttributeManifest::AttributeManifest(const Program& p)
@@ -78,9 +79,15 @@ namespace GL::LL
         return *pimpl == *other.pimpl;
     }
 
+    bool AttributeManifest::operator!=(const AttributeManifest& other) const
+    {
+        return not (*pimpl == *other.pimpl);
+    }
+
     const Attribute& AttributeManifest::operator[](GLuint i)       { return pimpl->at(i); }
           Attribute& AttributeManifest::operator[](GLuint i) const { return pimpl->at(i); }
 
     bool AttributeManifest::has(const Attribute& a) const { return pimpl->has(a); }
-    GLuint AttributeManifest::size() const { return pimpl->size(); }
+
+    GLint AttributeManifest::size() const { return pimpl->size(); }
 }
