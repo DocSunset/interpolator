@@ -247,4 +247,14 @@ namespace GL::LL
     {
         _attributes = AttributeManifest(*this);
     }
+
+    GLint Program::active_attributes() const
+    {
+        GLint attrs;
+        glGetProgramiv(handle, GL_ACTIVE_ATTRIBUTES, &attrs);
+#ifdef DEBUG
+        if (any_error()) error_print("glGetProgramiv got unexpected error.\n");
+#endif
+        return attrs;
+    }
 }

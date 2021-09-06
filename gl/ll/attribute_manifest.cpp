@@ -1,24 +1,29 @@
 #include "attribute_manifest.h"
 #include "program.h"
+#include "error.h"
 
 namespace GL::LL
 {
     struct AttributeManifest::Implementation
     {
-        Attribute a = Attribute("foo", Attribute::Type::FLOAT);
+        Attribute _a = Attribute("foo", Attribute::Type::FLOAT);
 
         Implementation() {}
         Implementation(const Program& p)
         {
+            if (not p) error_print("AttributeManifest constructed with invalid program.\n");
             char * namebuf = (char *)malloc(128);
-            a = Attribute(p.handle, 0, namebuf, 128);
+            _a = Attribute(p.handle, 0, namebuf, 128);
             free(namebuf);
         }
         void insert(const Attribute& a) {}
         void insert(Attribute&& a) {}
-        const Attribute& at(GLuint i) const {return a;}
-              Attribute& at(GLuint i)       {return a;}
-        bool has(const Attribute& a) {return false;}
+        const Attribute& at(GLuint i) const {return _a;}
+              Attribute& at(GLuint i)       {return _a;}
+        bool has(const Attribute& a)
+        {
+            return a == _a;
+        }
         GLuint size() const {return 0;}
     };
 

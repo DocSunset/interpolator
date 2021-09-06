@@ -71,6 +71,7 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
     expected.emplace_back("i3", Attribute::Type::IVEC3);
 
     auto returned = p.attributes();
+    CHECK(p);
 
     SECTION("The manifest has exactly all the expected attributes")
     {

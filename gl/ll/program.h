@@ -49,6 +49,8 @@ namespace GL::LL
 
         operator bool() const;
 
+        GLint active_attributes() const;
+
         void get_attributes();
 
         const AttributeManifest& attributes() const;

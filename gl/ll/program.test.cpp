@@ -178,3 +178,17 @@ TEST_CASE("Valid program from valid shader sources", "[gl][program][shader]")
 
     REQUIRE(p);
 }
+
+TEST_CASE("Get Attribute data", "[gl][program][attribute]")
+{
+    PLATFORM_SETUP();
+
+    using namespace GL::LL;
+
+    Program p{vertex_source, fragment_source};
+
+    SECTION("Number of active attributes")
+    {
+        REQUIRE(p.active_attributes() == 1);
+    }
+}
