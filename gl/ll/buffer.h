@@ -80,4 +80,7 @@ namespace GL::LL
         GLint parameter(Buffer::Parameter param);
         GLint64 parameter(Buffer::Parameter64 param);
     };
+
+    inline BufferBinding bind(const Buffer& b) {return BufferBinding(b);}
 }
+

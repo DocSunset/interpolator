@@ -14,14 +14,14 @@ TEST_CASE("Buffer Objects", "[gl][buffer]")
 
         SECTION("Buffer is valid after first binding.")
         {
-            auto bind = BufferBinding(b);
+            auto binding = bind(b);
             REQUIRE(b);
 
             SECTION("Buffering data sets a buffer's memory usage hint and size.")
             {
-                bind.buffer_data(128, nullptr);
-                CHECK(bind.parameter(Buffer::Parameter::SIZE) == 128);
-                REQUIRE(bind.parameter(Buffer::Parameter::USAGE) == GL_DYNAMIC_DRAW);
+                binding.buffer_data(128, nullptr);
+                CHECK(binding.parameter(Buffer::Parameter::SIZE) == 128);
+                REQUIRE(binding.parameter(Buffer::Parameter::USAGE) == GL_DYNAMIC_DRAW);
             }
         }
     }
