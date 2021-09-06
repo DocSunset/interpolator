@@ -47,6 +47,11 @@ namespace GL::LL
                 if (a == b) return true;
             return false;
         }
+
+        void add_attribute(const char * name, AttributeType type)
+        {
+            attributes.emplace_back(name, type);
+        }
     };
 
     AttributeManifest::AttributeManifest(const Program& p)
@@ -90,4 +95,9 @@ namespace GL::LL
     bool AttributeManifest::has(const Attribute& a) const { return pimpl->has(a); }
 
     GLint AttributeManifest::size() const { return pimpl->size(); }
+
+    void AttributeManifest::add_attribute(const char * name, AttributeType type)
+    {
+        pimpl->add_attribute(name, type);
+    }
 }

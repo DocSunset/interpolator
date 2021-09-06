@@ -95,4 +95,21 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
             CHECK(returned.has(attr));
         }
     }
+
+    SECTION("Manifest can be constructed manually")
+    {
+        auto expected = AttributeManifest();
+        expected.add_attribute("f", AttributeType::FLOAT);
+        expected.add_attribute("f2", AttributeType::VEC2);
+        expected.add_attribute("f3", AttributeType::VEC3);
+        expected.add_attribute("f4", AttributeType::VEC4);
+        expected.add_attribute("m2", AttributeType::MAT2);
+        expected.add_attribute("m3", AttributeType::MAT3);
+        expected.add_attribute("m4", AttributeType::MAT4);
+        expected.add_attribute("i", AttributeType::INT);
+        expected.add_attribute("i2", AttributeType::IVEC2);
+        expected.add_attribute("i3", AttributeType::IVEC3);
+
+        REQUIRE(expected == returned);
+    }
 }
