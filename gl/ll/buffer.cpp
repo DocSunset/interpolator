@@ -50,7 +50,42 @@ namespace
             case Buffer::Usage::DYNAMIC_COPY: return GL_DYNAMIC_COPY;
             default:
 #ifdef DEBUG
-                error_print("unrecognized Buffer::Target?!\n");
+                error_print("unrecognized Buffer::Usage?!\n");
+                exit(1);
+#else
+                return GL_DYNAMIC_DRAW;
+#endif
+        }
+    }
+
+    constexpr GLenum parameter_to_gl(Buffer::Parameter p)
+    {
+        switch(p)
+        {
+            case Buffer::Parameter::ACCESS_FLAGS: return GL_BUFFER_ACCESS_FLAGS;
+            case Buffer::Parameter::MAPPED:       return GL_BUFFER_MAPPED;
+            case Buffer::Parameter::SIZE:         return GL_BUFFER_SIZE;
+            case Buffer::Parameter::USAGE:        return GL_BUFFER_USAGE;
+            default:
+#ifdef DEBUG
+                error_print("unrecognized Buffer::Parameter?!\n");
+                exit(1);
+#else
+                return GL_DYNAMIC_DRAW;
+#endif
+        }
+    }
+
+    constexpr GLenum parameter_to_gl(Buffer::Parameter64 p)
+    {
+        switch(p)
+        {
+            case Buffer::Parameter64::MAP_LENGTH: return GL_BUFFER_MAP_LENGTH;
+            case Buffer::Parameter64::MAP_OFFSET: return GL_BUFFER_MAP_OFFSET;
+            case Buffer::Parameter64::SIZE:       return GL_BUFFER_SIZE;
+            default:
+#ifdef DEBUG
+                error_print("unrecognized Buffer::Parameter64?!\n");
                 exit(1);
 #else
                 return GL_DYNAMIC_DRAW;
@@ -83,13 +118,28 @@ namespace GL::LL
 #endif
     }
 
-    BufferBinding::BufferBinding(const Buffer& buffer)
+    Bind::Bind(const Buffer& buffer)
         : b{buffer}
     {
         glBindBuffer(b.target, b.handle);
     }
 
-    void BufferBinding::buffer_data(GLsizeiptr size, const void * data)
+    void Bind::buffer_data(GLsizeiptr size, const void * data)
     {
+        glBufferData(b.target, size, data, b.usage);
+    }
+
+    GLint Bind::parameter(Buffer::Parameter param)
+    {
+        GLint out = 0;
+        glGetBufferParameteriv(b.target, parameter_to_gl(param), &out);
+        return out;
+    }
+
+    GLint64 Bind::parameter(Buffer::Parameter64 param)
+    {
+        GLint64 out = 0;
+        glGetBufferParameteri64v(b.target, parameter_to_gl(param), &out);
+        return out;
     }
 }

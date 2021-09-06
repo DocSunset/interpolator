@@ -14,8 +14,15 @@ TEST_CASE("Buffer Objects", "[gl][buffer]")
 
         SECTION("Buffer is valid after first binding.")
         {
-            auto bind = BufferBinding(b);
+            auto bind = Bind(b);
             REQUIRE(b);
+
+            SECTION("Buffering data sets a buffer's memory usage hint.")
+            {
+                bind.buffer_data(128, nullptr);
+                REQUIRE(bind.parameter(Buffer::Parameter::USAGE) == GL_DYNAMIC_DRAW);
+            }
         }
     }
+
 }

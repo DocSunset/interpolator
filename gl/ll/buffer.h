@@ -4,7 +4,8 @@
 
 namespace GL::LL
 {
-    // this class is only meant as a handle; it does not manage data
+    // This class is only meant as a handle; it does not manage data.
+    // The target and memory usage hint are fixed at construction.
     class Buffer
     {
     public:
@@ -48,7 +49,7 @@ namespace GL::LL
             DYNAMIC_COPY
         };
     private:
-        friend class BufferBinding;
+        friend class Bind;
         GLuint handle;
         GLenum target;
         GLenum usage;
@@ -60,11 +61,23 @@ namespace GL::LL
         operator bool() const;
     };
 
-    class BufferBinding
+    // `Bind` provides scoped access to buffer API calls that operate on
+    // currently bound buffers.
+    class Bind
     {
         const Buffer& b;
     public:
-        BufferBinding(const Buffer&);
+        Bind(const Buffer&);
+
+        // The user is responsible for ensuring that size is non-negative,
+        // and that data is nullptr or valid.
+        //
+        // Furthermore, the user must check for GL_OUT_OF_MEMORY errors later;
+        // checking is not performed here as it might degrade performance.
+        // Other errors should be impossible by construction.
         void buffer_data(GLsizeiptr size, const void * data);
+
+        GLint parameter(Buffer::Parameter param);
+        GLint64 parameter(Buffer::Parameter64 param);
     };
 }
