@@ -9,14 +9,13 @@ TEST_CASE("Buffer Objects", "[gl][buffer]")
 
     SECTION("Buffer is invalid before first binding.")
     {
-        auto b = Buffer(Buffer::Target::ARRAY);
+        auto b = Buffer(Buffer::Target::ARRAY, Buffer::Usage::DYNAMIC_DRAW);
         REQUIRE(not b);
 
         SECTION("Buffer is valid after first binding.")
         {
-            b.bind();
+            auto bind = BufferBinding(b);
             REQUIRE(b);
         }
     }
-
 }

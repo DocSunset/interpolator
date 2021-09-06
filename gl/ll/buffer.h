@@ -48,13 +48,23 @@ namespace GL::LL
             DYNAMIC_COPY
         };
     private:
+        friend class BufferBinding;
         GLuint handle;
         GLenum target;
+        GLenum usage;
     public:
-        Buffer(Target t);
+        Buffer(Target t, Usage u);
+        Buffer(Buffer&& move);
         ~Buffer();
 
-        void bind() const;
         operator bool() const;
+    };
+
+    class BufferBinding
+    {
+        const Buffer& b;
+    public:
+        BufferBinding(const Buffer&);
+        void buffer_data(GLsizeiptr size, const void * data);
     };
 }

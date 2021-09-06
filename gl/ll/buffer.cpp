@@ -34,12 +34,36 @@ namespace
 #endif
         }
     }
+
+    constexpr GLenum usage_to_gl(Buffer::Usage u)
+    {
+        switch (u)
+        {
+            case Buffer::Usage::STREAM_DRAW:  return GL_STREAM_DRAW;
+            case Buffer::Usage::STREAM_READ:  return GL_STREAM_READ;
+            case Buffer::Usage::STREAM_COPY:  return GL_STREAM_COPY;
+            case Buffer::Usage::STATIC_DRAW:  return GL_STATIC_DRAW;
+            case Buffer::Usage::STATIC_READ:  return GL_STATIC_READ;
+            case Buffer::Usage::STATIC_COPY:  return GL_STATIC_COPY;
+            case Buffer::Usage::DYNAMIC_DRAW: return GL_DYNAMIC_DRAW;
+            case Buffer::Usage::DYNAMIC_READ: return GL_DYNAMIC_READ;
+            case Buffer::Usage::DYNAMIC_COPY: return GL_DYNAMIC_COPY;
+            default:
+#ifdef DEBUG
+                error_print("unrecognized Buffer::Target?!\n");
+                exit(1);
+#else
+                return GL_DYNAMIC_DRAW;
+#endif
+        }
+    }
 }
 
 namespace GL::LL
 {
-    Buffer::Buffer(Target t)
+    Buffer::Buffer(Target t, Usage u)
         : target{target_to_gl(t)}
+        , usage{usage_to_gl(u)}
     {
         glGenBuffers(1, &handle);
         if (any_error()) error_print("unexpected error after glGenBuffers.\n");
@@ -50,11 +74,6 @@ namespace GL::LL
         glDeleteBuffers(1, &handle);
     }
 
-    void Buffer::bind() const
-    {
-        glBindBuffer(target, handle);
-    }
-
     Buffer::operator bool() const
     {
 #ifdef DEBUG
@@ -62,5 +81,15 @@ namespace GL::LL
 #else
         return handle != 0;
 #endif
+    }
+
+    BufferBinding::BufferBinding(const Buffer& buffer)
+        : b{buffer}
+    {
+        glBindBuffer(b.target, b.handle);
+    }
+
+    void BufferBinding::buffer_data(GLsizeiptr size, const void * data)
+    {
     }
 }
