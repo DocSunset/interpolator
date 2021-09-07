@@ -29,8 +29,7 @@ namespace GL
         const LL::AttributeManifest& attributes;
         LL::AttributeElement * data_view;
     public:
-        VertexForm(const LL::AttributeManifest& attr);
-        VertexForm(const LL::AttributeManifest& attr, void * data);
+        VertexForm(const LL::AttributeManifest& attr, LL::AttributeElement * data);
 
         const Attribute operator[](const char * name) const;
               Attribute operator[](const char * name);
@@ -50,12 +49,18 @@ namespace GL
         Attribute(VertexForm& form, LL::AttributeElement * data_view, LL::AttributeType type);
         Attribute operator[](std::size_t i);
         GLfloat as_float(std::size_t i = 0);
+        GLint as_int(std::size_t i = 0);
+        GLuint as_uint(std::size_t i = 0);
         Attribute step(std::size_t i = 1);
         std::size_t size() const;
 
         template<std::size_t pos = 0, typename T, typename ... Ts>
         VertexForm& set(T t, Ts ... ts)
         {
+            static_assert(  std::is_same_v<T, GLfloat>
+                         || std::is_same_v<T, GLint>
+                         || std::is_same_v<T, GLuint>
+                         , "cannot set with non-AttributeElement type");
             if (pos >= size()) return form;
             set(pos, t);
             return set<pos+1>(ts ...);

@@ -17,7 +17,7 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
 
     SECTION("Get a template with fields for each vertex attribute")
     {
-        auto form = v.attributes();
+        auto form = v.add_vertex();
 
         CHECK(form.has("pos"));
         CHECK(form.has("bi"));
@@ -45,11 +45,15 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
 
     //SECTION("Append data to the array by modifying forms")
     //{
-    //    v.add_vertex()["pos"].set(1.0,1.0)
-    //                   ["bi"].set(1.0);
+    //    float val = 1.0;
+    //    v.add_vertex()["pos"].set(val, val)
+    //                   ["bi"].set(val);
+    //    v.add_vertex()["pos"].set(val, val)
+    //                   ["bi"].set(val);
 
-    //    REQUIRE(v[0]["pos"][0].as_float() == 1.0);
-    //    REQUIRE(v[1]["bi"][0].as_float() == 1.0);
+    //    CHECK(v.size() == 2);
+    //    CHECK(v[0]["pos"][0].as_float() == val);
+    //    CHECK(v[1]["bi"][0].as_float() == val);
     //}
 
     //SECTION("Append data to the array by traversing")
@@ -69,6 +73,7 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
     //    }
 
     //    CHECK(v.size() == growth);
-    //    CHECK(v[9]["pos"][0].as_float() == val);
+    //    auto vertex = v[9];
+    //    CHECK(vertex["pos"][0].as_float() == val);
     //}
 }

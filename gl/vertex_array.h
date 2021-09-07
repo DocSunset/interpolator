@@ -10,9 +10,9 @@ namespace GL
         const LL::Program& program;
         LL::VertexArray vao;
         LL::AttributeManifest _attributes;
-        LL::AttributeElement * array;
         std::size_t _size;
         std::size_t _capacity;
+        LL::AttributeElement * array;
     public:
         VertexArray(const LL::Program& program);
 
@@ -22,10 +22,9 @@ namespace GL
         // vertex storage capacity
         std::size_t capacity() const;
 
-        VertexForm attributes() const;
-        const VertexForm& operator[](std::size_t i) const;
-              VertexForm& operator[](std::size_t i);
-        VertexForm& add_vertex();
-        VertexForm& grow(std::size_t i);
+        const VertexForm operator[](std::size_t i) const;
+              VertexForm operator[](std::size_t i);
+        VertexForm add_vertex();
+        VertexForm grow(std::size_t i);
     };
 }

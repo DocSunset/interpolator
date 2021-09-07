@@ -3,11 +3,10 @@
 
 namespace GL
 {
-    VertexForm::VertexForm(const LL::AttributeManifest& a)
+    VertexForm::VertexForm(const LL::AttributeManifest& a, LL::AttributeElement * data)
         : attributes{a}
-    {
-        data_view = (LL::AttributeElement *)malloc(sizeof(LL::AttributeElement) * attributes.elements());
-    }
+        , data_view{data}
+    { }
 
     bool VertexForm::has(const char * name) const
     {
@@ -64,9 +63,47 @@ namespace GL
             case AttributeElementType::FLOAT:
                 return view->f;
             case AttributeElementType::INT:
-                return static_cast<float>(view->i);
+                return static_cast<GLfloat>(view->i);
             case AttributeElementType::UINT:
-                return static_cast<float>(view->u);
+                return static_cast<GLfloat>(view->u);
+            default:
+                error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
+                return 0.0f;
+        }
+    }
+
+    GLint Attribute::as_int(std::size_t i)
+    {
+        using namespace ::GL::LL;
+        if (i >= elements(type)) i = elements(type) - 1;
+        auto view = data_view + i;
+        switch (element_type(type))
+        {
+            case AttributeElementType::FLOAT:
+                return static_cast<GLint>(view->f);
+            case AttributeElementType::INT:
+                return view->i;
+            case AttributeElementType::UINT:
+                return static_cast<GLint>(view->u);
+            default:
+                error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
+                return 0.0f;
+        }
+    }
+
+    GLuint Attribute::as_uint(std::size_t i)
+    {
+        using namespace ::GL::LL;
+        if (i >= elements(type)) i = elements(type) - 1;
+        auto view = data_view + i;
+        switch (element_type(type))
+        {
+            case AttributeElementType::FLOAT:
+                return static_cast<GLuint>(view->f);
+            case AttributeElementType::INT:
+                return static_cast<GLuint>(view->i);
+            case AttributeElementType::UINT:
+                return view->u;
             default:
                 error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
                 return 0.0f;
