@@ -27,7 +27,7 @@ namespace GL
     class VertexForm
     {
         const LL::AttributeManifest& attributes;
-        void * data_view;
+        LL::AttributeElement * data_view;
     public:
         VertexForm(const LL::AttributeManifest& attr);
         VertexForm(const LL::AttributeManifest& attr, void * data);
@@ -42,13 +42,17 @@ namespace GL
     {
     private:
         VertexForm& form;
-        void * data_view;
+        LL::AttributeElement * data_view;
+        std::size_t stride;
+        std::size_t size;
+        std::size_t bytes;
     public:
-        Attribute(VertexForm& form);
+        // pointer to a particular attribute in a form
+        Attribute(VertexForm& form, LL::AttributeElement * data_view, std::size_t stride, std::size_t size, std::size_t bytes);
         template<typename ... Ts>
         VertexForm& set(Ts ... ts) {return form;}
         Attribute operator[](std::size_t i);
         float as_float();
-        void step();
+        Attribute step(std::size_t i = 1);
     };
 }

@@ -7,6 +7,7 @@ target_sources(interpolators-objects PRIVATE
     attribute_manifest.h attribute_manifest.cpp
     buffer.h buffer.cpp
     vertex_array.h vertex_array.cpp
+    attribute_element.h
     )
 
 target_sources(interpolators-tests PRIVATE
@@ -17,4 +18,5 @@ target_sources(interpolators-tests PRIVATE
     attribute_manifest.test.cpp
     buffer.test.cpp
     vertex_array.test.cpp
+    attribute_element.test.cpp
     )

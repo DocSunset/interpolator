@@ -10,10 +10,7 @@ namespace GL
         const LL::Program& program;
         LL::VertexArray vao;
         LL::AttributeManifest _attributes;
-        void * array;
-
-        std::size_t _stride;
-        std::size_t _bytes;
+        LL::AttributeElement * array;
         std::size_t _size;
         std::size_t _capacity;
     public:

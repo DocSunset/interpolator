@@ -16,4 +16,5 @@
 #include "ll/vertex_array.h"
 #include "ll/attributes.h"
 #include "ll/attribute_manifest.h"
+#include "ll/attribute_element.h"
 #include "ll/error.h"
