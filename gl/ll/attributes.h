@@ -7,6 +7,10 @@
 
 namespace GL::LL
 {
+    std::size_t elements(AttributeType t);
+
+    AttributeElementType element_type(AttributeType t);
+
     class Attribute
     {
     private:
@@ -24,8 +28,7 @@ namespace GL::LL
         const char * name() const;
         AttributeType type() const;
 
-        std::size_t bytes() const;
-
-        AttributeElementType element_type() const;
+        std::size_t elements() const {return ::GL::LL::elements(_type);}
+        AttributeElementType element_type() const {return ::GL::LL::element_type(_type);}
     };
 }

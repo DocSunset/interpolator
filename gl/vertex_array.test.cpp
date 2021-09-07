@@ -18,8 +18,20 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
     SECTION("Get a template with fields for each vertex attribute")
     {
         auto form = v.attributes();
+
         CHECK(form.has("pos"));
         CHECK(form.has("bi"));
+
+        SECTION("The form has the expected stride")
+        {
+            REQUIRE(form.stride() == 3);
+        }
+
+        SECTION("Attributes in the form have expected size")
+        {
+            auto pos = form["pos"];
+            REQUIRE(pos.size() == 2);
+        }
 
         SECTION("Derive vertices from the form")
         {

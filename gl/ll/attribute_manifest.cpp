@@ -78,14 +78,14 @@ namespace GL::LL
             attributes.emplace_back(name, type);
         }
 
-        std::size_t bytes() const
+        std::size_t elements() const
         {
-            std::size_t b = 0;
+            std::size_t elems = 0;
             for (auto& a : attributes)
             {
-                b += a.bytes();
+                elems += ::GL::LL::elements(a.type());
             }
-            return b;
+            return elems;
         }
     };
 
@@ -141,5 +141,5 @@ namespace GL::LL
         pimpl->add_attribute(name, type);
     }
 
-    std::size_t AttributeManifest::bytes() const { return pimpl->bytes(); }
+    std::size_t AttributeManifest::elements() const { return pimpl->elements(); }
 }

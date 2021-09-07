@@ -94,9 +94,9 @@ TEST_CASE("Attributes" "[gl][attribute]")
     SECTION("Metadata")
     {
         auto a = Attribute("foo", AttributeType::FLOAT);
-        SECTION("Attribute size in bytes can be retrieved")
+        SECTION("Attribute size in elements can be retrieved")
         {
-            REQUIRE(a.bytes() == sizeof(GLfloat));
+            REQUIRE(a.elements() == 1);
         }
         SECTION("Element type can be queried")
         {

@@ -36,6 +36,7 @@ namespace GL
               Attribute operator[](const char * name);
 
         bool has(const char * name) const;
+        std::size_t stride() const;
     };
 
     class Attribute
@@ -43,16 +44,15 @@ namespace GL
     private:
         VertexForm& form;
         LL::AttributeElement * data_view;
-        std::size_t stride;
-        std::size_t size;
-        std::size_t bytes;
+        LL::AttributeType type;
     public:
         // pointer to a particular attribute in a form
-        Attribute(VertexForm& form, LL::AttributeElement * data_view, std::size_t stride, std::size_t size, std::size_t bytes);
+        Attribute(VertexForm& form, LL::AttributeElement * data_view, LL::AttributeType type);
         template<typename ... Ts>
         VertexForm& set(Ts ... ts) {return form;}
         Attribute operator[](std::size_t i);
         float as_float();
         Attribute step(std::size_t i = 1);
+        std::size_t size() const;
     };
 }
