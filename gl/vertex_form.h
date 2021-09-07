@@ -48,11 +48,27 @@ namespace GL
     public:
         // pointer to a particular attribute in a form
         Attribute(VertexForm& form, LL::AttributeElement * data_view, LL::AttributeType type);
-        template<typename ... Ts>
-        VertexForm& set(Ts ... ts) {return form;}
         Attribute operator[](std::size_t i);
-        float as_float();
+        GLfloat as_float(std::size_t i = 0);
         Attribute step(std::size_t i = 1);
         std::size_t size() const;
+
+        template<std::size_t pos = 0, typename T, typename ... Ts>
+        VertexForm& set(T t, Ts ... ts)
+        {
+            if (pos >= size()) return form;
+            set(pos, t);
+            return set<pos+1>(ts ...);
+        }
+
+        template<std::size_t pos>
+        VertexForm& set()
+        {
+            return form;
+        }
+
+        VertexForm& set(std::size_t pos, GLfloat f);
+        VertexForm& set(std::size_t pos, GLint i);
+        VertexForm& set(std::size_t pos, GLuint u);
     };
 }

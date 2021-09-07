@@ -45,6 +45,7 @@ namespace GL
 
     Attribute Attribute::operator[](std::size_t i)
     {
+        if (i == 0) return *this;
         return step(i);
     }
 
@@ -53,13 +54,90 @@ namespace GL
         return Attribute(form, data_view + i * form.stride(), type);
     }
 
-    float Attribute::as_float()
+    GLfloat Attribute::as_float(std::size_t i)
     {
-        return 0.5;
+        using namespace ::GL::LL;
+        if (i >= elements(type)) i = elements(type) - 1;
+        auto view = data_view + i;
+        switch (element_type(type))
+        {
+            case AttributeElementType::FLOAT:
+                return view->f;
+            case AttributeElementType::INT:
+                return static_cast<float>(view->i);
+            case AttributeElementType::UINT:
+                return static_cast<float>(view->u);
+            default:
+                error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
+                return 0.0f;
+        }
     }
 
     std::size_t Attribute::size() const
     {
         return LL::elements(type);
+    }
+
+    VertexForm& Attribute::set(std::size_t position, GLfloat f)
+    {
+        using namespace ::GL::LL;
+        auto view = data_view + position;
+        switch (element_type(type))
+        {
+            case AttributeElementType::FLOAT:
+                view->f = f;
+                break;
+            case AttributeElementType::INT:
+                view->i = static_cast<GLint>(f);
+                break;
+            case AttributeElementType::UINT:
+                view->u = static_cast<GLuint>(f);
+                break;
+            default:
+                error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
+        }
+        return form;
+    }
+
+    VertexForm& Attribute::set(std::size_t position, GLint i)
+    {
+        using namespace ::GL::LL;
+        auto view = data_view + position;
+        switch (element_type(type))
+        {
+            case AttributeElementType::FLOAT:
+                view->f = static_cast<GLfloat>(i);
+                break;
+            case AttributeElementType::INT:
+                view->i = i;
+                break;
+            case AttributeElementType::UINT:
+                view->u = static_cast<GLuint>(i);
+                break;
+            default:
+                error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
+        }
+        return form;
+    }
+
+    VertexForm& Attribute::set(std::size_t position, GLuint u)
+    {
+        using namespace ::GL::LL;
+        auto view = data_view + position;
+        switch (element_type(type))
+        {
+            case AttributeElementType::FLOAT:
+                view->f = static_cast<GLfloat>(u);
+                break;
+            case AttributeElementType::INT:
+                view->i = static_cast<GLint>(u);
+                break;
+            case AttributeElementType::UINT:
+                view->u = u;
+                break;
+            default:
+                error_print("Unrecognized AttributeElementType in Attribute::as_float.\n");
+        }
+        return form;
     }
 }
