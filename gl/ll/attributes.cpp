@@ -72,4 +72,35 @@ namespace GL::LL
 
     const char * Attribute::name() const {return _name.c_str();}
     AttributeType Attribute::type() const {return _type;}
+
+    std::size_t Attribute::bytes() const
+    {
+        switch (_type)
+        {
+            case AttributeType::FLOAT: return sizeof(GLfloat);
+            case AttributeType::VEC2: return 2 * sizeof(GLfloat);
+            case AttributeType::VEC3: return 3 * sizeof(GLfloat);
+            case AttributeType::VEC4: return 4 * sizeof(GLfloat);
+            case AttributeType::MAT2: return 2 * 2 * sizeof(GLfloat);
+            case AttributeType::MAT3: return 3 * 3 * sizeof(GLfloat);
+            case AttributeType::MAT4: return 4 * 4 * sizeof(GLfloat);
+            case AttributeType::MAT2x3: return 2 * 3 * sizeof(GLfloat);
+            case AttributeType::MAT2x4: return 2 * 4 * sizeof(GLfloat);
+            case AttributeType::MAT3x2: return 3 * 2 * sizeof(GLfloat);
+            case AttributeType::MAT3x4: return 3 * 4 * sizeof(GLfloat);
+            case AttributeType::MAT4x2: return 4 * 2 * sizeof(GLfloat);
+            case AttributeType::MAT4x3: return 4 * 3 * sizeof(GLfloat);
+            case AttributeType::INT: return sizeof(GLfloat);
+            case AttributeType::IVEC2: return 2 * sizeof(GLfloat);
+            case AttributeType::IVEC3: return 3 * sizeof(GLfloat);
+            case AttributeType::IVEC4: return 4 * sizeof(GLfloat);
+            case AttributeType::UINT: return sizeof(GLfloat);
+            case AttributeType::UVEC2: return 2 * sizeof(GLfloat);
+            case AttributeType::UVEC3: return 3 * sizeof(GLfloat);
+            case AttributeType::UVEC4: return 4 * sizeof(GLfloat);
+            default:
+                error_print("Encountered unknown attribute type\n");
+                return 0;
+        }
+    }
 }

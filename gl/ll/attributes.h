@@ -23,5 +23,6 @@ namespace GL::LL
         const char * name() const;
         AttributeType type() const;
 
+        std::size_t bytes() const;
     };
 }

@@ -58,16 +58,34 @@ namespace GL::LL
             return true;
         }
 
-        bool has(const Attribute& a)
+        bool has(const Attribute& a) const
         {
             for (auto& b : attributes)
                 if (a == b) return true;
             return false;
         }
 
+        bool has(const char * name) const
+        {
+            std::string n = name;
+            for (auto& a : attributes)
+                if (a._name == n) return true;
+            return false;
+        }
+
         void add_attribute(const char * name, AttributeType type)
         {
             attributes.emplace_back(name, type);
+        }
+
+        std::size_t bytes() const
+        {
+            std::size_t b = 0;
+            for (auto& a : attributes)
+            {
+                b += a.bytes();
+            }
+            return b;
         }
     };
 
@@ -114,10 +132,14 @@ namespace GL::LL
 
     bool AttributeManifest::has(const Attribute& a) const { return pimpl->has(a); }
 
+    bool AttributeManifest::has(const char * name) const { return pimpl->has(name); }
+
     GLint AttributeManifest::size() const { return pimpl->size(); }
 
     void AttributeManifest::add_attribute(const char * name, AttributeType type)
     {
         pimpl->add_attribute(name, type);
     }
+
+    std::size_t AttributeManifest::bytes() const { return pimpl->bytes(); }
 }

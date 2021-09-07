@@ -120,4 +120,11 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
 
         REQUIRE(a == b);
     }
+
+    SECTION("Bytes required to store attributes can be retrieved")
+    {
+        std::size_t expected = (1 + 2 + 3 + 4 + 4 + 9 + 16) * sizeof(GLfloat)
+                             + (1 + 2 + 3) * sizeof(GLint);
+        REQUIRE(returned.bytes() == expected);
+    }
 }

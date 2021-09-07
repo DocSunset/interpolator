@@ -90,4 +90,9 @@ TEST_CASE("Attributes" "[gl][attribute]")
         CHECK(AttributeType::VEC2 == returned.type());
         REQUIRE(returned == expected);
     }
+
+    SECTION("Attribute size in bytes can be retrieved")
+    {
+        REQUIRE(Attribute("foo", AttributeType::FLOAT).bytes() == sizeof(GLfloat));
+    }
 }
