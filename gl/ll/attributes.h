@@ -1,6 +1,7 @@
 #pragma once
 
 #include "attribute_type.h"
+#include "attribute_element.h"
 #include <string>
 #include <GLES3/gl3.h>
 
@@ -24,5 +25,7 @@ namespace GL::LL
         AttributeType type() const;
 
         std::size_t bytes() const;
+
+        AttributeElementType element_type() const;
     };
 }

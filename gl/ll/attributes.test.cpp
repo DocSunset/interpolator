@@ -91,8 +91,17 @@ TEST_CASE("Attributes" "[gl][attribute]")
         REQUIRE(returned == expected);
     }
 
-    SECTION("Attribute size in bytes can be retrieved")
+    SECTION("Metadata")
     {
-        REQUIRE(Attribute("foo", AttributeType::FLOAT).bytes() == sizeof(GLfloat));
+        auto a = Attribute("foo", AttributeType::FLOAT);
+        SECTION("Attribute size in bytes can be retrieved")
+        {
+            REQUIRE(a.bytes() == sizeof(GLfloat));
+        }
+        SECTION("Element type can be queried")
+        {
+            REQUIRE(a.element_type() == AttributeElementType::FLOAT);
+        }
     }
+
 }

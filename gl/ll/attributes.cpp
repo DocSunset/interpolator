@@ -103,4 +103,38 @@ namespace GL::LL
                 return 0;
         }
     }
+
+    AttributeElementType Attribute::element_type() const
+    {
+        switch (_type)
+        {
+            case AttributeType::FLOAT:
+            case AttributeType::VEC2:
+            case AttributeType::VEC3:
+            case AttributeType::VEC4:
+            case AttributeType::MAT2:
+            case AttributeType::MAT3:
+            case AttributeType::MAT4:
+            case AttributeType::MAT2x3:
+            case AttributeType::MAT2x4:
+            case AttributeType::MAT3x2:
+            case AttributeType::MAT3x4:
+            case AttributeType::MAT4x2:
+            case AttributeType::MAT4x3:
+                return AttributeElementType::FLOAT;
+            case AttributeType::INT:
+            case AttributeType::IVEC2:
+            case AttributeType::IVEC3:
+            case AttributeType::IVEC4:
+                return AttributeElementType::INT;
+            case AttributeType::UINT:
+            case AttributeType::UVEC2:
+            case AttributeType::UVEC3:
+            case AttributeType::UVEC4:
+                return AttributeElementType::UINT;
+            default:
+                error_print("Encountered unknown attribute type\n");
+                return AttributeElementType::FLOAT;
+        }
+    }
 }
