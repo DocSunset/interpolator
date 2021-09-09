@@ -41,44 +41,44 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
         }
     }
 
-    //SECTION("Attribute by name is congruent with attribute size")
-    //{
-    //    auto form = v.add_vertex();
-    //    CHECK(form.raw() == v.raw());
-    //    CHECK(form["pos"][0] == v.raw());
-    //    CHECK(form["pos"][1] == v.raw() + 1);
-    //    CHECK(form["bi"][0] == v.raw() + form["pos"].size());
+    SECTION("Attribute by name is congruent with attribute size")
+    {
+        auto form = v.add_vertex();
+        CHECK(form.raw() == v.raw());
+        CHECK(form["pos"][0] == v.raw());
+        CHECK(form["pos"][1] == v.raw() + 1);
+        CHECK(form["bi"][0] == v.raw() + form["pos"].size());
 
-    //    auto form2 = v.add_vertex();
-    //    CHECK(form2.raw() == v.raw() + v.stride());
-    //    CHECK(form2["pos"][0] == v.raw() + v.stride());
-    //    CHECK(form2["pos"][1] == v.raw() + v.stride() + 1);
-    //    CHECK(form2["bi"][0] == v.raw() + v.stride() + form2["pos"].size());
+        auto form2 = v.add_vertex();
+        CHECK(form2.raw() == v.raw() + v.stride());
+        CHECK(form2["pos"][0] == v.raw() + v.stride());
+        CHECK(form2["pos"][1] == v.raw() + v.stride() + 1);
+        CHECK(form2["bi"][0] == v.raw() + v.stride() + form2["pos"].size());
 
-    //}
+    }
 
-    //SECTION("Append data to the array by modifying forms")
-    //{
-    //    GLfloat val1 = 1.0;
-    //    GLfloat val2 = 2.0;
-    //    GLfloat val3 = 3.0;
-    //    GLfloat val4 = 4.0;
-    //    GLfloat val5 = 5.0;
-    //    GLfloat val6 = 6.0;
+    SECTION("Append data to the array by modifying forms")
+    {
+        GLfloat val1 = 1.0;
+        GLfloat val2 = 2.0;
+        GLfloat val3 = 3.0;
+        GLfloat val4 = 4.0;
+        GLfloat val5 = 5.0;
+        GLfloat val6 = 6.0;
 
-    //    v.add_vertex()["pos"].set(val1, val2)
-    //                   ["bi"].set(val3);
-    //    v.add_vertex()["pos"].set(val4, val5)
-    //                   ["bi"].set(val6);
+        v.add_vertex()["pos"].set(val1, val2)
+                       ["bi"].set(val3);
+        v.add_vertex()["pos"].set(val4, val5)
+                       ["bi"].set(val6);
 
-    //    CHECK(v.size() == 2);
-    //    CHECK(v[0]["pos"].as_float(0) == val1);
-    //    CHECK(v[0]["pos"].as_float(1) == val2);
-    //    CHECK(v[0]["bi"].as_float(0) == val3);
-    //    CHECK(v[1]["pos"].as_float(0) == val4);
-    //    CHECK(v[1]["pos"].as_float(1) == val5);
-    //    CHECK(v[1]["bi"].as_float(0) == val6);
-    //}
+        CHECK(v.size() == 2);
+        CHECK(v[0]["pos"].as_float(0) == val1);
+        CHECK(v[0]["pos"].as_float(1) == val2);
+        CHECK(v[0]["bi"].as_float(0) == val3);
+        CHECK(v[1]["pos"].as_float(0) == val4);
+        CHECK(v[1]["pos"].as_float(1) == val5);
+        CHECK(v[1]["bi"].as_float(0) == val6);
+    }
 
     //SECTION("Append data to the array by traversing")
     //{

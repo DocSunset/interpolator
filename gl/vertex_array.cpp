@@ -23,7 +23,7 @@ namespace GL
         auto next = array;
         if ((_size + i) < _capacity)
         {
-            next = next + _size;
+            next = next + _size * stride();
             _size += i;
         }
         // else grow array
