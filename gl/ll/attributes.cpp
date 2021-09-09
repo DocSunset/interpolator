@@ -40,7 +40,7 @@ namespace
 namespace GL::LL
 {
     Attribute::Attribute(const char * name, AttributeType type)
-        : _name{name}, _type{type}
+        : _name{name}, _type{type}, _location{0}
     {
     }
 
@@ -56,6 +56,7 @@ namespace GL::LL
 #endif
         _name = name_buffer;
         _type = gl_to_attrib_type(type);
+        _location = glGetAttribLocation(program, _name.c_str());
     }
 
     bool Attribute::operator==(const Attribute& other) const
@@ -72,6 +73,77 @@ namespace GL::LL
 
     const char * Attribute::name() const {return _name.c_str();}
     AttributeType Attribute::type() const {return _type;}
+    GLuint Attribute::location() const {return _location;}
+
+    GLint rows(AttributeType _type)
+    {
+        switch (_type)
+        {
+            case AttributeType::MAT2:
+            case AttributeType::MAT2x3:
+            case AttributeType::MAT2x4:
+                return 2;
+            case AttributeType::MAT3:
+            case AttributeType::MAT3x2:
+            case AttributeType::MAT3x4:
+                return 3;
+            case AttributeType::MAT4:
+            case AttributeType::MAT4x2:
+            case AttributeType::MAT4x3:
+                return 4;
+            case AttributeType::FLOAT:
+            case AttributeType::VEC2:
+            case AttributeType::VEC3:
+            case AttributeType::VEC4:
+            case AttributeType::INT:
+            case AttributeType::IVEC2:
+            case AttributeType::IVEC3:
+            case AttributeType::IVEC4:
+            case AttributeType::UINT:
+            case AttributeType::UVEC2:
+            case AttributeType::UVEC3:
+            case AttributeType::UVEC4:
+                return elements(_type);
+            default:
+                error_print("Encountered unknown attribute type in rows\n");
+                return 0;
+        }
+    }
+
+    GLuint columns(AttributeType _type)
+    {
+        switch (_type)
+        {
+            case AttributeType::MAT2:
+            case AttributeType::MAT3x2:
+            case AttributeType::MAT4x2:
+                return 2;
+            case AttributeType::MAT3:
+            case AttributeType::MAT2x3:
+            case AttributeType::MAT4x3:
+                return 3;
+            case AttributeType::MAT4:
+            case AttributeType::MAT2x4:
+            case AttributeType::MAT3x4:
+                return 4;
+            case AttributeType::FLOAT:
+            case AttributeType::VEC2:
+            case AttributeType::VEC3:
+            case AttributeType::VEC4:
+            case AttributeType::INT:
+            case AttributeType::IVEC2:
+            case AttributeType::IVEC3:
+            case AttributeType::IVEC4:
+            case AttributeType::UINT:
+            case AttributeType::UVEC2:
+            case AttributeType::UVEC3:
+            case AttributeType::UVEC4:
+                return 1;
+            default:
+                error_print("Encountered unknown attribute type in columns\n");
+                return 0;
+        }
+    }
 
     std::size_t elements(AttributeType _type)
     {
@@ -99,7 +171,7 @@ namespace GL::LL
             case AttributeType::UVEC3: return 3;
             case AttributeType::UVEC4: return 4;
             default:
-                error_print("Encountered unknown attribute type\n");
+                error_print("Encountered unknown attribute type in elements\n");
                 return 0;
         }
     }
@@ -133,8 +205,42 @@ namespace GL::LL
             case AttributeType::UVEC4:
                 return AttributeElementType::UINT;
             default:
-                error_print("Encountered unknown attribute type\n");
+                error_print("Encountered unknown attribute type in element_type\n");
                 return AttributeElementType::FLOAT;
+        }
+    }
+
+    GLenum gl_type(AttributeType _type)
+    {
+        switch (_type)
+        {
+            case AttributeType::FLOAT:
+            case AttributeType::VEC2:
+            case AttributeType::VEC3:
+            case AttributeType::VEC4:
+            case AttributeType::MAT2:
+            case AttributeType::MAT3:
+            case AttributeType::MAT4:
+            case AttributeType::MAT2x3:
+            case AttributeType::MAT2x4:
+            case AttributeType::MAT3x2:
+            case AttributeType::MAT3x4:
+            case AttributeType::MAT4x2:
+            case AttributeType::MAT4x3:
+                return GL_FLOAT;
+            case AttributeType::INT:
+            case AttributeType::IVEC2:
+            case AttributeType::IVEC3:
+            case AttributeType::IVEC4:
+                return GL_INT;
+            case AttributeType::UINT:
+            case AttributeType::UVEC2:
+            case AttributeType::UVEC3:
+            case AttributeType::UVEC4:
+                return GL_UNSIGNED_INT;
+            default:
+                error_print("Encountered unknown attribute type in gl_type\n");
+                return GL_FLOAT;
         }
     }
 }

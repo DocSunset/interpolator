@@ -94,6 +94,18 @@ TEST_CASE("Attributes" "[gl][attribute]")
     SECTION("Metadata")
     {
         auto a = Attribute("foo", AttributeType::FLOAT);
+        SECTION("Rows")
+        {
+            REQUIRE(a.rows() == 1);
+        }
+        SECTION("Columns")
+        {
+            REQUIRE(a.columns() == 1);
+        }
+        SECTION("gl_type")
+        {
+            REQUIRE(a.gl_type() == GL_FLOAT);
+        }
         SECTION("Attribute size in elements can be retrieved")
         {
             REQUIRE(a.elements() == 1);

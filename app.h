@@ -7,6 +7,7 @@
 #include "components/quit_flag.h"
 #include "systems/platform.h"
 #include "systems/demo_maker.h"
+#include "systems/demo_viewer.h"
 
 class App
 {
@@ -28,6 +29,7 @@ public:
         // system constructor order == execution order
         systems.push_back(std::make_unique<System::Platform>(registry));
         systems.push_back(std::make_unique<System::DemoMaker>(registry));
+        systems.push_back(std::make_unique<System::DemoViewer>(registry));
     }
 
     ~App()

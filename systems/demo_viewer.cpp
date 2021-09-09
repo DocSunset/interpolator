@@ -1,11 +1,8 @@
-#include <cstddef> //offsetof
-
-#include "demo_maker.h"
+#include "demo_viewer.h"
 #include "components/demo.h"
 #include "components/position.h"
 #include "components/color.h"
-#include "gl/vertex_buffer.hpp"
-#include "gl/program.h"
+#include "gl/vertex_array.h"
 
 struct Dot
 {
@@ -14,7 +11,7 @@ struct Dot
     float ring_color[4];
 };
 
-const char * vertex_shader = R"GLSL(
+static const char * vertex_shader = R"GLSL(
 #version 300 es
 
 in vec2 position;
@@ -36,7 +33,7 @@ void main()
 }
 )GLSL";
 
-const char * fragment_shader = R"GLSL(
+static const char * fragment_shader = R"GLSL(
 #version 300 es
 #ifdef GL_ES
 precision highp float;
@@ -63,63 +60,49 @@ namespace System
 
     struct DemoViewerImplementation
     {
-
         entt::observer new_demos;
         entt::observer updated_demos;
-        GL::VertexBuffer vertex_buffer;
-        GLuint program;
-
+        GL::LL::Program program;
+        GL::VertexAttributeArray array;
+        GL::LL::VertexArray vao;
+        GL::LL::Buffer vbo;
 
         DemoViewerImplementation(entt::registry& registry)
-            : new_demos{registry, entt::collector.group<Demo, Position, Color>()}
-            , updated_demos{registry, entt::collector.update<Demo, Position, Color>()}
-            , vertex_buffer(GL_DYNAMIC_DRAW)
+            : updated_demos{registry, entt::collector.update<Demo>().update<Position>().update<Color>()}
+            , new_demos{registry, entt::collector.group<Demo, Position>()}
+            , program{vertex_shader, fragment_shader}
+            , array{program}
+            , vao{}
+            , vbo{GL::LL::Buffer::Target::ARRAY, GL::LL::Buffer::Usage::DYNAMIC_DRAW}
         {
-            program = GL::Boilerplate::create_program
-                ( create_shader_from_source("DemoViewer Vertex", GL_VERTEX_SHADER, &vertex_shader, 1)
-                , create_shader_from_source("DemoViewer Fragment", GL_FRAGMENT_SHADER, &fragment_shader, 1)
-                );
+            auto vaobind = bind(vao);
+            auto vbobind = bind(vbo);
+            const auto& attributes = array.attributes();
 
-            glBindVertexArray(vertex_buffer.vao);
-
-            Dot d;
-            glVertexAttribPointer(glGetAttribLocation(program, "position")
-                    , std::size(d.position), GL_FLOAT, GL_FALSE, sizeof(Dot)
-                    , (const GLvoid *)0);
-            glEnableVertexAttribArray(glGetAttribLocation(program, "position"));
-
-            glVertexAttribPointer(glGetAttribLocation(program, "fill_color_in")
-                    , std::size(d.fill_color), GL_FLOAT, GL_FALSE, sizeof(Dot)
-                    , (const GLvoid *)offsetof(struct Dot, fill_color));
-            glEnableVertexAttribArray(glGetAttribLocation(program, "fill_colour_in"));
-
-            glVertexAttribPointer(glGetAttribLocation(program, "ring_color_in")
-                    , std::size(d.ring_color), GL_FLOAT, GL_FALSE, sizeof(Dot)
-                    , (const GLvoid *)offsetof(struct Dot, ring_color));
-            glEnableVertexAttribArray(glGetAttribLocation(program, "ring_colour_in"));
-
-            glBindVertexArray(0);
+            vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
+            vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
+            vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
         }
 
         void run(entt::registry& registry)
         {
-            for (auto entity: new_demos)
+            new_demos.each([&](const auto entity)
             {
                 // add a demoview
                 Position p = registry.get<Position>(entity);
                 Color c = registry.get<Color>(entity);
                 registry.emplace_or_replace<Dot>(entity, 
-                        { {p.x, p.y}, {c.r, c.g, c.b} });
-            }
+                        Dot{ {p.x, p.y}, {c.r, c.g, c.b}, {0.0f, 0.0f, 0.0f}});
+            });
 
-            for (auto entity: updated_demos)
+            new_demos.each([&](const auto entity)
             {
                 // update associated demoview
                 Position p = registry.get<Position>(entity);
                 Color c = registry.get<Color>(entity);
                 registry.emplace_or_replace<Dot>(entity, 
-                        { {p.x, p.y}, {c.r, c.g, c.b} });
-            }
+                        Dot{ {p.x, p.y}, {c.r, c.g, c.b}, {0.0f, 0.0f, 0.0f}});
+            });
 
             // it is assumed that demo entities will be destroyed wholesale,
             // and that no action is needed to remove the Dot component
@@ -130,9 +113,10 @@ namespace System
             auto size = view.size();
             if (size == 0) return;
 
-            Dot * dots = view.raw();
+            Dot * dots = *(view.raw());
 
-            vertex_buffer.update(dots, size);
+            auto buffbind = bind(vbo);
+            buffbind.buffer_data(size * sizeof(Dot), dots);
 
             // draw dots
         }
@@ -145,5 +129,5 @@ namespace System
 
     DemoViewer::~DemoViewer() { delete impl; }
 
-    void DemoViewer::run(entt::registry& registry) { impl.run(); }
+    void DemoViewer::run(entt::registry& registry) { impl->run(registry); }
 }
