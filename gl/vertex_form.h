@@ -31,11 +31,15 @@ namespace GL
     public:
         VertexForm(const LL::AttributeManifest& attr, LL::AttributeElement * data);
 
+        const Attribute operator[](std::size_t i) const;
+              Attribute operator[](std::size_t i);
         const Attribute operator[](const char * name) const;
               Attribute operator[](const char * name);
 
+        const LL::AttributeElement * raw() const {return data_view;}
+        LL::AttributeElement * raw() {return data_view;}
+
         bool has(const char * name) const;
-        std::size_t stride() const;
     };
 
     class Attribute
@@ -47,11 +51,11 @@ namespace GL
     public:
         // pointer to a particular attribute in a form
         Attribute(VertexForm& form, LL::AttributeElement * data_view, LL::AttributeType type);
-        Attribute operator[](std::size_t i);
+        const LL::AttributeElement * operator[](std::size_t i) const;
+              LL::AttributeElement * operator[](std::size_t i);
         GLfloat as_float(std::size_t i = 0);
         GLint as_int(std::size_t i = 0);
         GLuint as_uint(std::size_t i = 0);
-        Attribute step(std::size_t i = 1);
         std::size_t size() const;
 
         template<std::size_t pos = 0, typename T, typename ... Ts>

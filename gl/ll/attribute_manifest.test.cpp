@@ -127,4 +127,18 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
                              + (1 + 2 + 3);
         REQUIRE(returned.elements() == expected);
     }
+
+    SECTION("Element offset of attributes can be retrieved")
+    {
+        SECTION("by name")
+        {
+            CHECK(returned.offset_of("f") == 0);
+            REQUIRE(returned.offset_of("f2") == returned["f"].elements());
+        }
+        SECTION("by index")
+        {
+            CHECK(returned.offset_of(int(0)) == 0);
+            REQUIRE(returned.offset_of(1) == returned[0].elements());
+        }
+    }
 }

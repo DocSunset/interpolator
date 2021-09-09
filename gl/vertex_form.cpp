@@ -13,6 +13,10 @@ namespace GL
         return attributes.has(name);
     }
 
+    Attribute VertexForm::operator[](std::size_t i)
+    {
+    }
+
     Attribute VertexForm::operator[](const char * name)
     {
         std::string n = name;
@@ -31,8 +35,6 @@ namespace GL
         return Attribute(*this, data_view, LL::AttributeType::FLOAT);
     }
 
-    std::size_t VertexForm::stride() const { return attributes.elements(); }
-
     Attribute::Attribute(VertexForm& f
             , LL::AttributeElement * dv
             , LL::AttributeType t)
@@ -42,15 +44,14 @@ namespace GL
     {
     }
 
-    Attribute Attribute::operator[](std::size_t i)
+    const LL::AttributeElement * Attribute::operator[](std::size_t i) const
     {
-        if (i == 0) return *this;
-        return step(i);
+        return data_view + i;
     }
 
-    Attribute Attribute::step(std::size_t i)
+    LL::AttributeElement * Attribute::operator[](std::size_t i)
     {
-        return Attribute(form, data_view + i * form.stride(), type);
+        return data_view + i;
     }
 
     GLfloat Attribute::as_float(std::size_t i)

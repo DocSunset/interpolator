@@ -37,5 +37,8 @@ namespace GL::LL
         void add_attribute(const char * name, AttributeType type);
 
         std::size_t elements() const;
+
+        std::size_t offset_of(const char * name) const;
+        std::size_t offset_of(std::size_t idx) const;
     };
 }

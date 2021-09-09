@@ -22,9 +22,14 @@ namespace GL
         // vertex storage capacity
         std::size_t capacity() const;
 
+        std::size_t stride() const {return _attributes.elements();}
+
         const VertexForm operator[](std::size_t i) const;
               VertexForm operator[](std::size_t i);
         VertexForm add_vertex();
         VertexForm grow(std::size_t i);
+
+        const LL::AttributeElement * raw() const {return array;}
+        LL::AttributeElement * raw() {return array;}
     };
 }

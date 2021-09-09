@@ -83,9 +83,32 @@ namespace GL::LL
             std::size_t elems = 0;
             for (auto& a : attributes)
             {
-                elems += ::GL::LL::elements(a.type());
+                elems += a.elements();
             }
             return elems;
+        }
+
+        std::size_t offset_of(const char * name) const
+        {
+            std::string n = name;
+            std::size_t offset = 0;
+            for (auto& a : attributes)
+            {
+                if (a.name() == n) return offset;
+                offset += a.elements();
+            }
+            return offset;
+        }
+
+        std::size_t offset_of(std::size_t idx) const
+        {
+            std::size_t offset = 0;
+            for (std::size_t i = 0; i < attributes.size(); ++i)
+            {
+                if (i == idx) return offset;
+                offset += attributes[i].elements();
+            }
+            return offset;
         }
     };
 
@@ -142,4 +165,7 @@ namespace GL::LL
     }
 
     std::size_t AttributeManifest::elements() const { return pimpl->elements(); }
+
+    std::size_t AttributeManifest::offset_of(const char * name) const { return pimpl->offset_of(name); }
+    std::size_t AttributeManifest::offset_of(std::size_t idx) const { return pimpl->offset_of(idx); }
 }

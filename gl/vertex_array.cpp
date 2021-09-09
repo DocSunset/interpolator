@@ -19,24 +19,25 @@ namespace GL
 
     VertexForm VertexArray::grow(std::size_t i)
     {
-        auto arr = array;
-        //if ((_size + i) < _capacity)
-        //{
-        //    arr = _size;
-        //    _size += i;
-        //}
-        //else realloc array
-        return VertexForm(_attributes, arr);
+        if (i == 0) return VertexForm(_attributes, array);
+        auto next = array;
+        if ((_size + i) < _capacity)
+        {
+            next = next + _size;
+            _size += i;
+        }
+        // else grow array
+        return VertexForm(_attributes, next);
     }
 
     const VertexForm VertexArray::operator[](std::size_t i) const
     {
-        return VertexForm(_attributes, array);
+        return VertexForm(_attributes, array + _attributes.elements() * i);
     }
 
     VertexForm VertexArray::operator[](std::size_t i)
     {
-        return static_cast<const VertexArray>(*this)[i];
+        return VertexForm(_attributes, array + _attributes.elements() * i);
     }
 
 }
