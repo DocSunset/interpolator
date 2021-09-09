@@ -93,10 +93,10 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
             v[i][pos].set(val, val + 0.1f);
             v[i][bi].set(val + 0.2f);
         }
-        //CHECK(v.size() == capacity);
-        //auto vertex = v[9];
-        //CHECK(vertex["pos"].as_float(0) == GLfloat(9));
-        //CHECK(vertex["pos"].as_float(1) == GLfloat(9) + 0.1f);
-        //CHECK(vertex["bi"].as_float(0) == GLfloat(9) + 0.2f);
+        CHECK(v.size() == capacity);
+        auto vertex = v[9];
+        CHECK(vertex["pos"].as_float(0) == GLfloat(9));
+        CHECK(vertex["pos"].as_float(1) == GLfloat(9) + 0.1f);
+        CHECK(vertex["bi"].as_float(0) == GLfloat(9) + 0.2f);
     }
 }

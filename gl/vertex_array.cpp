@@ -46,11 +46,24 @@ namespace GL
 
     const VertexForm VertexArray::operator[](std::size_t i) const
     {
+        if (i >= _size)
+        {
+            LL::error_print("out of bounds access on const VertexArray!\n");
+        }
         return VertexForm(_attributes, array + _attributes.elements() * i);
     }
 
     VertexForm VertexArray::operator[](std::size_t i)
     {
+        if (i >= _size)
+        {
+            if (i >= _capacity)
+            {
+                LL::error_print("out of bounds VertexArray access; growing array...\n");
+                reserve(2 * _capacity);
+            }
+            _size = i + 1;
+        }
         return VertexForm(_attributes, array + _attributes.elements() * i);
     }
 }
