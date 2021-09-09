@@ -5,16 +5,14 @@
 
 namespace GL
 {
-    class VertexArray
+    class VertexAttributeArray
     {
-        const LL::Program& program;
-        LL::VertexArray vao;
         LL::AttributeManifest _attributes;
         std::size_t _size;
         std::size_t _capacity;
         LL::AttributeElement * array;
     public:
-        VertexArray(const LL::Program& program);
+        VertexAttributeArray(const LL::Program& program);
 
         // number of vertices stored
         std::size_t size() const;

@@ -11,7 +11,7 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
     using namespace GL;
 
     LL::Program p{vertex_source, fragment_source};
-    VertexArray v{p};
+    VertexAttributeArray v{p};
     CHECK(v.size() == 0);
     CHECK(v.capacity() >= 0);
 
