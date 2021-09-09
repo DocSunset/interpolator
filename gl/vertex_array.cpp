@@ -15,19 +15,18 @@ namespace GL
 
     std::size_t VertexArray::size() const { return _size; }
     std::size_t VertexArray::capacity() const { return _capacity; }
-    VertexForm VertexArray::add_vertex() { return grow(1); }
 
-    VertexForm VertexArray::grow(std::size_t i)
+    VertexForm VertexArray::add_vertex() 
     {
-        if (i == 0) return VertexForm(_attributes, array);
-        auto next = array;
-        if ((_size + i) < _capacity)
-        {
-            next = next + _size * stride();
-            _size += i;
-        }
-        // else grow array
+        if ((_size + 1) >= _capacity) reserve(2 * _capacity);
+        auto next = array + _size * stride();
+        ++_size;
         return VertexForm(_attributes, next);
+    }
+
+    void VertexArray::reserve(std::size_t new_cap)
+    {
+        return;
     }
 
     const VertexForm VertexArray::operator[](std::size_t i) const

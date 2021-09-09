@@ -27,7 +27,7 @@ namespace GL
         const VertexForm operator[](std::size_t i) const;
               VertexForm operator[](std::size_t i);
         VertexForm add_vertex();
-        VertexForm grow(std::size_t i);
+        void reserve(std::size_t i);
 
         const LL::AttributeElement * raw() const {return array;}
         LL::AttributeElement * raw() {return array;}
