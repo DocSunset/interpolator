@@ -8,7 +8,7 @@ namespace GL
         , _attributes{p}
         , _size{0}
         , _capacity{8}
-        , array{(LL::AttributeElement*)malloc(_capacity * _attributes.elements())}
+        , array{(LL::AttributeElement*)malloc(_capacity * _attributes.bytes())}
     {
         // set up vertexAttribPointer, Attrib locations, etc.
     }
@@ -26,6 +26,21 @@ namespace GL
 
     void VertexArray::reserve(std::size_t new_cap)
     {
+        if (new_cap <= _capacity) return;
+        decltype(array) new_array = (decltype(array))realloc((void *)array, new_cap * _attributes.bytes());
+        if (new_array == nullptr)
+        {
+            LL::error_print("failed to allocate memory in VertexArray::reserve\n");
+            LL::error_print("caller requested ");
+            LL::error_print(std::to_string(new_cap).c_str());
+            LL::error_print(" vertices\n");
+            LL::error_print("vertex size is ");
+            LL::error_print(std::to_string(_attributes.elements()).c_str());
+            LL::error_print("attribute elements.\n");
+            exit(1);
+        }
+        array = new_array;
+        _capacity = new_cap;
         return;
     }
 
@@ -38,5 +53,4 @@ namespace GL
     {
         return VertexForm(_attributes, array + _attributes.elements() * i);
     }
-
 }

@@ -31,10 +31,8 @@ namespace GL
     public:
         VertexForm(const LL::AttributeManifest& attr, LL::AttributeElement * data);
 
-        const Attribute operator[](std::size_t i) const;
-              Attribute operator[](std::size_t i);
-        const Attribute operator[](const char * name) const;
-              Attribute operator[](const char * name);
+        Attribute operator[](std::size_t i);
+        Attribute operator[](const char * name);
 
         const LL::AttributeElement * raw() const {return data_view;}
         LL::AttributeElement * raw() {return data_view;}

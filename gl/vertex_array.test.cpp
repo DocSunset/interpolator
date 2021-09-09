@@ -80,24 +80,23 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
         CHECK(v[1]["bi"].as_float(0) == val6);
     }
 
-    //SECTION("Append data to the array by traversing")
-    //{
-    //    std::size_t capacity{10};
-    //    v.reserve(capacity);
-    //    auto form = v[0];
-    //    auto pos = form["pos"];
-    //    auto bi = form["bi"];
-    //    float val = 0.5;
-    //    
-    //    for (std::size_t i = 0; i < capacity; ++i)
-    //    {
-    //        pos.set(val,val);
-    //        bi.set(val);
-    //        pos.step();
-    //        bi.step();
-    //    }
-    //    CHECK(v.size() == capacity);
-    //    auto vertex = v[9];
-    //    CHECK(vertex["pos"].as_float(0) == val);
-    //}
+    SECTION("Append data to the array by traversing")
+    {
+        std::size_t capacity{10};
+        v.reserve(capacity);
+        auto pos = v.index_of("pos");
+        auto bi = v.index_of("bi");
+        
+        for (std::size_t i = 0; i < capacity; ++i)
+        {
+            GLfloat val = i;
+            v[i][pos].set(val, val + 0.1f);
+            v[i][bi].set(val + 0.2f);
+        }
+        //CHECK(v.size() == capacity);
+        //auto vertex = v[9];
+        //CHECK(vertex["pos"].as_float(0) == GLfloat(9));
+        //CHECK(vertex["pos"].as_float(1) == GLfloat(9) + 0.1f);
+        //CHECK(vertex["bi"].as_float(0) == GLfloat(9) + 0.2f);
+    }
 }

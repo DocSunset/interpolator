@@ -23,11 +23,11 @@ namespace GL::LL
         bool operator==(const AttributeManifest& other) const;
         bool operator!=(const AttributeManifest& other) const;
 
-        const Attribute& operator[](GLuint i);
-              Attribute& operator[](GLuint i) const;
+        const Attribute& operator[](GLuint i) const;
+              Attribute& operator[](GLuint i);
 
-        const Attribute& operator[](const std::string& name);
-              Attribute& operator[](const std::string& name) const;
+        const Attribute& operator[](const std::string& name) const;
+              Attribute& operator[](const std::string& name);
 
         GLint size() const;
 
@@ -37,6 +37,7 @@ namespace GL::LL
         void add_attribute(const char * name, AttributeType type);
 
         std::size_t elements() const;
+        std::size_t bytes() const;
 
         std::size_t offset_of(const char * name) const;
         std::size_t offset_of(std::size_t idx) const;

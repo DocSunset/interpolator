@@ -15,24 +15,12 @@ namespace GL
 
     Attribute VertexForm::operator[](std::size_t i)
     {
+        return Attribute(*this, data_view + attributes.offset_of(i), attributes[i].type());
     }
 
     Attribute VertexForm::operator[](const char * name)
     {
-        std::string n = name;
-        std::size_t offset = 0;
-        for (std::size_t i = 0; i < attributes.size(); ++i)
-        {
-            const auto& a = attributes[i];
-            if (a.name() == n) return Attribute(*this, data_view + offset, a.type());
-            offset += a.elements();
-        }
-#ifdef DEBUG
-        LL::error_print("failed to locate attribute '");
-        LL::error_print(name);
-        LL::error_print("' in VertexForm.\n");
-#endif
-        return Attribute(*this, data_view, LL::AttributeType::FLOAT);
+        return Attribute(*this, data_view + attributes.offset_of(name), attributes[name].type());
     }
 
     Attribute::Attribute(VertexForm& f

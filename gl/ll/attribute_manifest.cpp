@@ -88,6 +88,11 @@ namespace GL::LL
             return elems;
         }
 
+        std::size_t bytes() const
+        {
+            return elements() * sizeof(AttributeElement);
+        }
+
         std::size_t offset_of(const char * name) const
         {
             std::string n = name;
@@ -159,11 +164,11 @@ namespace GL::LL
         return not (*pimpl == *other.pimpl);
     }
 
-    const Attribute& AttributeManifest::operator[](GLuint i)       { return pimpl->at(i); }
-          Attribute& AttributeManifest::operator[](GLuint i) const { return pimpl->at(i); }
+    const Attribute& AttributeManifest::operator[](GLuint i) const { return pimpl->at(i); }
+          Attribute& AttributeManifest::operator[](GLuint i)       { return pimpl->at(i); }
 
-    const Attribute& AttributeManifest::operator[](const std::string& name)       { return pimpl->at(name); }
-          Attribute& AttributeManifest::operator[](const std::string& name) const { return pimpl->at(name); }
+    const Attribute& AttributeManifest::operator[](const std::string& name) const { return pimpl->at(name); }
+          Attribute& AttributeManifest::operator[](const std::string& name)       { return pimpl->at(name); }
 
     bool AttributeManifest::has(const Attribute& a) const { return pimpl->has(a); }
 
@@ -177,6 +182,7 @@ namespace GL::LL
     }
 
     std::size_t AttributeManifest::elements() const { return pimpl->elements(); }
+    std::size_t AttributeManifest::bytes() const { return pimpl->bytes(); }
 
     std::size_t AttributeManifest::offset_of(const char * name) const { return pimpl->offset_of(name); }
     std::size_t AttributeManifest::offset_of(std::size_t idx) const { return pimpl->offset_of(idx); }

@@ -24,6 +24,8 @@ namespace GL
 
         std::size_t stride() const {return _attributes.elements();}
 
+        std::size_t index_of(const char * name) const {return _attributes.index_of(name);}
+
         const VertexForm operator[](std::size_t i) const;
               VertexForm operator[](std::size_t i);
         VertexForm add_vertex();
