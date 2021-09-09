@@ -82,22 +82,22 @@ TEST_CASE("High-level Vertex Array", "[gl][vertex array][high-level]")
 
     //SECTION("Append data to the array by traversing")
     //{
-    //    std::size_t growth{10};
-    //    auto form = v.grow(growth);
+    //    std::size_t capacity{10};
+    //    v.reserve(capacity);
+    //    auto form = v[0];
     //    auto pos = form["pos"];
-    //    auto bi  = form["bi"];
+    //    auto bi = form["bi"];
     //    float val = 0.5;
     //    
-    //    for (std::size_t i = 0; i < growth; ++i)
+    //    for (std::size_t i = 0; i < capacity; ++i)
     //    {
     //        pos.set(val,val);
     //        bi.set(val);
     //        pos.step();
     //        bi.step();
     //    }
-
-    //    CHECK(v.size() == growth);
+    //    CHECK(v.size() == capacity);
     //    auto vertex = v[9];
-    //    CHECK(vertex["pos"][0].as_float() == val);
+    //    CHECK(vertex["pos"].as_float(0) == val);
     //}
 }

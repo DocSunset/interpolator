@@ -90,6 +90,9 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
         expected.emplace_back("i", AttributeType::INT);
         expected.emplace_back("i2", AttributeType::IVEC2);
         expected.emplace_back("i3", AttributeType::IVEC3);
+
+        CHECK(returned.size() == expected.size());
+
         for (const auto& attr : expected)
         {
             CHECK(returned.has(attr));
@@ -140,5 +143,13 @@ TEST_CASE("AttributeManifest", "[gl][attribute]")
             CHECK(returned.offset_of(int(0)) == 0);
             REQUIRE(returned.offset_of(1) == returned[0].elements());
         }
+    }
+
+    SECTION("Index of attribute can be retrieved by name")
+    {
+        CHECK(returned.index_of("f") == 0);
+        CHECK(returned.index_of("f2") == 1);
+        CHECK(returned.index_of("f3") == 2);
+        CHECK(returned.index_of("i3") == 9);
     }
 }

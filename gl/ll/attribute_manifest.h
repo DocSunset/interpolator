@@ -40,5 +40,7 @@ namespace GL::LL
 
         std::size_t offset_of(const char * name) const;
         std::size_t offset_of(std::size_t idx) const;
+
+        std::size_t index_of(const char * name) const;
     };
 }
