@@ -13,6 +13,6 @@ namespace System
         Platform(entt::registry&);
         ~Platform();
         void run(entt::registry&) override;
+        void * window() const;
     };
-
 }

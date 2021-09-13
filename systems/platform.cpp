@@ -1,7 +1,11 @@
 #include "platform.h"
 
+#include <GLES3/gl3.h>
 #include <SDL.h>
+#include <SDL_video.h>
 #include "components/quit_flag.h"
+#include "components/window.h"
+#include "gl/ll.h"
 
 namespace System
 {
@@ -10,6 +14,7 @@ namespace System
     {
         SDL_Window * window;
         SDL_GLContext gl;
+        entt::registry::entity_type window_entity;
 
     public:
         // standard SDL setup boilerplate
@@ -36,7 +41,7 @@ namespace System
                     ( "Interpolators"
                     , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
                     , 500 , 500
-                    , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+                    , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN// | SDL_WINDOW_RESIZABLE
                     );
 
             if (window == nullptr)
@@ -62,6 +67,12 @@ namespace System
                 exit(EXIT_FAILURE);
             }
             else SDL_Log("Created GL context\n");
+
+            SDL_GL_SetSwapInterval(1); // should check for errors
+            
+            // create platform entities
+            window_entity = registry.create();
+            registry.emplace<Component::Window>(window_entity, 500, 500);
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
@@ -72,8 +83,9 @@ namespace System
             registry.set<Component::QuitFlag>(true);
         }
 
-        void run(entt::registry& registry)
+        void poll_events(entt::registry& registry)
         {
+            auto win = registry.get<Component::Window>(window_entity);
             SDL_Event ev;
             while (SDL_PollEvent(&ev)) switch (ev.type)
             {
@@ -92,6 +104,20 @@ namespace System
                 break;
             }
         }
+
+        void run(entt::registry& registry)
+        {
+            poll_events(registry);
+
+            SDL_GL_SwapWindow(window);
+            glViewport(0, 0, 500, 500);// this should only be called when window size changes
+            glClear(GL_COLOR_BUFFER_BIT);
+        }
+
+        void * get_window() const
+        {
+            return window;
+        }
     };
     
     Platform::Platform(entt::registry& registry)
@@ -107,6 +133,11 @@ namespace System
     void Platform::run(entt::registry& registry)
     {
         pimpl->run(registry);
+    }
+
+    void * Platform::window() const
+    {
+        return pimpl->get_window();
     }
 
 }

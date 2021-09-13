@@ -36,12 +36,21 @@ namespace GL::LL
 
         void add_attribute(const char * name, AttributeType type);
 
+        // number of elements in the manifest
         std::size_t elements() const;
+
+        // size of manifest in bytes (== elements() * sizeof(AttributeElement))
         std::size_t bytes() const;
 
+        // offset of given attribute in elements
         std::size_t offset_of(const char * name) const;
         std::size_t offset_of(std::size_t idx) const;
 
+        // offset of given attribute in bytes
+        std::size_t byte_offset_of(const char * name) const;
+        std::size_t byte_offset_of(std::size_t idx) const;
+
+        // index of given attribute in the manifest
         std::size_t index_of(const char * name) const;
     };
 }

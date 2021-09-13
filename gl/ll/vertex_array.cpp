@@ -8,7 +8,7 @@ namespace GL::LL
     {
         glGenVertexArrays(1, &handle);
 #ifdef DEBUG
-        if (any_error()) error_print("unexpected error after glGenVertexArrays");
+        if (any_error()) error_print("unexpected error after glGenVertexArrays\n");
 #endif
     }
 
@@ -16,7 +16,7 @@ namespace GL::LL
     {
         glDeleteVertexArrays(1, &handle);
 #ifdef DEBUG
-        if (any_error()) error_print("unexpected error after glDeleteVertexArrays");
+        if (any_error()) error_print("unexpected error after glDeleteVertexArrays\n");
 #endif
     }
 
@@ -34,7 +34,7 @@ namespace GL::LL
     {
         glBindVertexArray(v.handle);
 #ifdef DEBUG
-        if (any_error()) error_print("unexpected error after glBindVertexArray");
+        if (any_error()) error_print("unexpected error after glBindVertexArray\n");
 #endif
     }
 
@@ -59,6 +59,16 @@ namespace GL::LL
         enable_attrib_array(manifest, idx);
     }
 
+    std::string to_string(AttributeElementType elem)
+    {
+        switch (elem)
+        {
+            case AttributeElementType::FLOAT: return "GL_FLOAT";
+            case AttributeElementType::INT: return "GL_INT";
+            case AttributeElementType::UINT: return "GL_UNSIGNED_INT";
+        }
+    }
+
     void VertexArrayBinding::attrib_pointer(const AttributeManifest& manifest, std::size_t idx)
     {
         auto attribute = manifest[idx];
@@ -73,10 +83,10 @@ namespace GL::LL
                         , attribute.gl_type()
                         , false
                         , (GLsizei)manifest.bytes()
-                        , (void *)manifest.offset_of(idx)
+                        , (void *)manifest.byte_offset_of(idx)
                         );
 #ifdef DEBUG
-                    if (any_error()) error_print("unexpected error after glVertexAttribPointer");
+                    if (any_error()) error_print("unexpected error after glVertexAttribPointer\n");
 #endif
                     break;
                 case AttributeElementType::INT:
@@ -86,10 +96,10 @@ namespace GL::LL
                         , attribute.rows()
                         , attribute.gl_type()
                         , (GLsizei)manifest.bytes()
-                        , (void *)manifest.offset_of(idx)
+                        , (void *)manifest.byte_offset_of(idx)
                         );
 #ifdef DEBUG
-                    if (any_error()) error_print("unexpected error after glVertexAttribPointer");
+                    if (any_error()) error_print("unexpected error after glVertexAttribPointer\n");
 #endif
                     break;
             }
@@ -101,10 +111,11 @@ namespace GL::LL
         auto attribute = manifest[idx];
         for (GLuint i = 0; i < attribute.columns(); ++i)
         {
+            error_print((std::string("glEnableVertexAttribArray(") + std::to_string(attribute.location() + i) + std::string(")\n")).c_str());
             glEnableVertexAttribArray(attribute.location() + i);
         }
 #ifdef DEBUG
-        if (any_error()) error_print("unexpected error after glEnableVertexAttribArray");
+        if (any_error()) error_print("unexpected error after glEnableVertexAttribArray\n");
 #endif
     }
 }

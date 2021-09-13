@@ -37,6 +37,7 @@ add_subdirectory(systems)
 add_subdirectory(components)
 add_subdirectory(gl)
 add_subdirectory(test)
+add_subdirectory(shader)
 
 target_link_libraries(interpolators PRIVATE interpolators-objects)
 target_link_libraries(interpolators-tests PRIVATE interpolators-objects)

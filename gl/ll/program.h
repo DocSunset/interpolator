@@ -19,6 +19,7 @@ namespace GL::LL
         GLuint vertex_shader;
         GLuint fragment_shader;
     public:
+        GLuint gl_handle() const {return handle;}
         Program();
         Program(const char * vertex_source, const char * fragment_source);
 

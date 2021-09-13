@@ -102,6 +102,7 @@ namespace GL::LL
                 if (a._name == n) return offset;
                 offset += a.elements();
             }
+            error_print("Could not find attribute \""); error_print(n.c_str()); error_print("\".\n");
             return offset;
         }
 
@@ -116,6 +117,16 @@ namespace GL::LL
             return offset;
         }
 
+        std::size_t byte_offset_of(const char * name) const
+        {
+            return offset_of(name) * sizeof(AttributeElement);
+        }
+
+        std::size_t byte_offset_of(std::size_t idx) const
+        {
+            return offset_of(idx) * sizeof(AttributeElement);
+        }
+
         std::size_t index_of(const char * name) const
         {
             std::string n = name;
@@ -125,6 +136,7 @@ namespace GL::LL
                 if (a._name == n) return idx;
                 ++idx;
             }
+            error_print("Could not find attribute \""); error_print(n.c_str()); error_print("\".\n");
             return idx;
         }
     };
@@ -186,5 +198,7 @@ namespace GL::LL
 
     std::size_t AttributeManifest::offset_of(const char * name) const { return pimpl->offset_of(name); }
     std::size_t AttributeManifest::offset_of(std::size_t idx) const { return pimpl->offset_of(idx); }
+    std::size_t AttributeManifest::byte_offset_of(const char * name) const { return pimpl->byte_offset_of(name); }
+    std::size_t AttributeManifest::byte_offset_of(std::size_t idx) const { return pimpl->byte_offset_of(idx); }
     std::size_t AttributeManifest::index_of(const char * name) const { return pimpl->index_of(name); }
 }
