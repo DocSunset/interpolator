@@ -52,7 +52,6 @@ namespace GL::LL
         , vertex_shader{0}
         , fragment_shader{0}
     {
-        handle = glCreateProgram();
 #ifdef DEBUG
         if (handle == 0)
             error_print("There was an error creating a program object.\n");
@@ -62,6 +61,10 @@ namespace GL::LL
     Program::Program(Program&& other)
     {
         glDeleteProgram(handle);
+#ifdef DEBUG
+        if (any_error())
+            error_print("There was an error deleting a program object.\n");
+#endif
         handle = other.handle;
         vertex_shader = other.vertex_shader;
         fragment_shader = other.fragment_shader;
@@ -71,6 +74,10 @@ namespace GL::LL
     Program& Program::operator=(Program&& other)
     {
         glDeleteProgram(handle);
+#ifdef DEBUG
+        if (any_error())
+            error_print("There was an error deleting a program object.\n");
+#endif
         handle = other.handle;
         vertex_shader = other.vertex_shader;
         fragment_shader = other.fragment_shader;
@@ -81,6 +88,10 @@ namespace GL::LL
     Program::~Program()
     {
         glDeleteProgram(handle);
+#ifdef DEBUG
+        if (any_error())
+            error_print("There was an error deleting a program object.\n");
+#endif
         handle = 0;
     }
 
@@ -98,6 +109,10 @@ namespace GL::LL
     {
         GLint attached = 0;
         glGetProgramiv(handle, GL_ATTACHED_SHADERS, &attached);
+#ifdef DEBUG
+        if (any_error())
+            error_print("Error calling glGetProgramiv in Program::attached_shaders()");
+#endif
         return attached;
     }
 
@@ -106,13 +121,9 @@ namespace GL::LL
         glValidateProgram(handle);
 #ifdef DEBUG
         auto error = last_error();
-        if (error == Error::INVALID_OPERATION)
+        if (error != Error::NO_ERROR)
         {
-            error_print("Program::link, glLinkProgram, called on active program while transform feedback mode is active.\n");
-        }
-        else if (error != Error::NO_ERROR)
-        {
-            error_print("glLinkProgram in Program::link generated unexpected error.\n");
+            error_print("glValidateProgram in Program::validate generated unexpected error.\n");
         }
 #endif
     }
@@ -129,7 +140,7 @@ namespace GL::LL
 #ifdef DEBUG
         auto error = last_error();
         if (error != Error::NO_ERROR)
-            error_print("Program::link_status got unexpected errors.\n");
+            error_print("Program::validation_status got unexpected errors.\n");
 #endif
         return status == GL_TRUE;
     }

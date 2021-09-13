@@ -61,8 +61,8 @@ namespace GL::LL
         operator bool() const;
     };
 
-    // `Bind` provides scoped access to buffer API calls that operate on
-    // currently bound buffers.
+    // `BufferBinding` provides scoped access to buffer API calls that operate
+    // on currently bound buffers.
     class BufferBinding
     {
         const Buffer& b;
