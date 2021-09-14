@@ -8,5 +8,6 @@ namespace Component
         float g;
         float b;
         float a;
+        static Color Random();
     };
 }

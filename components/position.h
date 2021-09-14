@@ -6,5 +6,6 @@ namespace Component
     {
         float x;
         float y;
+        static Position Random();
     };
 }

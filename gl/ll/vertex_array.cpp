@@ -67,6 +67,7 @@ namespace GL::LL
             case AttributeElementType::INT: return "GL_INT";
             case AttributeElementType::UINT: return "GL_UNSIGNED_INT";
         }
+        return "";
     }
 
     void VertexArrayBinding::attrib_pointer(const AttributeManifest& manifest, std::size_t idx)
@@ -77,6 +78,15 @@ namespace GL::LL
             switch (attribute.element_type())
             {
                 case AttributeElementType::FLOAT:
+                    //error_print((
+                    //std::string("glVertexAttribPointer(") +
+                    //std::to_string(attribute.location() + i) + std::string(", ") +
+                    //std::to_string(attribute.rows()) + std::string(", ") +
+                    //to_string(attribute.element_type()) + std::string(", ") +
+                    //std::string("false, ") + 
+                    //std::to_string(manifest.bytes()) + std::string(", ") +
+                    //std::to_string(manifest.offset_of(idx)) + std::string(")\n")
+                    //            ).c_str());
                     glVertexAttribPointer
                         ( attribute.location() + i
                         , attribute.rows()
@@ -111,7 +121,7 @@ namespace GL::LL
         auto attribute = manifest[idx];
         for (GLuint i = 0; i < attribute.columns(); ++i)
         {
-            error_print((std::string("glEnableVertexAttribArray(") + std::to_string(attribute.location() + i) + std::string(")\n")).c_str());
+            //error_print((std::string("glEnableVertexAttribArray(") + std::to_string(attribute.location() + i) + std::string(")\n")).c_str());
             glEnableVertexAttribArray(attribute.location() + i);
         }
 #ifdef DEBUG

@@ -37,9 +37,6 @@ namespace System
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
-
-            auto e = registry.create();
-            registry.emplace_or_replace<Attributes>(e, Attributes{ {0,0}, {1,0,0}, {0,1,0}});
         }
 
         void run(entt::registry& registry)
@@ -50,7 +47,7 @@ namespace System
                 Position p = registry.get<Position>(entity);
                 Color c = registry.get<Color>(entity);
                 registry.emplace_or_replace<Attributes>(entity, 
-                        Attributes{ {p.x, p.y}, {c.r, c.g, c.b}, {0.0f, 0.0f, 0.0f}});
+                        Attributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {c.r, c.g, c.b, c.a}});
             };
             new_demos.each(emp_or_rep);
             updated_demos.each(emp_or_rep);
