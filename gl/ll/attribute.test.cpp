@@ -1,7 +1,7 @@
 #include <catch2/catch.hpp>
 #include "test/common.h"
 #include "gl/ll/shader.h"
-#include "gl/ll/attributes.h"
+#include "gl/ll/attribute.h"
 #include "gl/ll/attribute_manifest.h"
 #include "gl/ll/program.h"
 #include "test/shader_sources.h"

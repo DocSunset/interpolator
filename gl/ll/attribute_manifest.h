@@ -1,7 +1,7 @@
 #pragma once
 
 #include "program.h"
-#include "attributes.h"
+#include "attribute.h"
 #include <GLES3/gl3.h>
 #include <memory>
 

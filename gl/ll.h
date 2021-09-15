@@ -14,7 +14,7 @@
 #include "ll/program.h"
 #include "ll/buffer.h"
 #include "ll/vertex_array.h"
-#include "ll/attributes.h"
+#include "ll/attribute.h"
 #include "ll/attribute_manifest.h"
 #include "ll/attribute_element.h"
 #include "ll/error.h"
