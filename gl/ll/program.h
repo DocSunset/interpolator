@@ -5,6 +5,7 @@
 
 namespace GL::LL
 {
+    class ProgramInUse;
     /* class Program
      *
      * This is an RAII wrapper around a program handle with helper methods for
@@ -14,12 +15,16 @@ namespace GL::LL
     class Program
     {
     protected:
-        friend class AttributeManifest;
         GLuint handle;
         GLuint vertex_shader;
         GLuint fragment_shader;
     public:
+
+        // return the raw GL handle
+        // this is mainly provided for internal use and testing
+        // obviously if you use glDeleteProgram on this bad things will happen...
         GLuint gl_handle() const {return handle;}
+
         Program();
         Program(const char * vertex_source, const char * fragment_source);
 
@@ -44,11 +49,20 @@ namespace GL::LL
 
         void print_info_log() const;
 
-        void use() const;
+        ProgramInUse use() const;
 
         operator bool() const;
 
         GLint active_attributes() const;
         GLint max_attribute_name_length() const;
+    };
+
+    // Scoped access to GL calls that operate on the program currently in use,
+    // notably glUniformXXX functions
+    class ProgramInUse
+    {
+        const Program& p;
+    public:
+        ProgramInUse(const Program& program) : p{program} {}
     };
 }

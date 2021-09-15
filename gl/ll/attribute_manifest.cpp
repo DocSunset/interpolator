@@ -22,7 +22,7 @@ namespace GL::LL
             char * namebuf = (char *)malloc(bufsize);
             for (GLint i = 0; i < active_attributes; ++i)
             {
-                attributes.push_back(Attribute(p.handle, i, namebuf, bufsize));
+                attributes.push_back(Attribute(p.gl_handle(), i, namebuf, bufsize));
             }
             free(namebuf);
         }

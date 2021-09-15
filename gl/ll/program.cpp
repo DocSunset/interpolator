@@ -200,14 +200,13 @@ namespace GL::LL
         return;
     }
 
-    void Program::use() const
+    ProgramInUse Program::use() const
     {
         if (handle == 0) 
         {
             error_print("Invalid program.\n");
-            return;
         }
-        glUseProgram(handle);
+        else glUseProgram(handle);
 #ifdef DEBUG
         auto error = last_error();
         if (error == Error::INVALID_OPERATION)
@@ -219,6 +218,7 @@ namespace GL::LL
             error_print("Program::use got unexpected errors.\n");
         }
 #endif
+        return {*this};
     }
 
     Program::Program(const char * vertex_source, const char * fragment_source)

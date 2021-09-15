@@ -30,6 +30,7 @@ TEST_CASE("Shaders", "[shaders]")
         vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
         vbobind.buffer_data(2 * sizeof(Attributes), dots);
         program.use();
+        glUniform2f(glGetUniformLocation(program.gl_handle(), "window"), 500, 500);
 
         auto start = SDL_GetTicks();
         while (SDL_GetTicks() - start < 500)
