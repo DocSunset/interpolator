@@ -4,5 +4,5 @@
 
 namespace Component
 {
-    struct QuitFlag : public Flag { };
+    struct Selected : public Flag { };
 }

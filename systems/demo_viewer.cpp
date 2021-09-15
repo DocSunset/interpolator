@@ -3,6 +3,7 @@
 #include "components/position.h"
 #include "components/color.h"
 #include "components/window.h"
+#include "components/selected.h"
 #include "gl/vertex_array.h"
 
 #include "shader/demo_viewer.h"
@@ -12,6 +13,7 @@ namespace System
     using Component::Demo;
     using Component::Position;
     using Component::Color;
+    using Component::Selected;
 
     struct DemoViewerImplementation
     {

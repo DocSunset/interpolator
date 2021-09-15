@@ -4,4 +4,5 @@ target_sources(interpolators-objects PRIVATE
     window.h
     position.h position.cpp
     color.h color.cpp
+    selected.h
     )
