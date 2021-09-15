@@ -41,7 +41,7 @@ namespace System
                     ( "Interpolators"
                     , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
                     , 500 , 500
-                    , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN// | SDL_WINDOW_RESIZABLE
+                    , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
                     );
 
             if (window == nullptr)
@@ -97,6 +97,17 @@ namespace System
             case SDL_WINDOWEVENT:
                 switch (ev.window.event)
                 {
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                    registry.replace<Component::Window>
+                            ( window_entity
+                            , (unsigned int)ev.window.data1
+                            , (unsigned int)ev.window.data2
+                            );
+                    glViewport(0, 0
+                            , (unsigned int)ev.window.data1
+                            , (unsigned int)ev.window.data2
+                            );
+                    break;
                 case SDL_WINDOWEVENT_CLOSE:
                     quit(registry);
                     break;
@@ -110,7 +121,6 @@ namespace System
             poll_events(registry);
 
             SDL_GL_SwapWindow(window);
-            glViewport(0, 0, 500, 500);// this should only be called when window size changes
             glClear(GL_COLOR_BUFFER_BIT);
         }
 

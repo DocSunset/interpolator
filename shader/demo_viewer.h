@@ -17,9 +17,8 @@ in vec4 ring_color_in;
 out vec4 fill_color;
 out vec4 ring_color;
 
-vec2 window = vec2(500,500);
 float sz = float(50);
-//uniform vec2 window;
+uniform vec2 window;
 //uniform float sz;
 
 void main()

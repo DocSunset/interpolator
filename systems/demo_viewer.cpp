@@ -2,6 +2,7 @@
 #include "components/demo.h"
 #include "components/position.h"
 #include "components/color.h"
+#include "components/window.h"
 #include "gl/vertex_array.h"
 
 #include "shader/demo_viewer.h"
@@ -21,6 +22,20 @@ namespace System
         GL::LL::VertexArray vao;
         GL::LL::Buffer vbo;
 
+        void window_uniform(Component::Window& win)
+        {
+            program.use();
+            auto prog = program.gl_handle();
+            auto window = glGetUniformLocation(prog, "window");
+            glUniform2f(window, win.w, win.h);
+        }
+
+        void update_window(entt::registry& registry, entt::registry::entity_type entity)
+        {
+            Component::Window win = registry.get<Component::Window>(entity);
+            window_uniform(win);
+        }
+
         DemoViewerImplementation(entt::registry& registry)
             : updated_demos{registry, entt::collector.update<Demo>().update<Position>().update<Color>()}
             , new_demos{registry, entt::collector.group<Demo, Position>()}
@@ -37,6 +52,13 @@ namespace System
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
+
+            registry.on_update<Component::Window>().connect<&DemoViewerImplementation::update_window>(*this);
+
+            auto view = registry.view<Component::Window>();
+            assert(view.size() == 1);
+            Component::Window win = **(view.raw());
+            window_uniform(win);
         }
 
         void run(entt::registry& registry)
