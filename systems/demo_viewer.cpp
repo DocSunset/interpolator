@@ -39,7 +39,7 @@ namespace System
         }
 
         DemoViewerImplementation(entt::registry& registry)
-            : updated_demos{registry, entt::collector.update<Demo>().update<Position>().update<Color>()}
+            : updated_demos{registry, entt::collector.update<Demo>().update<Position>().update<Color>().update<Selected>()}
             , new_demos{registry, entt::collector.group<Demo, Position>()}
             , program{vertex_shader, fragment_shader}
             , array{program}
@@ -65,13 +65,17 @@ namespace System
 
         void run(entt::registry& registry)
         {
+            constexpr Color selected_ring{1,0.7,0.7,1};
+            constexpr Color default_ring{0.7,0.7,0.7,1};
             auto emp_or_rep = [&](const auto entity)
             {
                 // add a demoview
                 Position p = registry.get<Position>(entity);
                 Color c = registry.get<Color>(entity);
+                Selected s = registry.get<Selected>(entity);
+                Color r = s ? selected_ring : default_ring;
                 registry.emplace_or_replace<Attributes>(entity, 
-                        Attributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {c.r, c.g, c.b, c.a}});
+                        Attributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {r.r, r.b, r.g, r.a}});
             };
             new_demos.each(emp_or_rep);
             updated_demos.each(emp_or_rep);
