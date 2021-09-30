@@ -5,6 +5,8 @@
 #include <SDL_video.h>
 #include "components/quit_flag.h"
 #include "components/window.h"
+#include "components/mouse_button.h"
+#include "components/modifier_keys.h"
 #include "gl/ll.h"
 
 namespace System
@@ -14,11 +16,13 @@ namespace System
     {
         SDL_Window * window;
         SDL_GLContext gl;
-        entt::registry::entity_type window_entity;
+        Component::Window win_size;
+        entt::registry::entity_type window_entity, mouse_left_button_entity;
 
     public:
         // standard SDL setup boilerplate
         PlatformImplementation(entt::registry& registry)
+            : win_size{500, 500}
         {
             // no audio yet...
             if (SDL_Init(SDL_INIT_VIDEO) != 0)
@@ -40,7 +44,7 @@ namespace System
             window = SDL_CreateWindow
                     ( "Interpolators"
                     , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
-                    , 500 , 500
+                    , win_size.w, win_size.h
                     , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
                     );
 
@@ -73,6 +77,15 @@ namespace System
             // create platform entities
             window_entity = registry.create();
             registry.emplace<Component::Window>(window_entity, 500, 500);
+            mouse_left_button_entity = registry.create();
+            registry.emplace<Component::LeftMouseButton>(mouse_left_button_entity
+                    , false
+                    , 0
+                    , Component::Position{0,0}
+                    );
+            
+            // set initial context
+            registry.set<Component::ShiftModifier>(false);
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
@@ -98,19 +111,90 @@ namespace System
                 switch (ev.window.event)
                 {
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    registry.replace<Component::Window>
-                            ( window_entity
-                            , (unsigned int)ev.window.data1
-                            , (unsigned int)ev.window.data2
-                            );
-                    glViewport(0, 0
-                            , (unsigned int)ev.window.data1
-                            , (unsigned int)ev.window.data2
-                            );
+                    win_size = {(unsigned int)ev.window.data1, (unsigned int)ev.window.data2};
+                    registry.replace<Component::Window>(window_entity , win_size.w , win_size.h);
+                    glViewport(0, 0 , win_size.w , win_size.h);
                     break;
                 case SDL_WINDOWEVENT_CLOSE:
                     quit(registry);
                     break;
+                }
+                break;
+            case SDL_MOUSEMOTION:
+                break;
+            case SDL_MOUSEBUTTONDOWN:
+                switch (ev.button.button)
+                {
+                    case SDL_BUTTON_LEFT:
+                    {
+                        auto current = registry.get<Component::LeftMouseButton>(mouse_left_button_entity);
+                        registry.replace<Component::LeftMouseButton>
+                                ( mouse_left_button_entity
+                                , true
+                                , ev.button.clicks
+                                , Component::Position
+                                    { float(ev.button.x) - win_size.w/2.0f
+                                    , win_size.h/2.0f - float(ev.button.y)
+                                    }
+                                );
+                        break;
+                    }
+                    case SDL_BUTTON_MIDDLE:
+                        break;
+                    case SDL_BUTTON_RIGHT:
+                        break;
+
+                }
+                break;
+            case SDL_MOUSEBUTTONUP:
+                switch (ev.button.which)
+                {
+                    case SDL_BUTTON_LEFT:
+                    {
+                        auto current = registry.get<Component::LeftMouseButton>(mouse_left_button_entity);
+                        registry.replace<Component::LeftMouseButton>
+                                ( mouse_left_button_entity
+                                , false
+                                , ev.button.clicks
+                                , Component::Position{float(ev.button.x), float(ev.button.y)}
+                                );
+                        break;
+                    }
+                    case SDL_BUTTON_MIDDLE:
+                        break;
+                    case SDL_BUTTON_RIGHT:
+                        break;
+
+                }
+                break;
+            case SDL_MOUSEWHEEL:
+                break;
+            case SDL_KEYDOWN:
+            case SDL_KEYUP:
+                switch (ev.key.keysym.sym)
+                {
+                case SDLK_LSHIFT:
+                case SDLK_RSHIFT:
+                    bool shift;
+                    if (ev.type == SDL_KEYDOWN) shift = true;
+                    else shift = false;
+                    registry.set<Component::ShiftModifier>(ev.type == SDL_KEYDOWN);
+                    break;
+                case SDLK_LALT:
+                case SDLK_RALT:
+                    bool alt;
+                    if (ev.type == SDL_KEYDOWN) alt = true;
+                    else alt = false;
+                    break;
+                case SDLK_LCTRL:
+                case SDLK_RCTRL:
+                case SDLK_LGUI:
+                case SDLK_RGUI:
+                    bool ctrl;
+                    if (ev.type == SDL_KEYDOWN) ctrl = true;
+                    else ctrl = false;
+                    break;
+                // default: generate a key command entity?
                 }
                 break;
             }

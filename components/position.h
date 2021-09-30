@@ -8,4 +8,6 @@ namespace Component
         float y;
         static Position Random();
     };
+
+    float distance(const Position& p1, const Position& p2);
 }

@@ -4,5 +4,8 @@
 
 namespace Component
 {
-    struct Selected : public Flag { };
+    struct Selected : public Flag
+    {
+        // selection group ?
+    };
 }
