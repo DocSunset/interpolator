@@ -34,7 +34,7 @@ namespace
         registry.replace<Component::Selected>(entity, false);
     }
 
-    void toggle_select(entt::registry& registry, entt::entity entity)
+    void toggle_selection(entt::registry& registry, entt::entity entity)
     {
         auto current = registry.get<Component::Selected>(entity);
         registry.replace<Component::Selected>(entity, not current);
@@ -54,6 +54,21 @@ namespace
         {
             unselect(registry, entity);
         }
+    }
+
+    void untouch_all(entt::registry& registry)
+    {
+        for (auto entity : registry.view<Component::Selected>())
+        {
+            auto& selected = registry.get<Component::Selected>(entity);
+            selected._touched = false;
+        }
+    }
+
+    void touch(entt::registry& registry, entt::entity entity)
+    {
+        auto& selected = registry.get<Component::Selected>(entity);
+        selected._touched = true;
     }
 
     /* tests
@@ -139,6 +154,11 @@ namespace System
                     return;
                 case SELECT_DRAG:
                 {
+                    auto touched = close_enough_to_grab(registry, motion.position);
+                    if (touched == entt::null) return;
+                    if (already_touched(registry, touched)) return;
+                    toggle_selection(registry, touched);
+                    touch(registry, touched);
                     return;
                 }
             }
@@ -176,6 +196,7 @@ namespace System
                     else // no grab
                     {
                         if (not shift(registry)) unselect_all(registry);
+                        untouch_all(registry);
                         state = SELECT_DRAG;
                         return;
                     }
