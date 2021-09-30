@@ -120,7 +120,22 @@ namespace System
                     break;
                 }
                 break;
-            case SDL_MOUSEMOTION:
+           case SDL_MOUSEMOTION:
+                if (ev.motion.state == 0)
+                {
+                }
+                else 
+                {
+                    if ((ev.motion.state & SDL_BUTTON_LMASK) != 0)
+                    {
+                    }
+                    if ((ev.motion.state & SDL_BUTTON_RMASK) != 0)
+                    {
+                    }
+                    if ((ev.motion.state & SDL_BUTTON_MMASK) != 0)
+                    {
+                    }
+                }
                 break;
             case SDL_MOUSEBUTTONDOWN:
                 switch (ev.button.button)
@@ -136,6 +151,7 @@ namespace System
                                     { float(ev.button.x) - win_size.w/2.0f
                                     , win_size.h/2.0f - float(ev.button.y)
                                     }
+                                , current.up_position
                                 );
                         break;
                     }
@@ -147,7 +163,7 @@ namespace System
                 }
                 break;
             case SDL_MOUSEBUTTONUP:
-                switch (ev.button.which)
+                switch (ev.button.button)
                 {
                     case SDL_BUTTON_LEFT:
                     {
@@ -156,7 +172,11 @@ namespace System
                                 ( mouse_left_button_entity
                                 , false
                                 , ev.button.clicks
-                                , Component::Position{float(ev.button.x), float(ev.button.y)}
+                                , current.down_position
+                                , Component::Position
+                                    { float(ev.button.x) - win_size.w/2.0f
+                                    , win_size.h/2.0f - float(ev.button.y)
+                                    }
                                 );
                         break;
                     }

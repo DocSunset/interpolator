@@ -3,7 +3,7 @@
 #include "components/position.h"
 #include "components/color.h"
 #include "components/window.h"
-#include "components/selected.h"
+#include "components/draggable.h"
 #include "gl/vertex_array.h"
 
 #include "shader/demo_viewer.h"
@@ -76,7 +76,7 @@ namespace System
                 Color c = registry.get<Color>(entity);
                 Selected s = registry.get<Selected>(entity);
                 SelectionHovered h = registry.get<SelectionHovered>(entity);
-                Color r = s ? selected_ring : default_ring;
+                Color r = s ? selected_ring : h ? highlight_ring : default_ring;
                 registry.emplace_or_replace<Attributes>(entity, 
                         Attributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {r.r, r.b, r.g, r.a}});
             };

@@ -8,7 +8,7 @@
 #include "systems/platform.h"
 #include "systems/demo_maker.h"
 #include "systems/demo_viewer.h"
-#include "systems/selection.h"
+#include "systems/draggable.h"
 
 class App
 {
@@ -31,7 +31,7 @@ public:
         systems.push_back(std::make_unique<System::Platform>(registry));
         systems.push_back(std::make_unique<System::DemoViewer>(registry));
         systems.push_back(std::make_unique<System::DemoMaker>(registry));
-        systems.push_back(std::make_unique<System::Selection>(registry));
+        systems.push_back(std::make_unique<System::Draggable>(registry));
     }
 
     ~App()

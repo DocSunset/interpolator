@@ -9,7 +9,8 @@ namespace Component
         bool pressed;
         int clicks;
 
-        Position position;
+        Position down_position;
+        Position up_position;
     };
 
     struct LeftMouseButton : public _MouseButton {};

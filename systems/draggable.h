@@ -5,11 +5,11 @@
 
 namespace System
 {
-    class Selection : public System
+    class Draggable : public System
     {
     public:
-        Selection(entt::registry&);
-        ~Selection();
+        Draggable(entt::registry&);
+        ~Draggable();
         void run(entt::registry&) override;
     private:
         struct Implementation;

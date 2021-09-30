@@ -15,4 +15,16 @@ namespace Component
         Position diff{p1.x - p2.x, p1.y - p2.y};
         return std::sqrt(diff.x * diff.x + diff.y * diff.y);
     }
+
+    bool Position::operator==(const Position& other) const
+    {
+        if (x == other.x && y == other.y) return true;
+        else return false;
+    }
+
+    bool Position::operator!=(const Position& other) const
+    {
+        if (x != other.x || y != other.y) return true;
+        else return false;
+    }
 }
