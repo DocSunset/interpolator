@@ -6,6 +6,7 @@
 #include "components/quit_flag.h"
 #include "components/window.h"
 #include "components/mouse_button.h"
+#include "components/mouse_motion.h"
 #include "components/modifier_keys.h"
 #include "gl/ll.h"
 
@@ -17,7 +18,7 @@ namespace System
         SDL_Window * window;
         SDL_GLContext gl;
         Component::Window win_size;
-        entt::registry::entity_type window_entity, mouse_left_button_entity;
+        entt::registry::entity_type window_entity, mouse_entity;
 
     public:
         // standard SDL setup boilerplate
@@ -77,10 +78,14 @@ namespace System
             // create platform entities
             window_entity = registry.create();
             registry.emplace<Component::Window>(window_entity, 500, 500);
-            mouse_left_button_entity = registry.create();
-            registry.emplace<Component::LeftMouseButton>(mouse_left_button_entity
+            mouse_entity = registry.create();
+            registry.emplace<Component::LeftMouseButton>(mouse_entity
                     , false
                     , 0
+                    , Component::Position{0,0}
+                    );
+            registry.emplace<Component::MouseMotion>(mouse_entity
+                    , Component::Position{0,0}
                     , Component::Position{0,0}
                     );
             
@@ -107,6 +112,7 @@ namespace System
             case SDL_APP_LOWMEMORY:
                 quit(registry);
                 break;
+
             case SDL_WINDOWEVENT:
                 switch (ev.window.event)
                 {
@@ -120,31 +126,28 @@ namespace System
                     break;
                 }
                 break;
-           case SDL_MOUSEMOTION:
-                if (ev.motion.state == 0)
-                {
-                }
-                else 
-                {
-                    if ((ev.motion.state & SDL_BUTTON_LMASK) != 0)
-                    {
-                    }
-                    if ((ev.motion.state & SDL_BUTTON_RMASK) != 0)
-                    {
-                    }
-                    if ((ev.motion.state & SDL_BUTTON_MMASK) != 0)
-                    {
-                    }
-                }
+
+            case SDL_MOUSEMOTION:
+                registry.replace<Component::MouseMotion>
+                        ( mouse_entity
+                        , Component::Position
+                            { float(ev.motion.x) - win_size.w/2.0f
+                            , win_size.h/2.0f - float(ev.motion.y)
+                            }
+                        , Component::Position
+                            { float(ev.motion.xrel)
+                            , float(ev.motion.yrel)
+                            }
+                        );
                 break;
+
             case SDL_MOUSEBUTTONDOWN:
                 switch (ev.button.button)
                 {
                     case SDL_BUTTON_LEFT:
                     {
-                        auto current = registry.get<Component::LeftMouseButton>(mouse_left_button_entity);
-                        registry.replace<Component::LeftMouseButton>
-                                ( mouse_left_button_entity
+                        auto current = registry.get<Component::LeftMouseButton>(mouse_entity);
+                        registry.replace<Component::LeftMouseButton>(mouse_entity
                                 , true
                                 , ev.button.clicks
                                 , Component::Position
@@ -162,14 +165,14 @@ namespace System
 
                 }
                 break;
+
             case SDL_MOUSEBUTTONUP:
                 switch (ev.button.button)
                 {
                     case SDL_BUTTON_LEFT:
                     {
-                        auto current = registry.get<Component::LeftMouseButton>(mouse_left_button_entity);
-                        registry.replace<Component::LeftMouseButton>
-                                ( mouse_left_button_entity
+                        auto current = registry.get<Component::LeftMouseButton>(mouse_entity);
+                        registry.replace<Component::LeftMouseButton>(mouse_entity
                                 , false
                                 , ev.button.clicks
                                 , current.down_position

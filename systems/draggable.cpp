@@ -105,6 +105,7 @@ namespace System
         } state = START;
 
         entt::entity maybe_drop = entt::null;
+        entt::entity hovered = entt::null;
 
         Implementation(entt::registry& registry)
         {
@@ -116,12 +117,20 @@ namespace System
         {
             using Component::MouseMotion;
 
-            //auto mtn = registry.get<MouseMotion>(entity);
+            auto motion = registry.get<MouseMotion>(entity);
 
             switch (state)
             {
                 case START:
                 {
+                    if (hovered != entt::null) unhighlight(registry, hovered);
+                    auto hover = close_enough_to_grab(registry, motion.position);
+                    if (hover != entt::null) // got a hover
+                    {
+                        highlight(registry, hover);
+                        hovered = hover;
+                    }
+                    else hovered = entt::null;
                     return;
                 }
                 case MAYBE_DRAG:
@@ -145,7 +154,6 @@ namespace System
             {
                 case START:
                 {
-                    std::cout << "button START / " << (btn.pressed ? "pressed" : "released") << "\n";
                     if (not btn.pressed) return;
 
                     auto grab = close_enough_to_grab(registry, btn.down_position);
@@ -175,7 +183,6 @@ namespace System
                 }
 
                 case MAYBE_DRAG:
-                    std::cout << "button MAYBE / " << (btn.pressed ? "pressed" : "released") << "\n";
                     if (btn.pressed) return; // this should never happen
                     if (shift(registry)) unselect(registry, maybe_drop);
                     else unselect_all(registry);
@@ -184,7 +191,6 @@ namespace System
 
                 case DRAG:
                 case SELECT_DRAG:
-                    std::cout << "button DRAGG / " << (btn.pressed ? "pressed" : "released") << "\n";
                     if (btn.pressed) return; // this should never happen
                     state = START;
                     return;

@@ -40,7 +40,7 @@ namespace System
         }
 
         DemoViewerImplementation(entt::registry& registry)
-            : updated_demos{registry, entt::collector.update<Demo>().update<Position>().update<Color>().update<Selected>()}
+            : updated_demos{registry, entt::collector.update<Demo>().update<Position>().update<Color>().update<Selected>().update<SelectionHovered>()}
             , new_demos{registry, entt::collector.group<Demo, Position>()}
             , program{vertex_shader, fragment_shader}
             , array{program}

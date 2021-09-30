@@ -7,4 +7,5 @@ target_sources(interpolators-objects PRIVATE
     draggable.h
     mouse_button.h
     modifier_keys.h
+    mouse_motion.h
     )
