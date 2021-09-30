@@ -1,13 +1,11 @@
 #include "selection.h"
 
 #include <limits>
-#include <iostream>
 #include "components/mouse_button.h"
 #include "components/modifier_keys.h"
 #include "components/demo.h"
 #include "components/position.h"
 #include "components/selected.h"
-#include "components/modifier_keys.h"
 
 namespace System
 {

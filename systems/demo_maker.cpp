@@ -12,6 +12,8 @@ namespace System
         using Component::Color;
         using Component::Position;
         using Component::Selected;
+        using Component::SelectionHovered;
+
         for (int i = 0; i < 5; ++i)
         {
             auto entity = registry.create();
@@ -19,6 +21,7 @@ namespace System
             registry.emplace<Color>(entity, Color::Random());
             registry.emplace<Position>(entity, Position::Random());
             registry.emplace<Selected>(entity, false);
+            registry.emplace<SelectionHovered>(entity, false);
         }
     }
 

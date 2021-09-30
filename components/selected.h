@@ -8,4 +8,8 @@ namespace Component
     {
         // selection group ?
     };
+
+    struct SelectionHovered : public Flag
+    {
+    };
 }

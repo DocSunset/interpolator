@@ -14,6 +14,7 @@ namespace System
     using Component::Position;
     using Component::Color;
     using Component::Selected;
+    using Component::SelectionHovered;
 
     struct DemoViewerImplementation
     {
@@ -66,13 +67,15 @@ namespace System
         void run(entt::registry& registry)
         {
             constexpr Color selected_ring{1,0.7,0.7,1};
-            constexpr Color default_ring{0.7,0.7,0.7,1};
+            constexpr Color default_ring{0.6,0.6,0.6,1};
+            constexpr Color highlight_ring{0.7,0.8,0.8,1};
             auto emp_or_rep = [&](const auto entity)
             {
                 // add a demoview
                 Position p = registry.get<Position>(entity);
                 Color c = registry.get<Color>(entity);
                 Selected s = registry.get<Selected>(entity);
+                SelectionHovered h = registry.get<SelectionHovered>(entity);
                 Color r = s ? selected_ring : default_ring;
                 registry.emplace_or_replace<Attributes>(entity, 
                         Attributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {r.r, r.b, r.g, r.a}});
