@@ -136,7 +136,7 @@ namespace System
                             }
                         , Component::Position
                             { float(ev.motion.xrel)
-                            , float(ev.motion.yrel)
+                            , -float(ev.motion.yrel)
                             }
                         );
                 break;

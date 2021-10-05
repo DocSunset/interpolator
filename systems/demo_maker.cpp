@@ -23,7 +23,13 @@ namespace System
             registry.emplace<Position>(entity, Position::Random());
             registry.emplace<Selected>(entity, false);
             registry.emplace<SelectionHovered>(entity, false);
-            registry.emplace<Draggable>(entity, 25);
+            registry.emplace<Draggable>(entity
+                    , 25
+                    , Position::Zero()
+                    , Position::Zero()
+                    , Position::Zero()
+                    , Position::Zero()
+                    );
         }
     }
 

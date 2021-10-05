@@ -9,6 +9,7 @@
 #include "systems/demo_maker.h"
 #include "systems/demo_viewer.h"
 #include "systems/draggable.h"
+#include "systems/demo_dragger.h"
 
 class App
 {
@@ -29,9 +30,10 @@ public:
     {
         // system constructor order == execution order
         systems.push_back(std::make_unique<System::Platform>(registry));
+        systems.push_back(std::make_unique<System::Draggable>(registry));
+        systems.push_back(std::make_unique<System::DemoDragger>(registry));
         systems.push_back(std::make_unique<System::DemoViewer>(registry));
         systems.push_back(std::make_unique<System::DemoMaker>(registry));
-        systems.push_back(std::make_unique<System::Draggable>(registry));
     }
 
     ~App()

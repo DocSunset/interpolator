@@ -18,12 +18,9 @@ namespace Component
     struct Draggable
     {
         float radius;
-    };
-
-    struct Drag
-    {
         Position start;
         Position previous;
         Position current;
+        Position delta;
     };
 }

@@ -71,6 +71,25 @@ namespace
         selected._touched = true;
     }
 
+    void drag(entt::registry& registry, const Component::MouseMotion& motion)
+    {
+        auto draggables = registry.view<Component::Selected, Component::Draggable>();
+        for (auto &&[entity, selected, draggable] : draggables.each())
+        {
+            if (not selected) continue;
+            registry.replace<Component::Draggable>(entity
+                    , draggable.radius
+                    , draggable.start
+                    , draggable.current // previous = current
+                    , motion.position // current = motion.position
+
+                    // systems should clear delta to keep track of delta since
+                    // last they checked
+                    , motion.delta + draggable.delta
+                    );
+        }
+    }
+
     /* tests
      */
     // returns entt::null in case cmp is not close enough to grab
@@ -151,6 +170,7 @@ namespace System
                 case MAYBE_DRAG:
                     state = DRAG;
                 case DRAG:
+                    drag(registry, motion);
                     return;
                 case SELECT_DRAG:
                 {
