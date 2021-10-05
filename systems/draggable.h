@@ -7,12 +7,13 @@ namespace System
 {
     class Draggable : public System
     {
-    public:
-        Draggable(entt::registry&);
-        ~Draggable();
-        void run(entt::registry&) override;
-    private:
         struct Implementation;
         Implementation * pimpl;
+    public:
+        Draggable();
+        void setup_reactive_systems(entt::registry&) override;
+        void prepare_registry(entt::registry&) override;
+        ~Draggable();
+        void run(entt::registry&) override;
     };
 }

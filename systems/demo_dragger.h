@@ -7,12 +7,13 @@ namespace System
 {
     class DemoDragger : public System
     {
-    public:
-        DemoDragger(entt::registry&);
-        ~DemoDragger();
-        void run(entt::registry&);
-    private:
         class Implementation;
         Implementation * pimpl;
+    public:
+        DemoDragger();
+        void setup_reactive_systems(entt::registry&) override;
+        void prepare_registry(entt::registry&) override;
+        ~DemoDragger();
+        void run(entt::registry&);
     };
 }

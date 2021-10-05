@@ -16,7 +16,7 @@ namespace System
     using Component::Selected;
     using Component::SelectionHovered;
 
-    struct DemoViewerImplementation
+    struct DemoViewer::Implementation
     {
         entt::observer new_demos;
         entt::observer updated_demos;
@@ -39,15 +39,8 @@ namespace System
             window_uniform(win);
         }
 
-        DemoViewerImplementation(entt::registry& registry)
-            : updated_demos{registry, entt::collector
-                    .update<Position>()
-                    .update<Color>()
-                    .update<Selected>()
-                    .update<SelectionHovered>()
-                    .where<Demo>()}
-            , new_demos{registry, entt::collector.group<Demo, Position>()}
-            , program{vertex_shader, fragment_shader}
+        Implementation()
+            : program{vertex_shader, fragment_shader}
             , array{program}
             , vao{}
             , vbo(GL::LL::Buffer::Target::ARRAY, GL::LL::Buffer::Usage::DYNAMIC_DRAW)
@@ -60,9 +53,24 @@ namespace System
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
+        }
 
-            registry.on_update<Component::Window>().connect<&DemoViewerImplementation::update_window>(*this);
+        void setup_reactive_systems(entt::registry& registry)
+        {
+            updated_demos.connect(registry, entt::collector
+                    .update<Position>()
+                    .update<Color>()
+                    .update<Selected>()
+                    .update<SelectionHovered>()
+                    .where<Demo>());
 
+            new_demos.connect(registry, entt::collector.group<Demo, Position>());
+
+            registry.on_update<Component::Window>().connect<&Implementation::update_window>(*this);
+        }
+
+        void prepare_registry(entt::registry& registry)
+        {
             auto view = registry.view<Component::Window>();
             assert(view.size() == 1);
             Component::Window win = **(view.raw());
@@ -111,12 +119,23 @@ namespace System
         }
     };
 
-    DemoViewer::DemoViewer(entt::registry& registry)
+    DemoViewer::DemoViewer()
     {
-        impl = new DemoViewerImplementation(registry);
+        pimpl = new Implementation();
     }
 
-    DemoViewer::~DemoViewer() { delete impl; }
+    void DemoViewer::setup_reactive_systems(entt::registry& registry)
+    {
+        pimpl->setup_reactive_systems(registry);
+    }
 
-    void DemoViewer::run(entt::registry& registry) { impl->run(registry); }
+    void DemoViewer::prepare_registry(entt::registry& registry)
+    {
+        pimpl->prepare_registry(registry);
+    }
+
+
+    DemoViewer::~DemoViewer() { delete pimpl; }
+
+    void DemoViewer::run(entt::registry& registry) { pimpl->run(registry); }
 }

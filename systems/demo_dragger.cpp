@@ -10,10 +10,18 @@ namespace System
     {
         entt::observer dragged;
 
-        Implementation(entt::registry& registry)
-            : dragged{registry, entt::collector
+        Implementation()
+        {
+        }
+
+        void setup_reactive_systems(entt::registry& registry)
+        {
+            dragged.connect(registry, entt::collector
                     .update<Component::Draggable>()
-                    .where<Component::Demo>()}
+                    .where<Component::Demo>());
+        }
+
+        void prepare_registry(entt::registry& registry)
         {
         }
 
@@ -29,9 +37,19 @@ namespace System
         }
     };
 
-    DemoDragger::DemoDragger(entt::registry& registry)
+    DemoDragger::DemoDragger()
     {
-        pimpl = new Implementation(registry);
+        pimpl = new Implementation();
+    }
+
+    void DemoDragger::setup_reactive_systems(entt::registry& registry)
+    {
+        pimpl->setup_reactive_systems(registry);
+    }
+
+    void DemoDragger::prepare_registry(entt::registry& registry)
+    {
+        pimpl->prepare_registry(registry);
     }
 
     DemoDragger::~DemoDragger()

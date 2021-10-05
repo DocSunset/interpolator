@@ -5,15 +5,15 @@
 
 namespace System
 {
-    struct DemoViewerImplementation;
-
     class DemoViewer : public System
     {
+        class Implementation;
+        Implementation * pimpl;
     public:
-        DemoViewer(entt::registry&);
+        DemoViewer();
+        void setup_reactive_systems(entt::registry&) override;
+        void prepare_registry(entt::registry&) override;
         ~DemoViewer();
         void run(entt::registry&) override;
-    private:
-        DemoViewerImplementation * impl;
     };
 }

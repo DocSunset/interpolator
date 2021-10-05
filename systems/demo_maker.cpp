@@ -4,32 +4,41 @@
 #include "components/position.h"
 #include "components/draggable.h"
 
+namespace
+{
+    void prepare_demo(entt::registry& registry, entt::entity demo_entity)
+    {
+        registry.emplace_or_replace<Component::Color>(demo_entity, Component::Color::Random());
+        registry.emplace<Component::Position>(demo_entity, Component::Position::Random());
+        registry.emplace<Component::Selected>(demo_entity, false);
+        registry.emplace<Component::SelectionHovered>(demo_entity, false);
+        registry.emplace<Component::Draggable>(demo_entity
+                , 25
+                , Component::Position::Zero()
+                , Component::Position::Zero()
+                , Component::Position::Zero()
+                , Component::Position::Zero()
+                );
+    }
+}
+
 namespace System
 {
-    DemoMaker::DemoMaker(entt::registry& registry)
+    DemoMaker::DemoMaker()
     {
-        using Component::Demo;
-        using Component::Color;
-        using Component::Position;
-        using Component::Selected;
-        using Component::SelectionHovered;
-        using Component::Draggable;
+    }
 
+    void DemoMaker::setup_reactive_systems(entt::registry& registry)
+    {
+        registry.on_construct<Component::Demo>().connect<&prepare_demo>();
+    }
+
+    void DemoMaker::prepare_registry(entt::registry& registry)
+    {
         for (int i = 0; i < 5; ++i)
         {
             auto entity = registry.create();
-            registry.emplace<Demo>(entity, i);
-            registry.emplace<Color>(entity, Color::Random());
-            registry.emplace<Position>(entity, Position::Random());
-            registry.emplace<Selected>(entity, false);
-            registry.emplace<SelectionHovered>(entity, false);
-            registry.emplace<Draggable>(entity
-                    , 25
-                    , Position::Zero()
-                    , Position::Zero()
-                    , Position::Zero()
-                    , Position::Zero()
-                    );
+            registry.emplace<Component::Demo>(entity, i);
         }
     }
 

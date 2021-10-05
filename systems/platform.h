@@ -7,10 +7,12 @@ namespace System
 {
     class Platform : public System
     {
-        class PlatformImplementation;
-        PlatformImplementation* pimpl;
+        class Implementation;
+        Implementation* pimpl;
     public:
-        Platform(entt::registry&);
+        Platform();
+        void setup_reactive_systems(entt::registry&) override;
+        void prepare_registry(entt::registry&) override;
         ~Platform();
         void run(entt::registry&) override;
         void * window() const;

@@ -13,7 +13,7 @@
 namespace System
 {
 
-    class Platform::PlatformImplementation
+    class Platform::Implementation
     {
         SDL_Window * window;
         SDL_GLContext gl;
@@ -22,7 +22,7 @@ namespace System
 
     public:
         // standard SDL setup boilerplate
-        PlatformImplementation(entt::registry& registry)
+        Implementation()
             : win_size{500, 500}
         {
             // no audio yet...
@@ -74,8 +74,14 @@ namespace System
             else SDL_Log("Created GL context\n");
 
             SDL_GL_SetSwapInterval(1); // should check for errors
-            
-            // create platform entities
+        }
+
+        void setup_reactive_systems(entt::registry& registry)
+        {
+        }
+
+        void prepare_registry(entt::registry& registry)
+        {
             window_entity = registry.create();
             registry.emplace<Component::Window>(window_entity, 500, 500);
             mouse_entity = registry.create();
@@ -94,7 +100,7 @@ namespace System
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
-        ~PlatformImplementation() { }
+        ~Implementation() { }
 
         void quit(entt::registry& registry)
         {
@@ -237,9 +243,19 @@ namespace System
         }
     };
     
-    Platform::Platform(entt::registry& registry)
+    Platform::Platform()
     {
-        pimpl = new PlatformImplementation(registry);
+        pimpl = new Implementation();
+    }
+
+    void Platform::setup_reactive_systems(entt::registry& registry)
+    {
+        pimpl->setup_reactive_systems(registry);
+    }
+
+    void Platform::prepare_registry(entt::registry& registry)
+    {
+        pimpl->prepare_registry(registry);
     }
     
     Platform::~Platform()

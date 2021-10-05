@@ -141,10 +141,18 @@ namespace System
         entt::entity maybe_drop = entt::null;
         entt::entity hovered = entt::null;
 
-        Implementation(entt::registry& registry)
+        Implementation()
+        {
+        }
+
+        void setup_reactive_systems(entt::registry& registry)
         {
             registry.on_update<Component::MouseMotion>().connect<&Draggable::Implementation::on_mouse_motion>(*this);
             registry.on_update<Component::LeftMouseButton>().connect<&Draggable::Implementation::on_mouse_button>(*this);
+        }
+
+        void prepare_registry(entt::registry& registry)
+        {
         }
 
         void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
@@ -243,9 +251,19 @@ namespace System
         }
     };
 
-    Draggable::Draggable(entt::registry& registry)
+    Draggable::Draggable()
     {
-        pimpl = new Implementation(registry);
+        pimpl = new Implementation();
+    }
+
+    void Draggable::setup_reactive_systems(entt::registry& registry)
+    {
+        pimpl->setup_reactive_systems(registry);
+    }
+
+    void Draggable::prepare_registry(entt::registry& registry)
+    {
+        pimpl->prepare_registry(registry);
     }
 
     Draggable::~Draggable() { delete pimpl; }

@@ -29,11 +29,14 @@ public:
     App()
     {
         // system constructor order == execution order
-        systems.push_back(std::make_unique<System::Platform>(registry));
-        systems.push_back(std::make_unique<System::Draggable>(registry));
-        systems.push_back(std::make_unique<System::DemoDragger>(registry));
-        systems.push_back(std::make_unique<System::DemoViewer>(registry));
-        systems.push_back(std::make_unique<System::DemoMaker>(registry));
+        systems.push_back(std::make_unique<System::Platform>());
+        systems.push_back(std::make_unique<System::Draggable>());
+        systems.push_back(std::make_unique<System::DemoDragger>());
+        systems.push_back(std::make_unique<System::DemoViewer>());
+        systems.push_back(std::make_unique<System::DemoMaker>());
+
+        for (auto& system : systems) system->setup_reactive_systems(registry);
+        for (auto& system : systems) system->prepare_registry(registry);
     }
 
     ~App()
