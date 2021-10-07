@@ -9,6 +9,7 @@
 #include "components/position.h"
 #include "components/draggable.h"
 #include "entt/entity/entity.hpp"
+#include "components/fmsynth.h"
 
 namespace
 {
@@ -26,7 +27,9 @@ namespace
 
     void select(entt::registry& registry, entt::entity entity)
     {
+        using P = Component::FMSynthParameters;
         registry.replace<Component::Selected>(entity, true);
+        registry.set<P>(registry.get<P>(entity));
     }
 
     void unselect(entt::registry& registry, entt::entity entity)

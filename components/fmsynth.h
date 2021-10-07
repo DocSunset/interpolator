@@ -8,6 +8,7 @@ namespace Component
         float amplitude;
         float feedback;
         float sampling_rate;
+        static FMSynthParameters Random(float sampling_rate);
     };
 
     struct FMSynth

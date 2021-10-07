@@ -3,6 +3,7 @@
 #include "components/color.h"
 #include "components/position.h"
 #include "components/draggable.h"
+#include "components/fmsynth.h"
 
 namespace
 {
@@ -19,6 +20,9 @@ namespace
                 , Component::Position::Zero()
                 , Component::Position::Zero()
                 );
+        auto sr = registry.ctx<Component::FMSynthParameters>().sampling_rate;
+        auto randomparam = Component::FMSynthParameters::Random(sr);
+        registry.emplace<Component::FMSynthParameters>(demo_entity, randomparam);
     }
 }
 

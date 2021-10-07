@@ -12,6 +12,7 @@
 #include "components/modifier_keys.h"
 #include "components/fmsynth.h"
 #include "gl/ll.h"
+#include "utility/mtof.h"
 
 namespace System
 {
@@ -293,6 +294,11 @@ namespace System
 
         void run(entt::registry& registry)
         {
+            synth.p = registry.ctx<Component::FMSynthParameters>();
+            SDL_Log("freq: %f", synth.p.frequency_hz);
+            SDL_Log("midi: %f", Utility::ftom(synth.p.frequency_hz));
+            SDL_Log("amp:  %f", synth.p.amplitude);
+            SDL_Log("fdbk: %f", synth.p.feedback);
             poll_events(registry);
 
             SDL_GL_SwapWindow(window);
