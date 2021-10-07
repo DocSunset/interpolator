@@ -2,12 +2,15 @@
 
 #include <GLES3/gl3.h>
 #include <SDL.h>
+#include <SDL_log.h>
 #include <SDL_video.h>
+#include <SDL_audio.h>
 #include "components/quit_flag.h"
 #include "components/window.h"
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
 #include "components/modifier_keys.h"
+#include "components/fmsynth.h"
 #include "gl/ll.h"
 
 namespace System
@@ -17,7 +20,10 @@ namespace System
     {
         SDL_Window * window;
         SDL_GLContext gl;
+        SDL_AudioDeviceID audio;
+        SDL_AudioSpec audio_spec;
         Component::Window win_size;
+        Component::FMSynth synth;
         entt::registry::entity_type window_entity, mouse_entity;
 
     public:
@@ -25,8 +31,7 @@ namespace System
         Implementation()
             : win_size{500, 500}
         {
-            // no audio yet...
-            if (SDL_Init(SDL_INIT_VIDEO) != 0)
+            if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0)
             {
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                         "Error initializing SDL:\n    %s\n", 
@@ -74,6 +79,62 @@ namespace System
             else SDL_Log("Created GL context\n");
 
             SDL_GL_SetSwapInterval(1); // should check for errors
+
+            // set up audio
+            SDL_AudioSpec want;
+            SDL_zero(want);
+            want.freq = 48000;
+            want.format = AUDIO_F32;
+            want.channels = 1;
+            want.samples = 64;
+            want.callback = Component::fm_synth_audio_callback;
+            want.userdata = (void *)(&synth);
+
+            audio = SDL_OpenAudioDevice
+                    ( nullptr
+                    , 0
+                    , &want, &audio_spec
+                    , SDL_AUDIO_ALLOW_FREQUENCY_CHANGE
+                    );
+            
+            if (audio == 0)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
+                        "Error opening audio device:\n    %s\n",
+                        SDL_GetError());
+                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                        "Couldn't open audio device :(", NULL);
+                exit(EXIT_FAILURE);
+            }
+            else SDL_Log("Opened audio device\n");
+
+            if (want.format != audio_spec.format)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
+                        "Error: got unexpected audio format");
+                exit(EXIT_FAILURE);
+            }
+            if (want.channels != audio_spec.channels)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
+                        "Error: got unexpected audio channels");
+                exit(EXIT_FAILURE);
+            }
+            if (want.callback != audio_spec.callback)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
+                        "Error: audio callback unexpectedly changed");
+                exit(EXIT_FAILURE);
+            }
+            if (want.userdata != audio_spec.userdata)
+            {
+                SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
+                        "Error: audio user data unexpectedly changed");
+                exit(EXIT_FAILURE);
+            }
+            synth.p = Component::FMSynthParameters{440, 1.0, 0.3, (float)audio_spec.freq};
+            synth.init();
+            SDL_PauseAudioDevice(audio, 0);
         }
 
         void setup_reactive_systems(entt::registry& registry)
@@ -97,6 +158,7 @@ namespace System
             
             // set initial context
             registry.set<Component::ShiftModifier>(false);
+            registry.set<Component::FMSynthParameters>(synth.p);
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
