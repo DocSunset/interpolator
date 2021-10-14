@@ -150,8 +150,10 @@ namespace System
 
         void setup_reactive_systems(entt::registry& registry)
         {
-            registry.on_update<Component::MouseMotion>().connect<&Draggable::Implementation::on_mouse_motion>(*this);
-            registry.on_update<Component::LeftMouseButton>().connect<&Draggable::Implementation::on_mouse_button>(*this);
+            registry.on_update<Component::MouseMotion>()
+                .connect<&Draggable::Implementation::on_mouse_motion>(*this);
+            registry.on_update<Component::LeftMouseButton>()
+                .connect<&Draggable::Implementation::on_mouse_button>(*this);
         }
 
         void prepare_registry(entt::registry& registry)

@@ -35,6 +35,7 @@ add_executable(interpolators-tests testmain.cpp)
 
 add_subdirectory(systems)
 add_subdirectory(components)
+add_subdirectory(dataset)
 add_subdirectory(utility)
 add_subdirectory(gl)
 add_subdirectory(shader)

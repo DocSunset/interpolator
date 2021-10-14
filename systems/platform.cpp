@@ -133,7 +133,7 @@ namespace System
                         "Error: audio user data unexpectedly changed");
                 exit(EXIT_FAILURE);
             }
-            synth.p = Component::FMSynthParameters{440, 1.0, 0.3, (float)audio_spec.freq};
+            synth.p = Component::FMSynthParameters{440.0f, 0.0f, 0.3f, (float)audio_spec.freq};
             synth.init();
             SDL_PauseAudioDevice(audio, 0);
         }
@@ -145,16 +145,16 @@ namespace System
         void prepare_registry(entt::registry& registry)
         {
             window_entity = registry.create();
-            registry.emplace<Component::Window>(window_entity, 500, 500);
+            registry.emplace<Component::Window>(window_entity, 500.0f, 500.0f);
             mouse_entity = registry.create();
             registry.emplace<Component::LeftMouseButton>(mouse_entity
                     , false
                     , 0
-                    , Component::Position{0,0}
+                    , Component::Position::Zero()
                     );
             registry.emplace<Component::MouseMotion>(mouse_entity
-                    , Component::Position{0,0}
-                    , Component::Position{0,0}
+                    , Component::Position::Zero()
+                    , Component::Position::Zero()
                     );
             
             // set initial context
@@ -295,10 +295,6 @@ namespace System
         void run(entt::registry& registry)
         {
             synth.p = registry.ctx<Component::FMSynthParameters>();
-            SDL_Log("freq: %f", synth.p.frequency_hz);
-            SDL_Log("midi: %f", Utility::ftom(synth.p.frequency_hz));
-            SDL_Log("amp:  %f", synth.p.amplitude);
-            SDL_Log("fdbk: %f", synth.p.feedback);
             poll_events(registry);
 
             SDL_GL_SwapWindow(window);
