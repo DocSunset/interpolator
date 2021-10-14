@@ -8,14 +8,19 @@ namespace Component
     FMSynthParameters FMSynthParameters::Random(float sampling_rate)
     {
         using namespace Utility;
-        return {mtof(rrandf(0, 127)), 0.0, rrandf(0, 1), sampling_rate};
+        return {rrandf(0, 127), rrandf(0.3, 1.0), rrandf(0, 1), sampling_rate};
+    }
+
+    FMSynthParameters FMSynthParameters::Zero(float sampling_rate)
+    {
+        return {0, 0, 0, sampling_rate};
     }
 
     // It is ill advised to do math with parameter sets using different
     // sampling rates. Care must be taken.
     FMSynthParameters operator+(const FMSynthParameters& lhs, const FMSynthParameters& rhs)
     {
-        return { lhs.frequency_hz + rhs.frequency_hz
+        return { lhs.frequency_midi + rhs.frequency_midi
                , lhs.amplitude + rhs.amplitude
                , lhs.feedback + rhs.feedback
                , lhs.sampling_rate
@@ -24,7 +29,7 @@ namespace Component
 
     FMSynthParameters operator*(float scalar, const FMSynthParameters& vector)
     {
-        return { scalar * vector.frequency_hz
+        return { scalar * vector.frequency_midi
                , scalar * vector.amplitude
                , scalar * vector.feedback
                , vector.sampling_rate
@@ -53,10 +58,10 @@ namespace Component
         constexpr float lotspi = twopi * 64;
 
         // smooth out parameter changes
-        s = 0.1 * p + 0.9 * s; // s.sampling_rate == p.sampling_rate
+        s = 0.001 * p + 0.999 * s; // s.sampling_rate == p.sampling_rate
 
         float out;
-        float phase_incr = twopi * s.frequency_hz / s.sampling_rate; 
+        float phase_incr = twopi * Utility::mtof(s.frequency_midi) / s.sampling_rate; 
         float feedback = s.feedback * twopi * (_last_out[0] + _last_out[1]); 
         _phase_rads += phase_incr;
         // modulo to ensure rollover on multiple of two pi and without loss of precision

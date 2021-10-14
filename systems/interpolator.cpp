@@ -1,25 +1,50 @@
 #include "interpolator.h"
+#include "components/demo.h"
 #include "components/position.h"
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
 #include "components/fmsynth.h"
 
+#include <vector>
+#include <iostream>
+
 namespace
 {
-    void run_interpolator(entt::registry& registry, Component::Position position, bool pressed)
+    template<typename ViewEachPack>
+    Component::Position source(ViewEachPack& pack)
     {
-        using P = Component::FMSynthParameters;
-        auto synth_params = registry.ctx<P>();
-        synth_params.amplitude = static_cast<float>(pressed);
-        registry.set<P>(synth_params);
+        auto &&[entity, demo] = pack;
+        return *demo.source;
+    }
+
+    template<typename ViewEachPack>
+    Component::FMSynthParameters destination(ViewEachPack& pack)
+    {
+        auto &&[entity, demo] = pack;
+        return *demo.destination;
+    }
+
+    template<typename ViewEachPack>
+    int id(ViewEachPack& pack)
+    {
+        auto &&[entity, demo] = pack;
+        return demo.id;
     }
 }
+
+#include "dataset/interpolators/intersecting_n_spheres.h"
+#include "dataset/interpolators/utility/weights.h"
 
 namespace System
 {
     struct Interpolator::Implementation
     {
+        using Scalar = float;
         bool pressed = false;
+        Component::Position position = Component::Position::Zero();
+        std::vector<Scalar> radius;
+        std::vector<Scalar> distance;
+        std::vector<Scalar> weight;
 
         Implementation()
         {
@@ -41,19 +66,39 @@ namespace System
         {
             auto button = registry.get<Component::LeftMouseButton>(entity);
             pressed = button.pressed;
-            run_interpolator(registry
-                    , button.pressed ? button.down_position : button.up_position
-                    , pressed);
+            position = button.pressed ? button.down_position : button.up_position;
         }
 
         void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
         {
             auto motion = registry.get<Component::MouseMotion>(entity);
-            run_interpolator(registry, motion.position, pressed);
+            position = motion.position;
         }
 
         void run(entt::registry& registry)
         {
+            using P = Component::Position;
+            using S = Component::FMSynthParameters;
+            std::size_t i = 0;
+            for (auto && [entity, demo, position, params] : registry.view<Component::Demo, P, S>().each())
+            {
+                demo.source = &position;
+                demo.destination = &params;
+                ++i;
+            }
+            distance.resize(i);
+            radius.resize(i);
+            weight.resize(i);
+            auto demo = registry.view<Component::Demo>().each();
+            Scalar dummy;
+            ::Interpolator::intersecting_spheres_update<Scalar>(position, demo, radius);
+            ::Interpolator::intersecting_spheres_query<Scalar>(position, demo, radius, dummy, distance, weight);
+            S s = S::Zero(registry.ctx<S>().sampling_rate);
+            s = ::Interpolator::Utility::normalized_weighted_sum<Scalar>(demo, weight, s);
+            if (not pressed) s.amplitude = 0;
+            std::cout << s.amplitude << " " << s.frequency_midi << " " << s.feedback;
+            std::cout << "\n";
+            registry.set<S>(s);
         }
     };
 

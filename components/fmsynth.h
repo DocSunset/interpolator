@@ -4,12 +4,13 @@ namespace Component
 {
     struct FMSynthParameters
     {
-        float frequency_hz;
+        float frequency_midi;
         float amplitude;
         float feedback;
         float sampling_rate;
 
         static FMSynthParameters Random(float sampling_rate);
+        static FMSynthParameters Zero(float sampling_rate);
 
         FMSynthParameters& operator+=(const FMSynthParameters& other);
         FMSynthParameters& operator*=(float scalar);

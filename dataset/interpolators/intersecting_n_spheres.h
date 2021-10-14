@@ -55,61 +55,48 @@ namespace Interpolator
         else return circle_circle_intersection_area(R, r, d) / circle_area(r);
     }
 
-    template<typename Scalar>
-    struct IntersectingNSpheres
+    template < typename Scalar
+             , typename Vector
+             , typename DemoList
+             , typename RadiusList
+             >
+    void intersecting_spheres_update(const Vector& q, const DemoList& demo,
+            RadiusList& radius)
     {
-        struct OutputAttributes
+        std::transform(std::begin(demo), std::end(demo), std::begin(radius),
+                [&](const auto& demo1)
         {
-            Scalar r;
-            Scalar d;
-        };
+            return std::transform_reduce(std::begin(demo), std::end(demo), std::numeric_limits<Scalar>::max(),
+                    [&](Scalar r, Scalar radius) { return std::min(r, radius); },
+                    [&](const auto& demo2)
+                    {
+                        if (id(demo1) == id(demo2)) return std::numeric_limits<Scalar>::max();
+                        return norm(source(demo1) - source(demo2));
+                    }
+            );
+        });
+    }
 
-        struct InputAttributes {}; // none
-
-        template < typename Vector
-                 , typename Demo
-                 , typename DemoList
-                 , typename InputAttributeList
-                 , typename DistanceList
-                 , typename RadiusList
-                 >
-        void update(const Vector& q, const DemoList& demo,
-                RadiusList& radius) const
+    template < typename Scalar
+             , typename Vector
+             , typename DemoList
+             , typename DistanceList
+             , typename RadiusList
+             , typename WeightList
+             >
+    void intersecting_spheres_query(
+            const Vector& q, const DemoList& demo, const RadiusList& radius, 
+            Scalar& r_q, DistanceList& distance, WeightList& weights)
+    {
+        using std::begin;
+        using std::end;
+        std::transform(begin(demo), end(demo), begin(distance), Utility::distance_to(q));
+        r_q = std::reduce(begin(distance), end(distance), std::numeric_limits<Scalar>::max(),
+                [](Scalar a, Scalar b) {return std::min(a, b); });
+        std::transform(std::begin(distance), std::end(distance), std::begin(radius), std::begin(weights),
+                [&](Scalar d_n, Scalar r_n)
         {
-            std::transform(std::begin(demo), std::end(demo), std::begin(radius),
-                    [&](const Demo& demo1)
-            {
-                return std::reduce(std::begin(demo), std::end(demo), std::numeric_limits<Scalar>::max(),
-                        [&](const Demo& demo2, Scalar radius)
-                {
-                    if (id(demo1) == id(demo2)) return radius;
-                    Scalar r = norm(source(demo1) - source(demo2));
-                    return std::min(r, radius);
-                });
-            });
-        }
-
-        template < typename Vector
-                 , typename Demo
-                 , typename DemoList
-                 , typename DistanceList
-                 , typename RadiusList
-                 , typename WeightList
-                 >
-        void query(const Vector& q, const DemoList& demo,
-                const DistanceList& distance, const RadiusList& radius,
-                Scalar& r_q, WeightList& weights) const
-        {
-            using std::begin;
-            using std::end;
-            using std::min;
-            std::transform(begin(demo), end(demo), begin(distance), Utility::distance_to(q));
-            r_q = std::reduce(begin(distance), end(distance), std::numeric_limits<Scalar>::max(), min);
-            std::transform(std::begin(distance), std::end(distance), std::begin(radius), std::begin(weights),
-                    [&](Scalar d_n, Scalar r_n)
-            {
-                return intersecting_spheres_weight(r_q, min(d_n, r_n), d_n);
-            });
-        }
-    };
+            return intersecting_spheres_weight(r_q, std::min(d_n, r_n), d_n);
+        });
+    }
 }
