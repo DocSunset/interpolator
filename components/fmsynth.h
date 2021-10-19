@@ -4,17 +4,24 @@ namespace Component
 {
     struct FMSynthParameters
     {
-        float frequency_midi;
-        float amplitude;
-        float feedback;
-        float sampling_rate;
+        float parameters[3];
 
-        static FMSynthParameters Random(float sampling_rate);
-        static FMSynthParameters Zero(float sampling_rate);
+        static FMSynthParameters Random();
+        static FMSynthParameters Zero();
 
         FMSynthParameters& operator+=(const FMSynthParameters& other);
         FMSynthParameters& operator*=(float scalar);
     };
+
+    float frequency_midi(const FMSynthParameters& p);
+    float frequency_hz(const FMSynthParameters& p);
+    float amplitude(const FMSynthParameters& p);
+    float feedback(const FMSynthParameters& p);
+
+    FMSynthParameters& set_frequency_midi(FMSynthParameters& p, float m);
+    FMSynthParameters& set_frequency_hz(FMSynthParameters& p, float f);
+    FMSynthParameters& set_amplitude(FMSynthParameters& p, float a);
+    FMSynthParameters& set_feedback(FMSynthParameters& p, float fb);
 
     FMSynthParameters operator+(const FMSynthParameters& lhs, const FMSynthParameters& rhs);
     FMSynthParameters operator*(float lhs, const FMSynthParameters& rhs);
@@ -22,6 +29,7 @@ namespace Component
 
     struct FMSynth
     {
+        float sampling_rate;
         float _phase_rads;
         float _last_out[2];
         FMSynthParameters p, s;

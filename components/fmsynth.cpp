@@ -1,38 +1,35 @@
 #include "fmsynth.h"
 #include <cmath>
+#include <iostream>
 #include "utility/random.h"
 #include "utility/mtof.h"
 
 namespace Component
 {
-    FMSynthParameters FMSynthParameters::Random(float sampling_rate)
+    FMSynthParameters FMSynthParameters::Random()
     {
         using namespace Utility;
-        return {rrandf(0, 127), rrandf(0.3, 1.0), rrandf(0, 1), sampling_rate};
+        return {rrandf(0, 1), rrandf(0, 1), rrandf(0, 1)};
     }
 
-    FMSynthParameters FMSynthParameters::Zero(float sampling_rate)
+    FMSynthParameters FMSynthParameters::Zero()
     {
-        return {0, 0, 0, sampling_rate};
+        return {0, 0, 0};
     }
 
-    // It is ill advised to do math with parameter sets using different
-    // sampling rates. Care must be taken.
     FMSynthParameters operator+(const FMSynthParameters& lhs, const FMSynthParameters& rhs)
     {
-        return { lhs.frequency_midi + rhs.frequency_midi
-               , lhs.amplitude + rhs.amplitude
-               , lhs.feedback + rhs.feedback
-               , lhs.sampling_rate
+        return { lhs.parameters[0] + rhs.parameters[0]
+               , lhs.parameters[1] + rhs.parameters[1]
+               , lhs.parameters[2] + rhs.parameters[2]
                };
     }
 
     FMSynthParameters operator*(float scalar, const FMSynthParameters& vector)
     {
-        return { scalar * vector.frequency_midi
-               , scalar * vector.amplitude
-               , scalar * vector.feedback
-               , vector.sampling_rate
+        return { scalar * vector.parameters[0]
+               , scalar * vector.parameters[1]
+               , scalar * vector.parameters[2]
                };
     }
 
@@ -51,6 +48,51 @@ namespace Component
         return *this = scalar * *this;
     }
 
+    float frequency_midi(const FMSynthParameters& p)
+    {
+        return 127 * p.parameters[0];
+    }
+
+    float frequency_hz(const FMSynthParameters& p)
+    {
+        return Utility::mtof(frequency_midi(p));
+    }
+
+    float amplitude(const FMSynthParameters& p)
+    {
+        return p.parameters[1];
+    }
+
+    float feedback(const FMSynthParameters& p)
+    {
+        return p.parameters[2];
+    }
+
+    FMSynthParameters& set_frequency_midi(FMSynthParameters& p, float m)
+    {
+        p.parameters[0] = m;
+        return p;
+    }
+
+    FMSynthParameters& set_frequency_hz(FMSynthParameters& p, float f)
+    {
+        p.parameters[0] = Utility::ftom(f);
+        return p;
+    }
+
+    FMSynthParameters& set_amplitude(FMSynthParameters& p, float a)
+    {
+        p.parameters[1] = a;
+        return p;
+    }
+
+    FMSynthParameters& set_feedback(FMSynthParameters& p, float fb)
+    {
+        p.parameters[2] = fb;
+        return p;
+    }
+
+
     float FMSynth::tick()
     {
         constexpr float pi = 3.141592653589793238462643383279502884197169399375105820974944;
@@ -61,14 +103,15 @@ namespace Component
         s = 0.001 * p + 0.999 * s; // s.sampling_rate == p.sampling_rate
 
         float out;
-        float phase_incr = twopi * Utility::mtof(s.frequency_midi) / s.sampling_rate; 
-        float feedback = s.feedback * twopi * (_last_out[0] + _last_out[1]); 
+        float phase_incr = twopi * frequency_hz(s) / sampling_rate;
+        float fb = feedback(s) * twopi * (_last_out[0] + _last_out[1]);
         _phase_rads += phase_incr;
         // modulo to ensure rollover on multiple of two pi and without loss of precision
         _phase_rads = std::fmod(_phase_rads, lotspi);
-        out = s.amplitude * std::cos(_phase_rads + feedback);
+        out = amplitude(s) * std::cos(_phase_rads + fb);
         _last_out[1] = _last_out[0];
         _last_out[0] = out;
+        std::cout << frequency_hz(s) << " " << amplitude(s) << " " << feedback(s) << "\n";
         return out;
     }
 

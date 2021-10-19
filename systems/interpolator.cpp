@@ -93,11 +93,9 @@ namespace System
             Scalar dummy;
             ::Interpolator::intersecting_spheres_update<Scalar>(position, demo, radius);
             ::Interpolator::intersecting_spheres_query<Scalar>(position, demo, radius, dummy, distance, weight);
-            S s = S::Zero(registry.ctx<S>().sampling_rate);
+            S s = S::Zero();
             s = ::Interpolator::Utility::normalized_weighted_sum<Scalar>(demo, weight, s);
-            if (not pressed) s.amplitude = 0;
-            std::cout << s.amplitude << " " << s.frequency_midi << " " << s.feedback;
-            std::cout << "\n";
+            if (not pressed) set_amplitude(s, 0);
             registry.set<S>(s);
         }
     };

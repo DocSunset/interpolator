@@ -20,8 +20,8 @@ namespace
                 , Component::Position::Zero()
                 , Component::Position::Zero()
                 );
-        auto sr = registry.ctx<Component::FMSynthParameters>().sampling_rate;
-        auto randomparam = Component::FMSynthParameters::Random(sr);
+        auto randomparam = Component::FMSynthParameters::Random();
+        set_amplitude(randomparam, 1.0);
         registry.emplace<Component::FMSynthParameters>(demo_entity, randomparam);
     }
 }

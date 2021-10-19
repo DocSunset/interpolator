@@ -5,6 +5,7 @@
 #include <SDL_log.h>
 #include <SDL_video.h>
 #include <SDL_audio.h>
+#include <iostream>
 #include "components/quit_flag.h"
 #include "components/window.h"
 #include "components/mouse_button.h"
@@ -133,8 +134,9 @@ namespace System
                         "Error: audio user data unexpectedly changed");
                 exit(EXIT_FAILURE);
             }
-            synth.p = Component::FMSynthParameters{440.0f, 0.0f, 0.3f, (float)audio_spec.freq};
+            synth.p = Component::FMSynthParameters{440.0f, 0.5f, 0.3f};
             synth.init();
+            synth.sampling_rate = audio_spec.freq;
             SDL_PauseAudioDevice(audio, 0);
         }
 
