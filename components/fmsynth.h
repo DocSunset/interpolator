@@ -1,4 +1,5 @@
 #pragma once
+#include "simple/phasor.h"
 
 namespace Component
 {
@@ -29,14 +30,15 @@ namespace Component
 
     struct FMSynth
     {
-        float sampling_rate;
-        float _phase_rads;
+        Simple::Phasor phasor;
         float _last_out[2];
         FMSynthParameters p, s;
 
-        void init()
+        void init(float sr, FMSynthParameters p)
         {
-            _phase_rads = 0;
+            phasor.sampling_rate.set_hz(sr);
+            phasor.frequency.set_midi(frequency_midi(p));
+            phasor.set_cycles(0);
             _last_out[0] = 0;
             _last_out[1] = 0;
             s = p;

@@ -134,9 +134,7 @@ namespace System
                         "Error: audio user data unexpectedly changed");
                 exit(EXIT_FAILURE);
             }
-            synth.p = Component::FMSynthParameters{440.0f, 0.5f, 0.3f};
-            synth.init();
-            synth.sampling_rate = audio_spec.freq;
+            synth.init(audio_spec.freq, Component::FMSynthParameters{0.5f, 0.5f, 0.3f});
             SDL_PauseAudioDevice(audio, 0);
         }
 

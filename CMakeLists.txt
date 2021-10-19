@@ -5,14 +5,17 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
 add_subdirectory(3rdparty/entt)
+add_subdirectory(3rdparty/simplesound)
 
 add_executable(interpolators app.h main.cpp)
     target_link_libraries(interpolators PUBLIC EnTT)
+    target_link_libraries(interpolators PUBLIC simplesound)
     set_property(TARGET interpolators PROPERTY CXX_STANDARD 17)
 
 add_library(interpolators-objects OBJECT)
     set_property(TARGET interpolators-objects PROPERTY CXX_STANDARD 17)
     target_link_libraries(interpolators-objects PUBLIC EnTT)
+    target_link_libraries(interpolators-objects PUBLIC simplesound)
 
     find_package(SDL2 REQUIRED)
     include_directories(${SDL2_INCLUDE_DIRS})
@@ -27,6 +30,7 @@ add_library(interpolators-objects OBJECT)
 add_executable(interpolators-tests testmain.cpp)
     set_property(TARGET interpolators-tests PROPERTY CXX_STANDARD 17)
     target_link_libraries(interpolators-tests PUBLIC EnTT)
+    target_link_libraries(interpolators-tests PUBLIC simplesound)
 
     find_package(Catch2 REQUIRED)
     target_link_libraries(interpolators-tests PRIVATE Catch2::Catch2)

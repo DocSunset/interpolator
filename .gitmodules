@@ -1,3 +1,6 @@
 [submodule "3rdparty/entt"]
 	path = 3rdparty/entt
 	url = git@github.com:skypjack/entt.git
+[submodule "3rdparty/simplesound"]
+	path = 3rdparty/simplesound
+	url = git@github.com:docsunset/simplesound

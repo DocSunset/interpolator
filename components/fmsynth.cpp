@@ -3,6 +3,7 @@
 #include <iostream>
 #include "utility/random.h"
 #include "utility/mtof.h"
+#include "simple/boundaries.h"
 
 namespace Component
 {
@@ -70,7 +71,7 @@ namespace Component
 
     FMSynthParameters& set_frequency_midi(FMSynthParameters& p, float m)
     {
-        p.parameters[0] = m;
+        p.parameters[0] = m/127.0f;
         return p;
     }
 
@@ -102,16 +103,19 @@ namespace Component
         // smooth out parameter changes
         s = 0.001 * p + 0.999 * s; // s.sampling_rate == p.sampling_rate
 
+        for (float& x : s.parameters)
+        {
+            x = Simple::clip(x);
+        }
+
         float out;
-        float phase_incr = twopi * frequency_hz(s) / sampling_rate;
+        phasor.frequency.set_midi(frequency_midi(s));
         float fb = feedback(s) * twopi * (_last_out[0] + _last_out[1]);
-        _phase_rads += phase_incr;
         // modulo to ensure rollover on multiple of two pi and without loss of precision
-        _phase_rads = std::fmod(_phase_rads, lotspi);
-        out = amplitude(s) * std::cos(_phase_rads + fb);
+        //_phase_rads = std::fmod(_phase_rads, lotspi);
+        out = amplitude(s) * std::cos(phasor.tick().radians() + fb);
         _last_out[1] = _last_out[0];
         _last_out[0] = out;
-        std::cout << frequency_hz(s) << " " << amplitude(s) << " " << feedback(s) << "\n";
         return out;
     }
 
