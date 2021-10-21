@@ -4,6 +4,7 @@
 #include "utility/random.h"
 #include "utility/mtof.h"
 #include "simple/boundaries.h"
+#include "simple/constants/pi.h"
 
 namespace Component
 {
@@ -96,27 +97,17 @@ namespace Component
 
     float FMSynth::tick()
     {
-        constexpr float pi = 3.141592653589793238462643383279502884197169399375105820974944;
-        constexpr float twopi = 2.0 * pi;
-        constexpr float lotspi = twopi * 64;
-
         // smooth out parameter changes
-        s = 0.001 * p + 0.999 * s; // s.sampling_rate == p.sampling_rate
+        s = 0.001 * p + 0.999 * s;
 
-        for (float& x : s.parameters)
-        {
-            x = Simple::clip(x);
-        }
+        // enforce parameter boundaries
+        for (float& x : s.parameters) x = Simple::clip(x);
 
-        float out;
         phasor.frequency.set_midi(frequency_midi(s));
-        float fb = feedback(s) * twopi * (_last_out[0] + _last_out[1]);
-        // modulo to ensure rollover on multiple of two pi and without loss of precision
-        //_phase_rads = std::fmod(_phase_rads, lotspi);
-        out = amplitude(s) * std::cos(phasor.tick().radians() + fb);
         _last_out[1] = _last_out[0];
-        _last_out[0] = out;
-        return out;
+        _last_out[0] = feedback(s) * Simple::twoPi * (_last_out[0] + _last_out[1]);
+        _last_out[0] = amplitude(s) * std::cos(phasor.tick().radians() + _last_out[0]);
+        return _last_out[0];
     }
 
     void fm_synth_audio_callback(void* userdata, unsigned char * stream, int bytes)

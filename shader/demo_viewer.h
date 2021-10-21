@@ -1,6 +1,6 @@
 #pragma once
 
-struct Attributes
+struct DemoViewerAttributes
 {
     float position[2];
     float fill_color[4];

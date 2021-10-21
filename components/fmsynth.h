@@ -1,17 +1,22 @@
 #pragma once
 #include "simple/phasor.h"
+#include <array>
 
 namespace Component
 {
     struct FMSynthParameters
     {
-        float parameters[3];
+        static constexpr int N = 3;
+        std::array<float, N> parameters;
 
         static FMSynthParameters Random();
         static FMSynthParameters Zero();
 
         FMSynthParameters& operator+=(const FMSynthParameters& other);
         FMSynthParameters& operator*=(float scalar);
+
+        auto begin() {return parameters.begin();}
+        auto end() {return parameters.end();}
     };
 
     float frequency_midi(const FMSynthParameters& p);

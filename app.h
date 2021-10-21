@@ -11,6 +11,8 @@
 #include "systems/draggable.h"
 #include "systems/demo_dragger.h"
 #include "systems/interpolator.h"
+#include "systems/knob_layout.h"
+#include "systems/knob_viewer.h"
 
 class App
 {
@@ -33,8 +35,10 @@ public:
         systems.push_back(std::make_unique<System::Platform>());
         systems.push_back(std::make_unique<System::Draggable>());
         systems.push_back(std::make_unique<System::DemoDragger>());
+        systems.push_back(std::make_unique<System::KnobLayout>());
         systems.push_back(std::make_unique<System::Interpolator>());
         systems.push_back(std::make_unique<System::DemoViewer>());
+        systems.push_back(std::make_unique<System::KnobViewer>());
         systems.push_back(std::make_unique<System::DemoMaker>());
 
         for (auto& system : systems) system->setup_reactive_systems(registry);

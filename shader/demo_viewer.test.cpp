@@ -16,7 +16,7 @@ TEST_CASE("Shaders", "[shaders]")
 
     SECTION("Demo viewer")
     {
-        Attributes dots[2] = { { {-100,-100}, {1,1,1,1}, {1,0,0,1} }
+        DemoViewerAttributes dots[2] = { { {-100,-100}, {1,1,1,1}, {1,0,0,1} }
                              , { {100,100}, {1,1,1,1}, {0,1,0,1} }
                              };
 
@@ -28,7 +28,7 @@ TEST_CASE("Shaders", "[shaders]")
         vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
         vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
         vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
-        vbobind.buffer_data(2 * sizeof(Attributes), dots);
+        vbobind.buffer_data(2 * sizeof(DemoViewerAttributes), dots);
         program.use();
         glUniform2f(glGetUniformLocation(program.gl_handle(), "window"), 500, 500);
 

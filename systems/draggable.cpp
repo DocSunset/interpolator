@@ -27,9 +27,7 @@ namespace
 
     void select(entt::registry& registry, entt::entity entity)
     {
-        using P = Component::FMSynthParameters;
         registry.replace<Component::Selected>(entity, true);
-        registry.set<P>(registry.get<P>(entity));
     }
 
     void unselect(entt::registry& registry, entt::entity entity)
@@ -170,7 +168,7 @@ namespace System
             {
                 case START:
                 {
-                    if (hovered != entt::null) unhighlight(registry, hovered);
+                    if (registry.valid(hovered)) unhighlight(registry, hovered);
                     auto hover = close_enough_to_grab(registry, motion.position);
                     if (hover != entt::null) // got a hover
                     {
@@ -238,7 +236,7 @@ namespace System
 
                 case MAYBE_DRAG:
                     if (btn.pressed) return; // this should never happen
-                    if (shift(registry)) unselect(registry, maybe_drop);
+                    if (shift(registry) && registry.valid(maybe_drop)) unselect(registry, maybe_drop);
                     else unselect_all(registry);
                     state = START;
                     return;

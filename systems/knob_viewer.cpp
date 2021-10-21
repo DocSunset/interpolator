@@ -1,25 +1,26 @@
-#include "demo_viewer.h"
-#include "components/demo.h"
+#include "knob_viewer.h"
+#include "components/knob.h"
 #include "components/position.h"
 #include "components/color.h"
 #include "components/window.h"
 #include "components/draggable.h"
 #include "gl/vertex_array.h"
 
-#include "shader/demo_viewer.h"
+#include "shader/knob_viewer.h"
+#include <iostream>
 
 namespace System
 {
-    using Component::Demo;
+    using Component::Knob;
     using Component::Position;
     using Component::Color;
     using Component::Selected;
     using Component::SelectionHovered;
 
-    struct DemoViewer::Implementation
+    struct KnobViewer::Implementation
     {
-        entt::observer new_demos;
-        entt::observer updated_demos;
+        entt::observer new_knobs;
+        entt::observer updated_knobs;
         GL::LL::Program program;
         GL::VertexAttributeArray array;
         GL::LL::VertexArray vao;
@@ -51,20 +52,20 @@ namespace System
             const auto& attributes = array.attributes();
 
             vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
-            vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
-            vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
+            vaobind.enable_attrib_pointer(attributes, attributes.index_of("bg_color_in"));
+            vaobind.enable_attrib_pointer(attributes, attributes.index_of("fg_color_in"));
+            vaobind.enable_attrib_pointer(attributes, attributes.index_of("value_in"));
         }
 
         void setup_reactive_systems(entt::registry& registry)
         {
-            updated_demos.connect(registry, entt::collector
-                    .update<Position>().where<Demo>()
-                    .update<Color>().where<Demo>()
-                    .update<Selected>().where<Demo>()
-                    .update<SelectionHovered>().where<Demo>()
+            updated_knobs.connect(registry, entt::collector
+                    .update<Position>().where<Knob>()
+                    .update<Selected>().where<Knob>()
+                    .update<SelectionHovered>().where<Knob>()
                     );
 
-            new_demos.connect(registry, entt::collector.group<Demo>());
+            new_knobs.connect(registry, entt::collector.group<Knob>());
 
             registry.on_update<Component::Window>().connect<&Implementation::update_window>(*this);
         }
@@ -82,35 +83,37 @@ namespace System
             constexpr Color selected_ring{1,0.7,0.7,1};
             constexpr Color default_ring{0.6,0.6,0.6,1};
             constexpr Color highlight_ring{0.7,0.8,0.8,1};
+            constexpr Color background{1.0,1.0,1.0,1.0};
 
             auto emp_or_rep = [&](const auto entity)
             {
                 // add a demoview
                 Position& p = registry.get<Position>(entity);
-                Color c = registry.get<Color>(entity);
                 Selected s = registry.get<Selected>(entity);
                 SelectionHovered h = registry.get<SelectionHovered>(entity);
                 Color r = s ? selected_ring : h ? highlight_ring : default_ring;
-                registry.emplace_or_replace<DemoViewerAttributes>(entity, 
-                        DemoViewerAttributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {r.r, r.b, r.g, r.a}});
+                auto k = registry.get<Knob>(entity);
+                registry.emplace_or_replace<KnobViewerAttributes>(entity, 
+                        KnobViewerAttributes
+                        { {p.x, p.y}
+                        , {r.r, r.b, r.g, r.a}
+                        , {background.r, background.g, background.b, background.a}
+                        , k.value
+                        });
             };
 
-            new_demos.each(emp_or_rep);
-            updated_demos.each(emp_or_rep);
-
-            // it is assumed that demo entities will be destroyed wholesale,
-            // and that no action is needed to remove the DemoViewerAttributes component
-            // manually
-
-            auto view = registry.view<DemoViewerAttributes>();
+            new_knobs.each(emp_or_rep);
+            updated_knobs.each(emp_or_rep);
+            
+            auto view = registry.view<KnobViewerAttributes>();
 
             auto size = view.size();
             if (size == 0) return;
 
-            DemoViewerAttributes * dots = *(view.raw());
+            KnobViewerAttributes * dots = *(view.raw());
 
             auto buffbind = bind(vbo);
-            buffbind.buffer_data(size * sizeof(DemoViewerAttributes), dots);
+            buffbind.buffer_data(size * sizeof(KnobViewerAttributes), dots);
 
             // draw dots
             GL::LL::any_error();
@@ -120,23 +123,30 @@ namespace System
         }
     };
 
-    DemoViewer::DemoViewer()
+    /* pimpl boilerplate *****************************************/
+
+    KnobViewer::KnobViewer()
     {
         pimpl = new Implementation();
     }
 
-    void DemoViewer::setup_reactive_systems(entt::registry& registry)
+    void KnobViewer::setup_reactive_systems(entt::registry& registry)
     {
         pimpl->setup_reactive_systems(registry);
     }
 
-    void DemoViewer::prepare_registry(entt::registry& registry)
+    void KnobViewer::prepare_registry(entt::registry& registry)
     {
         pimpl->prepare_registry(registry);
     }
 
-
-    DemoViewer::~DemoViewer() { delete pimpl; }
-
-    void DemoViewer::run(entt::registry& registry) { pimpl->run(registry); }
+    KnobViewer::~KnobViewer()
+    {
+        free(pimpl);
+    }
+    
+    void KnobViewer::run(entt::registry& registry)
+    {
+        pimpl->run(registry);
+    }
 }
