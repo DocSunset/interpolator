@@ -61,6 +61,7 @@ namespace System
         {
             updated_knobs.connect(registry, entt::collector
                     .update<Position>().where<Knob>()
+                    .update<Color>().where<Knob>()
                     .update<Selectable>().where<Knob>()
                     .update<SelectionHovered>().where<Knob>()
                     .update<Knob>()
@@ -82,9 +83,9 @@ namespace System
         void run(entt::registry& registry)
         {
             constexpr Color selected_ring{1,0.7,0.7,1};
-            constexpr Color default_ring{0.6,0.6,0.6,1};
+            constexpr Color default_ring{0.4,0.4,0.4,1};
             constexpr Color highlight_ring{0.7,0.8,0.8,1};
-            constexpr Color background{1.0,1.0,1.0,1.0};
+            constexpr Color background{0.6,0.6,0.6,1.0};
 
             auto emp_or_rep = [&](const auto entity)
             {
@@ -92,13 +93,14 @@ namespace System
                 auto p = registry.get<Position>(entity);
                 auto s = registry.get<Selectable>(entity);
                 auto h = registry.get<SelectionHovered>(entity);
-                auto r = s ? selected_ring : h ? highlight_ring : default_ring;
+                auto r = s ? selected_ring : h ? highlight_ring : background;
+                auto c = registry.get<Color>(entity);
                 auto k = registry.get<Knob>(entity);
                 registry.emplace_or_replace<KnobViewerAttributes>(entity, 
                         KnobViewerAttributes
                         { {p.x, p.y}
-                        , {r.r, r.b, r.g, r.a}
-                        , {background.r, background.g, background.b, background.a}
+                        , {c.r, c.g, c.b, c.a}
+                        , {r.r, r.g, r.b, r.a}
                         , k.value
                         });
             };

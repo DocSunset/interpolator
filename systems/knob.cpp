@@ -1,4 +1,5 @@
 #include "knob.h"
+#include "components/color.h"
 #include "components/draggable.h"
 #include "components/demo.h"
 #include "components/knob.h"
@@ -41,10 +42,10 @@ namespace
                 auto knob = registry.create();
                 registry.emplace<Component::Position>(knob, 0, 100 * i);
                 registry.emplace<Component::Selectable>(knob, false);
+                registry.emplace<Component::Color>(knob);
                 registry.emplace<Component::SelectionHovered>(knob, false);
                 registry.emplace<Component::Draggable>(knob, 75);
-                auto p = registry.get<Component::FMSynthParameters>(demo_entity);
-                registry.emplace<Component::Knob>(knob, p.parameters[i], i);
+                registry.emplace<Component::Knob>(knob, i);
             }
             break;
         }
@@ -62,9 +63,10 @@ namespace
         auto knobs = registry.view<Component::Knob>();
         auto selected_demos = registry.view<Component::Demo, Component::Selected>();
 
+        int n_demos;
         for (auto knob_entity : knobs)
         {
-            int n_demos = 0;
+            n_demos = 0;
             auto knob = registry.get<Component::Knob>(knob_entity);
             auto get_param = [&](auto demo_entity)
             {
@@ -79,6 +81,24 @@ namespace
             knob.value = knob.value / (float)n_demos;
             registry.replace<Component::Knob>(knob_entity, knob);
         }
+
+        auto color = std::transform_reduce
+            ( selected_demos.begin(), selected_demos.end()
+            , Component::Color{0.0f,0.0f,0.0f,0.0f}
+            , [](auto a, auto b){
+            std::cout << "color b: " << b.r << " " << b.g << " " << b.b << "\n";
+            return Component::Color{a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a};}
+            , [&](auto entity){return registry.get<Component::Color>(entity);}
+            );
+
+        color = { color.r / (float)n_demos
+                , color.g / (float)n_demos
+                , color.b / (float)n_demos
+                , color.a / (float)n_demos
+                };
+
+        for (auto knob_entity : knobs)
+            registry.replace<Component::Color>(knob_entity, color);
     }
 }
 

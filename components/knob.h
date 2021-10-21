@@ -4,7 +4,7 @@ namespace Component
 {
     struct Knob
     {
-        float value;
         int index;
+        float value;
     };
 }
