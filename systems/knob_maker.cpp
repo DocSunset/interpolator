@@ -2,6 +2,7 @@
 #include "components/draggable.h"
 #include "components/demo.h"
 #include "components/knob.h"
+#include "components/fmsynth.h"
 #include <iostream>
 #include <vector>
 
@@ -11,7 +12,6 @@ namespace System
     {
         entt::observer selected_demos;
         std::vector<entt::entity> demo_list;
-        std::vector<entt::entity> knobs;
 
         Implementation()
         {

@@ -8,4 +8,5 @@ target_sources(interpolators-objects PRIVATE
     interpolator.h interpolator.cpp
     knob_viewer.h knob_viewer.cpp
     knob_maker.h knob_maker.cpp
+    knob_layout.h knob_layout.cpp
     )

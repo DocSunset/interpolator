@@ -13,6 +13,7 @@
 #include "systems/interpolator.h"
 #include "systems/knob_maker.h"
 #include "systems/knob_viewer.h"
+#include "systems/knob_layout.h"
 
 class App
 {
@@ -36,6 +37,7 @@ public:
         systems.push_back(std::make_unique<System::Draggable>());
         systems.push_back(std::make_unique<System::DemoDragger>());
         systems.push_back(std::make_unique<System::KnobMaker>());
+        systems.push_back(std::make_unique<System::KnobLayout>());
         systems.push_back(std::make_unique<System::Interpolator>());
         systems.push_back(std::make_unique<System::DemoViewer>());
         systems.push_back(std::make_unique<System::KnobViewer>());
