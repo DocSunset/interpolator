@@ -13,7 +13,7 @@ namespace System
     using Component::Demo;
     using Component::Position;
     using Component::Color;
-    using Component::Selected;
+    using Component::Selectable;
     using Component::SelectionHovered;
 
     struct DemoViewer::Implementation
@@ -60,7 +60,7 @@ namespace System
             updated_demos.connect(registry, entt::collector
                     .update<Position>().where<Demo>()
                     .update<Color>().where<Demo>()
-                    .update<Selected>().where<Demo>()
+                    .update<Selectable>().where<Demo>()
                     .update<SelectionHovered>().where<Demo>()
                     );
 
@@ -88,7 +88,7 @@ namespace System
                 // add a demoview
                 Position& p = registry.get<Position>(entity);
                 Color c = registry.get<Color>(entity);
-                Selected s = registry.get<Selected>(entity);
+                Selectable s = registry.get<Selectable>(entity);
                 SelectionHovered h = registry.get<SelectionHovered>(entity);
                 Color r = s ? selected_ring : h ? highlight_ring : default_ring;
                 registry.emplace_or_replace<DemoViewerAttributes>(entity, 

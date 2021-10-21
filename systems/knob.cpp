@@ -26,40 +26,27 @@ namespace
         for (auto knob : knobs) position_knob(registry, knob);
     }
 
-    void track_selected_demos(entt::registry& registry
-            , std::vector<entt::entity>& demo_list
-            , entt::observer& selected_demos
-            )
+    void manage_knob_lifetimes(entt::registry& registry)
     {
-        if (selected_demos.size()) demo_list.clear();
-        auto layout = [&](entt::entity entity)
-        {
-            auto selected = registry.get<Component::Selected>(entity);
-            if (selected)
-            {
-                demo_list.push_back(entity);
-            }
-        };
-        selected_demos.each(layout);
-    }
-
-    void manage_knob_lifetimes(entt::registry& registry, std::vector<entt::entity>& demo_list)
-    {
+        bool any_selected_demos = false;
         auto knobs = registry.view<Component::Knob>();
-        if (demo_list.size())
+        auto selected_demos = registry.view<Component::Demo, Component::Selected>();
+        for (auto demo_entity : selected_demos)
         {
+            any_selected_demos = true;
             if (!knobs.size()) for (int i = 0; i < Component::FMSynthParameters::N; ++i)
             {
                 auto knob = registry.create();
                 registry.emplace<Component::Position>(knob, 0, 100 * i);
-                registry.emplace<Component::Selected>(knob, false);
+                registry.emplace<Component::Selectable>(knob, false);
                 registry.emplace<Component::SelectionHovered>(knob, false);
                 registry.emplace<Component::Draggable>(knob, 75);
-                auto p = registry.get<Component::FMSynthParameters>(demo_list[0]);
+                auto p = registry.get<Component::FMSynthParameters>(demo_entity);
                 registry.emplace<Component::Knob>(knob, p.parameters[i], i);
             }
+            break;
         }
-        else if (knobs.size())
+        if (!any_selected_demos && knobs.size())
         {
             for (auto knob : knobs)
             {
@@ -73,9 +60,6 @@ namespace System
 {
     struct Knob::Implementation
     {
-        entt::observer selected_demos;
-        std::vector<entt::entity> demo_list;
-
         Implementation()
         {
         }
@@ -84,11 +68,6 @@ namespace System
         {
             registry.on_construct<Component::Knob>().connect<&position_knob>();
             registry.on_update<Component::Window>().connect<&on_window_update>();
-
-            selected_demos.connect(registry, entt::collector
-                    .update<Component::Selected>()
-                    .where<Component::Demo>()
-                    );
         }
 
         void prepare_registry(entt::registry& registry)
@@ -97,9 +76,7 @@ namespace System
 
         void run(entt::registry& registry)
         {
-            track_selected_demos(registry, demo_list, selected_demos);
-
-            manage_knob_lifetimes(registry, demo_list);
+            manage_knob_lifetimes(registry);
         }
     };
 

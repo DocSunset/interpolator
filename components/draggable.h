@@ -5,11 +5,14 @@
 
 namespace Component
 {
-    struct Selected : public Flag
+    // boolean value represents whether or not the entity is already selected
+    struct Selectable : public Flag
     {
         // selection group ?
         bool _touched;
     };
+
+    struct Selected {}; // tag struct to signal that a component is selected
 
     struct SelectionHovered : public Flag
     {

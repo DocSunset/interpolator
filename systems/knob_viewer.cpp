@@ -14,7 +14,7 @@ namespace System
     using Component::Knob;
     using Component::Position;
     using Component::Color;
-    using Component::Selected;
+    using Component::Selectable;
     using Component::SelectionHovered;
 
     struct KnobViewer::Implementation
@@ -61,7 +61,7 @@ namespace System
         {
             updated_knobs.connect(registry, entt::collector
                     .update<Position>().where<Knob>()
-                    .update<Selected>().where<Knob>()
+                    .update<Selectable>().where<Knob>()
                     .update<SelectionHovered>().where<Knob>()
                     );
 
@@ -89,7 +89,7 @@ namespace System
             {
                 // add a demoview
                 Position& p = registry.get<Position>(entity);
-                Selected s = registry.get<Selected>(entity);
+                Selectable s = registry.get<Selectable>(entity);
                 SelectionHovered h = registry.get<SelectionHovered>(entity);
                 Color r = s ? selected_ring : h ? highlight_ring : default_ring;
                 auto k = registry.get<Knob>(entity);

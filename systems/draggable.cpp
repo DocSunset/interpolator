@@ -27,23 +27,27 @@ namespace
 
     void select(entt::registry& registry, entt::entity entity)
     {
-        registry.replace<Component::Selected>(entity, true);
+        registry.replace<Component::Selectable>(entity, true);
+        registry.emplace_or_replace<Component::Selected>(entity);
     }
 
     void unselect(entt::registry& registry, entt::entity entity)
     {
-        registry.replace<Component::Selected>(entity, false);
+        registry.replace<Component::Selectable>(entity, false);
+        if (registry.all_of<Component::Selected>(entity))
+            registry.erase<Component::Selected>(entity);
     }
 
     void toggle_selection(entt::registry& registry, entt::entity entity)
     {
-        auto current = registry.get<Component::Selected>(entity);
-        registry.replace<Component::Selected>(entity, not current);
+        auto current = registry.get<Component::Selectable>(entity);
+        if (current) unselect(registry, entity);
+        else select(registry, entity);
     }
 
     void select_all(entt::registry& registry)
     {
-        for (auto entity : registry.view<Component::Selected>())
+        for (auto entity : registry.view<Component::Selectable>())
         {
             select(registry, entity);
         }
@@ -51,7 +55,7 @@ namespace
 
     void unselect_all(entt::registry& registry)
     {
-        for (auto entity : registry.view<Component::Selected>())
+        for (auto entity : registry.view<Component::Selectable>())
         {
             unselect(registry, entity);
         }
@@ -59,22 +63,22 @@ namespace
 
     void untouch_all(entt::registry& registry)
     {
-        for (auto entity : registry.view<Component::Selected>())
+        for (auto entity : registry.view<Component::Selectable>())
         {
-            auto& selected = registry.get<Component::Selected>(entity);
+            auto& selected = registry.get<Component::Selectable>(entity);
             selected._touched = false;
         }
     }
 
     void touch(entt::registry& registry, entt::entity entity)
     {
-        auto& selected = registry.get<Component::Selected>(entity);
+        auto& selected = registry.get<Component::Selectable>(entity);
         selected._touched = true;
     }
 
     void drag(entt::registry& registry, const Component::MouseMotion& motion)
     {
-        auto draggables = registry.view<Component::Selected, Component::Draggable>();
+        auto draggables = registry.view<Component::Selectable, Component::Draggable>();
         for (auto &&[entity, selected, draggable] : draggables.each())
         {
             if (not selected) continue;
@@ -113,7 +117,7 @@ namespace
 
     bool selected(const entt::registry& registry, entt::entity entity)
     {
-        return registry.get<Component::Selected>(entity);
+        return registry.all_of<Component::Selected>(entity);
     }
 
     bool shift(const entt::registry& registry)
@@ -123,7 +127,7 @@ namespace
 
     bool already_touched(const entt::registry& registry, entt::entity entity)
     {
-        return registry.get<Component::Selected>(entity)._touched;
+        return registry.get<Component::Selectable>(entity)._touched;
     }
 }
 
