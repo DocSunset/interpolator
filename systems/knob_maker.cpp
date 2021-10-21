@@ -1,4 +1,4 @@
-#include "knob_layout.h"
+#include "knob_maker.h"
 #include "components/draggable.h"
 #include "components/demo.h"
 #include "components/knob.h"
@@ -7,7 +7,7 @@
 
 namespace System
 {
-    struct KnobLayout::Implementation
+    struct KnobMaker::Implementation
     {
         entt::observer selected_demos;
         std::vector<entt::entity> demo_list;
@@ -31,6 +31,8 @@ namespace System
 
         void run(entt::registry& registry)
         {
+            auto knobs = registry.view<Component::Knob>();
+
             if (selected_demos.size()) demo_list.clear();
             auto layout = [&](entt::entity entity)
             {
@@ -53,45 +55,41 @@ namespace System
                     registry.emplace<Component::Draggable>(knob, 75);
                     auto p = registry.get<Component::FMSynthParameters>(demo_list[0]);
                     registry.emplace<Component::Knob>(knob, p.parameters[i], i);
-                    knobs.emplace_back(knob);
                 }
             }
             else if (knobs.size())
             {
-                for (int i = 0; i < Component::FMSynthParameters::N; ++i)
+                for (auto knob : knobs)
                 {
-                    registry.destroy(knobs[i]);
+                    registry.destroy(knob);
                 }
-                knobs.clear();
             }
-
-            // dragged_knobs.each( a lambda )
         }
     };
 
     /* pimpl boilerplate *****************************************/
 
-    KnobLayout::KnobLayout()
+    KnobMaker::KnobMaker()
     {
         pimpl = new Implementation();
     }
 
-    void KnobLayout::setup_reactive_systems(entt::registry& registry)
+    void KnobMaker::setup_reactive_systems(entt::registry& registry)
     {
         pimpl->setup_reactive_systems(registry);
     }
 
-    void KnobLayout::prepare_registry(entt::registry& registry)
+    void KnobMaker::prepare_registry(entt::registry& registry)
     {
         pimpl->prepare_registry(registry);
     }
 
-    KnobLayout::~KnobLayout()
+    KnobMaker::~KnobMaker()
     {
         free(pimpl);
     }
     
-    void KnobLayout::run(entt::registry& registry)
+    void KnobMaker::run(entt::registry& registry)
     {
         pimpl->run(registry);
     }
