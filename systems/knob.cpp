@@ -4,8 +4,10 @@
 #include "components/knob.h"
 #include "components/fmsynth.h"
 #include "components/window.h"
+#include <functional>
 #include <iostream>
 #include <vector>
+#include <numeric>
 
 namespace
 {
@@ -54,6 +56,30 @@ namespace
             }
         }
     }
+
+    void sync_knob_values(entt::registry& registry)
+    {
+        auto knobs = registry.view<Component::Knob>();
+        auto selected_demos = registry.view<Component::Demo, Component::Selected>();
+
+        for (auto knob_entity : knobs)
+        {
+            int n_demos = 0;
+            auto knob = registry.get<Component::Knob>(knob_entity);
+            auto get_param = [&](auto demo_entity)
+            {
+                ++n_demos;
+                auto p = registry.get<Component::FMSynthParameters>(demo_entity);
+                return p.parameters[knob.index];
+            };
+            knob.value = std::transform_reduce
+                ( selected_demos.begin(), selected_demos.end()
+                , 0.0f, std::plus<float>(), get_param
+                );
+            knob.value = knob.value / (float)n_demos;
+            registry.replace<Component::Knob>(knob_entity, knob);
+        }
+    }
 }
 
 namespace System
@@ -77,6 +103,7 @@ namespace System
         void run(entt::registry& registry)
         {
             manage_knob_lifetimes(registry);
+            sync_knob_values(registry);
         }
     };
 

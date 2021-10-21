@@ -67,7 +67,6 @@ void main()
         angle = (angle - 60.0f) / 300.0f;
         if (angle < value) color = fg_color;
         else color = vec4(1.0f, 1.0f, 1.0f, 1.0f) - bg_color;
-        //color = vec4(angle, angle, angle, fg_color[0]* value);
     }
 }
 )GLSL";

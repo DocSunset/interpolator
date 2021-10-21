@@ -63,6 +63,7 @@ namespace System
                     .update<Position>().where<Knob>()
                     .update<Selectable>().where<Knob>()
                     .update<SelectionHovered>().where<Knob>()
+                    .update<Knob>()
                     );
 
             new_knobs.connect(registry, entt::collector.group<Knob>());
@@ -88,10 +89,10 @@ namespace System
             auto emp_or_rep = [&](const auto entity)
             {
                 // add a demoview
-                Position& p = registry.get<Position>(entity);
-                Selectable s = registry.get<Selectable>(entity);
-                SelectionHovered h = registry.get<SelectionHovered>(entity);
-                Color r = s ? selected_ring : h ? highlight_ring : default_ring;
+                auto p = registry.get<Position>(entity);
+                auto s = registry.get<Selectable>(entity);
+                auto h = registry.get<SelectionHovered>(entity);
+                auto r = s ? selected_ring : h ? highlight_ring : default_ring;
                 auto k = registry.get<Knob>(entity);
                 registry.emplace_or_replace<KnobViewerAttributes>(entity, 
                         KnobViewerAttributes
