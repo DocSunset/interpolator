@@ -5,15 +5,15 @@
 
 namespace System
 {
-    class KnobMaker : public System
+    class Knob : public System
     {
         class Implementation;
         Implementation * pimpl;
     public:
-        KnobMaker();
+        Knob();
         void setup_reactive_systems(entt::registry&) override;
         void prepare_registry(entt::registry&) override;
-        ~KnobMaker();
+        ~Knob();
         void run(entt::registry&) override;
     };
 }

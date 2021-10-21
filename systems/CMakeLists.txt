@@ -7,6 +7,5 @@ target_sources(interpolators-objects PRIVATE
     demo_dragger.h demo_dragger.cpp
     interpolator.h interpolator.cpp
     knob_viewer.h knob_viewer.cpp
-    knob_maker.h knob_maker.cpp
-    knob_layout.h knob_layout.cpp
+    knob.h knob.cpp
     )
