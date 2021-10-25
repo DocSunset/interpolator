@@ -10,7 +10,7 @@ namespace System
         class Implementation;
         Implementation* pimpl;
     public:
-        Platform();
+        Platform(bool testing = false);
         void setup_reactive_systems(entt::registry&) override;
         void prepare_registry(entt::registry&) override;
         ~Platform();

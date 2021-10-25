@@ -37,7 +37,7 @@ namespace System
 
     public:
         // standard SDL setup boilerplate
-        Implementation()
+        Implementation(bool testing)
             : win_size{500, 500}
         {
             if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0)
@@ -60,7 +60,7 @@ namespace System
                     ( "Interpolators"
                     , SDL_WINDOWPOS_CENTERED , SDL_WINDOWPOS_CENTERED
                     , win_size.w, win_size.h
-                    , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE
+                    , SDL_WINDOW_OPENGL | SDL_WINDOW_SHOWN | (testing ? 0 : SDL_WINDOW_RESIZABLE)
                     );
 
             if (window == nullptr)
@@ -68,7 +68,7 @@ namespace System
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                         "Error creating window:\n    %s\n", 
                         SDL_GetError());
-                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                if (not testing) SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
                         "Couldn't create the main window :(", NULL);
                 exit(EXIT_FAILURE);
             }
@@ -81,7 +81,7 @@ namespace System
                 SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, 
                         "Error creating OpenGL context:\n    %s\n", 
                         SDL_GetError());
-                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                if (not testing) SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
                         "Couldn't create OpenGL context :(", NULL);
                 exit(EXIT_FAILURE);
             }
@@ -111,9 +111,8 @@ namespace System
                 SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
                         "Error opening audio device:\n    %s\n",
                         SDL_GetError());
-                SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
+                if (not testing) if (not testing) SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
                         "Couldn't open audio device :(", NULL);
-                exit(EXIT_FAILURE);
             }
             else SDL_Log("Opened audio device\n");
 
@@ -121,28 +120,24 @@ namespace System
             {
                 SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
                         "Error: got unexpected audio format");
-                exit(EXIT_FAILURE);
             }
             if (want.channels != audio_spec.channels)
             {
                 SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
                         "Error: got unexpected audio channels");
-                exit(EXIT_FAILURE);
             }
             if (want.callback != audio_spec.callback)
             {
                 SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
                         "Error: audio callback unexpectedly changed");
-                exit(EXIT_FAILURE);
             }
             if (want.userdata != audio_spec.userdata)
             {
                 SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
                         "Error: audio user data unexpectedly changed");
-                exit(EXIT_FAILURE);
             }
             synth.init(audio_spec.freq, Component::FMSynthParameters{0.5f, 0.5f, 0.3f});
-            SDL_PauseAudioDevice(audio, 0);
+            if (audio != 0) SDL_PauseAudioDevice(audio, 0);
         }
 
         void setup_reactive_systems(entt::registry& registry)
@@ -337,9 +332,9 @@ namespace System
         }
     };
     
-    Platform::Platform()
+    Platform::Platform(bool testing)
     {
-        pimpl = new Implementation();
+        pimpl = new Implementation(testing);
     }
 
     void Platform::setup_reactive_systems(entt::registry& registry)
