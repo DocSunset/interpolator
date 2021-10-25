@@ -5,10 +5,16 @@
 
 namespace Component
 {
+
     // boolean value represents whether or not the entity is already selected
     struct Selectable : public Flag
     {
-        // selection group ?
+        enum class Group
+        {
+            Demo,
+            Knob,
+            All,
+        } group;
         bool _touched;
     };
 

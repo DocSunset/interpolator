@@ -41,7 +41,7 @@ namespace
             {
                 auto knob = registry.create();
                 registry.emplace<Component::Position>(knob, 0, 100 * i);
-                registry.emplace<Component::Selectable>(knob, false);
+                registry.emplace<Component::Selectable>(knob, false, Component::Selectable::Group::Knob);
                 registry.emplace<Component::Color>(knob);
                 registry.emplace<Component::SelectionHovered>(knob, false);
                 registry.emplace<Component::Draggable>(knob, 75);
@@ -85,9 +85,7 @@ namespace
         auto color = std::transform_reduce
             ( selected_demos.begin(), selected_demos.end()
             , Component::Color{0.0f,0.0f,0.0f,0.0f}
-            , [](auto a, auto b){
-            std::cout << "color b: " << b.r << " " << b.g << " " << b.b << "\n";
-            return Component::Color{a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a};}
+            , [](auto a, auto b){return Component::Color{a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a};}
             , [&](auto entity){return registry.get<Component::Color>(entity);}
             );
 

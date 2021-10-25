@@ -11,7 +11,7 @@ namespace
     {
         registry.emplace_or_replace<Component::Color>(demo_entity, Component::Color::Random());
         registry.emplace<Component::Position>(demo_entity, Component::Position::Random());
-        registry.emplace<Component::Selectable>(demo_entity, false);
+        registry.emplace<Component::Selectable>(demo_entity, false, Component::Selectable::Group::Demo);
         registry.emplace<Component::SelectionHovered>(demo_entity, false);
         registry.emplace<Component::Draggable>(demo_entity
                 , 25
