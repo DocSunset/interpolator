@@ -3,6 +3,7 @@
 #include <GLES3/gl3.h>
 #include <SDL.h>
 #include <SDL_log.h>
+#include <SDL_mouse.h>
 #include <SDL_video.h>
 #include <SDL_audio.h>
 #include <iostream>
@@ -10,10 +11,16 @@
 #include "components/window.h"
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
+#include "components/mouse_mode.h"
+#include "components/mouse_position.h"
 #include "components/modifier_keys.h"
 #include "components/fmsynth.h"
 #include "gl/ll.h"
 #include "utility/mtof.h"
+
+namespace
+{
+}
 
 namespace System
 {
@@ -140,6 +147,10 @@ namespace System
 
         void setup_reactive_systems(entt::registry& registry)
         {
+            registry.on_update<Component::RelativeMouseMode>()
+                .connect<&Platform::Implementation::on_mouse_mode>(*this);
+            registry.on_update<Component::MousePosition>()
+                .connect<&Platform::Implementation::on_mouse_position>(*this);
         }
 
         void prepare_registry(entt::registry& registry)
@@ -156,6 +167,8 @@ namespace System
                     , Component::Position::Zero()
                     , Component::Position::Zero()
                     );
+            registry.emplace<Component::RelativeMouseMode>(mouse_entity, false);
+            registry.emplace<Component::MousePosition>(mouse_entity, false);
             
             // set initial context
             registry.set<Component::ShiftModifier>(false);
@@ -164,6 +177,19 @@ namespace System
 
         // this should arguably delete the window and so on, but since the app is quitting...
         ~Implementation() { }
+
+        void on_mouse_mode(entt::registry& registry, entt::entity entity)
+        {
+            SDL_SetRelativeMouseMode(
+                    registry.get<Component::RelativeMouseMode>(entity) ?
+                    SDL_TRUE : SDL_FALSE);
+        }
+
+        void on_mouse_position(entt::registry& registry, entt::entity entity)
+        {
+            auto p = registry.get<Component::MousePosition>(entity);
+            SDL_WarpMouseInWindow(window, p.x + win_size.w/2.0f, win_size.h/2.0f - p.y);
+        }
 
         void quit(entt::registry& registry)
         {
@@ -197,19 +223,23 @@ namespace System
                 break;
 
             case SDL_MOUSEMOTION:
-                registry.replace<Component::MouseMotion>
-                        ( mouse_entity
-                        , Component::Position
+            {
+                auto p = Component::Position
                             { float(ev.motion.x) - win_size.w/2.0f
                             , win_size.h/2.0f - float(ev.motion.y)
-                            }
+                            };
+                registry.replace<Component::MouseMotion>
+                        ( mouse_entity
+                        , p
                         , Component::Position
                             { float(ev.motion.xrel)
                             , -float(ev.motion.yrel)
                             }
                         );
+                auto& mouse_position = registry.get<Component::MousePosition>(mouse_entity);
+                mouse_position = {p.x, p.y};
                 break;
-
+            }
             case SDL_MOUSEBUTTONDOWN:
                 switch (ev.button.button)
                 {

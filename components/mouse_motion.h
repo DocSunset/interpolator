@@ -4,8 +4,6 @@
 
 namespace Component
 {
-    // motion of the mouse when no buttons are actuated
- 
     struct MouseMotion
     {
         Position position;

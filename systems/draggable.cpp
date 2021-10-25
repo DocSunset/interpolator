@@ -10,6 +10,8 @@
 #include "components/draggable.h"
 #include "entt/entity/entity.hpp"
 #include "components/fmsynth.h"
+#include "components/mouse_mode.h"
+#include "components/mouse_position.h"
 
 namespace
 {
@@ -176,6 +178,12 @@ namespace
                     );
         }
     }
+
+    void set_relative_mouse(entt::registry& registry, bool mode)
+    {
+        auto mouse_entity = registry.view<Component::RelativeMouseMode>()[0];
+        registry.replace<Component::RelativeMouseMode>(mouse_entity, mode);
+    }
 }
 
 namespace System
@@ -194,6 +202,7 @@ namespace System
         entt::entity maybe_drop = entt::null;
         entt::entity hovered = entt::null;
         Component::Selectable::Group last_group = Component::Selectable::Group::All;
+        Component::MousePosition drag_start_position;
 
         Implementation()
         {
@@ -209,6 +218,31 @@ namespace System
 
         void prepare_registry(entt::registry& registry)
         {
+        }
+
+        void start_drag(entt::registry& registry)
+        {
+            if (last_group == Component::Selectable::Group::Knob)
+            {
+                drag_start_position = registry.get<Component::MousePosition>(
+                        registry.view<Component::MousePosition>()[0]);
+                set_relative_mouse(registry, true);
+            }
+            grab(registry, last_group);
+            state = DRAG;
+        }
+
+        void end_drag(entt::registry& registry)
+        {
+            if (last_group == Component::Selectable::Group::Knob)
+            {
+                set_relative_mouse(registry, false);
+                registry.replace<Component::MousePosition>(
+                        registry.view<Component::MousePosition>()[0],
+                        drag_start_position);
+            }
+            ungrab(registry);
+            state = START;
         }
 
         void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
@@ -232,8 +266,7 @@ namespace System
                     break;
                 }
                 case MAYBE_DRAG:
-                    grab(registry, last_group);
-                    state = DRAG;
+                    start_drag(registry);
                     // fall through
                 case DRAG:
                     drag(registry, motion);
@@ -300,8 +333,7 @@ namespace System
                         {
                             if (not shift(registry)) unselect_all(registry, last_group);
                             select(registry, grabbed);
-                            grab(registry, last_group);
-                            state = DRAG;
+                            start_drag(registry);
                             break;
                         }
                     }
@@ -335,8 +367,7 @@ namespace System
                 case DRAG:
                 case SELECT_DRAG:
                     if (btn.pressed) break; // this should never happen
-                    ungrab(registry);
-                    state = START;
+                    end_drag(registry);
                     break;
             }
         }

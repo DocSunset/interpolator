@@ -9,4 +9,5 @@ target_sources(interpolators-objects PRIVATE
     modifier_keys.h
     mouse_motion.h
     fmsynth.h fmsynth.cpp
+    mouse_mode.h
     )
