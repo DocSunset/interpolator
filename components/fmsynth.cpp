@@ -105,7 +105,7 @@ namespace Component
 
         phasor.frequency.set_midi(frequency_midi(s));
         _last_out[1] = _last_out[0];
-        _last_out[0] = feedback(s) * Simple::twoPi * (_last_out[0] + _last_out[1]);
+        _last_out[0] = feedback(s) * Simple::pi * (_last_out[0] + _last_out[1]);
         _last_out[0] = amplitude(s) * std::cos(phasor.tick().radians() + _last_out[0]);
         return _last_out[0];
     }

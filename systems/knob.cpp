@@ -5,6 +5,7 @@
 #include "components/knob.h"
 #include "components/fmsynth.h"
 #include "components/window.h"
+#include <simple/boundaries.h>
 #include <functional>
 #include <iostream>
 #include <vector>
@@ -98,12 +99,35 @@ namespace
         for (auto knob_entity : knobs)
             registry.replace<Component::Color>(knob_entity, color);
     }
+
+    void drag_knobs(entt::registry& registry, entt::observer& dragged)
+    {
+        const auto& win = *registry.view<Component::Window>().raw()[0];
+        dragged.each([&](const auto entity)
+        {
+            auto& drag = registry.get<Component::Draggable>(entity);
+            auto& knob = registry.get<Component::Knob>(entity);
+
+            float delta = drag.delta.y / win.h;
+            registry.replace<Component::Knob>(entity, knob.index, Simple::clip(knob.value + delta));
+            drag.delta = {0,0};
+
+            auto view = registry.view<Component::Selected, Component::Demo>();
+            for (auto entity : view)
+            {
+                auto& p = registry.get<Component::FMSynthParameters>(entity);
+                p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
+            }
+        });
+    }
 }
 
 namespace System
 {
     struct Knob::Implementation
     {
+        entt::observer dragged;
+
         Implementation()
         {
         }
@@ -112,6 +136,10 @@ namespace System
         {
             registry.on_construct<Component::Knob>().connect<&position_knob>();
             registry.on_update<Component::Window>().connect<&on_window_update>();
+            dragged.connect(registry, entt::collector
+                    .update<Component::Draggable>()
+                    .where<Component::Knob>()
+                    );
         }
 
         void prepare_registry(entt::registry& registry)
@@ -122,6 +150,7 @@ namespace System
         {
             manage_knob_lifetimes(registry);
             sync_knob_values(registry);
+            drag_knobs(registry, dragged);
         }
     };
 

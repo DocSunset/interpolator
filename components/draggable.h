@@ -19,6 +19,7 @@ namespace Component
     };
 
     struct Selected {}; // tag struct to signal that a component is selected
+    struct Grabbed {}; // tag struct to signal that a component is grabbed for dragging
 
     struct SelectionHovered : public Flag
     {

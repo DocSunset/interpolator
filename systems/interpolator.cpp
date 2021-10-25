@@ -4,6 +4,9 @@
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
 #include "components/fmsynth.h"
+#include "components/draggable.h"
+#include "components/knob.h"
+#include "entt/entity/entity.hpp"
 
 #include <vector>
 #include <iostream>
@@ -79,6 +82,23 @@ namespace System
         {
             using P = Component::Position;
             using S = Component::FMSynthParameters;
+
+            // if grabbed knob, play a demo
+            auto grabbed_knob = registry.view<Component::Knob, Component::Grabbed>();
+            for (auto && [entity, knob] : grabbed_knob.each())
+            {
+                // get first selected demo
+                entt::entity first_demo = entt::null;
+                auto first_demo_view = registry.view<Component::Selected, Component::Demo>();
+                for (auto e : first_demo_view) { first_demo = e; break; }
+                if (first_demo == entt::null) break; // this should never happen
+
+                // play first selected demo's parameters
+                auto s = registry.get<S>(first_demo);
+                registry.set<S>(s);
+                return;
+            }
+
             std::size_t i = 0;
             for (auto && [entity, demo, position, params] : registry.view<Component::Demo, P, S>().each())
             {

@@ -18,7 +18,8 @@ namespace System
         {
             dragged.connect(registry, entt::collector
                     .update<Component::Draggable>()
-                    .where<Component::Demo>());
+                    .where<Component::Demo>()
+                    );
         }
 
         void prepare_registry(entt::registry& registry)

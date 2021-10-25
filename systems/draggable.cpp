@@ -1,7 +1,6 @@
 #include "draggable.h"
 
 #include <limits>
-#include <iostream>
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
 #include "components/modifier_keys.h"
@@ -14,6 +13,64 @@
 
 namespace
 {
+    /* tests
+     */
+    // returns entt::null in case cmp is not close enough to grab
+    entt::entity close_enough_to_grab(const entt::registry& registry, Component::Position cmp)
+    {
+        entt::entity nearest_entity = entt::null;
+        float min_dist = std::numeric_limits<float>::max();
+        auto draggables = registry.view<Component::Position, Component::Draggable>();
+        for (auto &&[entity, position, draggable] : draggables.each())
+        {
+            auto dist = distance(cmp, position);
+            if (dist < draggable.radius && dist < min_dist)
+            {
+                nearest_entity = entity;
+                min_dist = dist;
+            }
+        }
+        return nearest_entity;
+    }
+
+    bool selected(const entt::registry& registry, entt::entity entity)
+    {
+        return registry.all_of<Component::Selected>(entity);
+    }
+
+    bool shift(const entt::registry& registry)
+    {
+        return registry.ctx<Component::ShiftModifier>();
+    }
+
+    bool already_touched(const entt::registry& registry, entt::entity entity)
+    {
+        return registry.get<Component::Selectable>(entity)._touched;
+    }
+
+    Component::Selectable::Group group(const entt::registry& registry, entt::entity entity)
+    {
+        return registry.get<Component::Selectable>(entity).group;
+    }
+
+    bool any_selected_in_group(const entt::registry& registry, Component::Selectable::Group group)
+    {
+        switch(group)
+        {
+            case Component::Selectable::Group::Demo:
+                registry.view<Component::Demo, Component::Selected>().each([](auto){return true;});
+                break;
+            case Component::Selectable::Group::Knob:
+                registry.view<Component::Knob, Component::Selected>().each([](auto){return true;});
+                break;
+            case Component::Selectable::Group::All:
+                registry.view<Component::Demo, Component::Selected>().each([](auto){return true;});
+                registry.view<Component::Knob, Component::Selected>().each([](auto){return true;});
+                break;
+        }
+        return false;
+    }
+
     /* actions
      */
     void highlight(entt::registry& registry, entt::entity entity)
@@ -87,12 +144,26 @@ namespace
         selected._touched = true;
     }
 
-    void drag(entt::registry& registry, const Component::MouseMotion& motion, Component::Selectable::Group group)
+    void grab(entt::registry& registry, Component::Selectable::Group grab_group)
     {
-        auto draggables = registry.view<Component::Selected, Component::Selectable, Component::Draggable>();
-        for (auto &&[entity, selectable, draggable] : draggables.each())
+        auto view = registry.view<Component::Selected, Component::Selectable, Component::Draggable>();
+        for (auto &&[entity, selectable, draggable] : view.each())
         {
-            if (group != Component::Selectable::Group::All && selectable.group != group) return;
+            if (group(registry, entity) == grab_group)
+                registry.emplace_or_replace<Component::Grabbed>(entity);
+        }
+    }
+
+    void ungrab(entt::registry& registry)
+    {
+        registry.clear<Component::Grabbed>();
+    }
+
+    void drag(entt::registry& registry, const Component::MouseMotion& motion)
+    {
+        auto draggables = registry.view<Component::Grabbed, Component::Draggable>();
+        for (auto &&[entity, draggable] : draggables.each())
+        {
             registry.replace<Component::Draggable>(entity
                     , draggable.radius
                     , draggable.start
@@ -104,64 +175,6 @@ namespace
                     , motion.delta + draggable.delta
                     );
         }
-    }
-
-    /* tests
-     */
-    // returns entt::null in case cmp is not close enough to grab
-    entt::entity close_enough_to_grab(const entt::registry& registry, Component::Position cmp)
-    {
-        entt::entity nearest_entity = entt::null;
-        float min_dist = std::numeric_limits<float>::max();
-        auto draggables = registry.view<Component::Position, Component::Draggable>();
-        for (auto &&[entity, position, draggable] : draggables.each())
-        {
-            auto dist = distance(cmp, position);
-            if (dist < draggable.radius && dist < min_dist)
-            {
-                nearest_entity = entity;
-                min_dist = dist;
-            }
-        }
-        return nearest_entity;
-    }
-
-    bool selected(const entt::registry& registry, entt::entity entity)
-    {
-        return registry.all_of<Component::Selected>(entity);
-    }
-
-    bool shift(const entt::registry& registry)
-    {
-        return registry.ctx<Component::ShiftModifier>();
-    }
-
-    bool already_touched(const entt::registry& registry, entt::entity entity)
-    {
-        return registry.get<Component::Selectable>(entity)._touched;
-    }
-
-    Component::Selectable::Group group(const entt::registry& registry, entt::entity entity)
-    {
-        return registry.get<Component::Selectable>(entity).group;
-    }
-
-    bool any_selected_in_group(const entt::registry& registry, Component::Selectable::Group group)
-    {
-        switch(group)
-        {
-            case Component::Selectable::Group::Demo:
-                registry.view<Component::Demo, Component::Selected>().each([](auto){return true;});
-                break;
-            case Component::Selectable::Group::Knob:
-                registry.view<Component::Knob, Component::Selected>().each([](auto){return true;});
-                break;
-            case Component::Selectable::Group::All:
-                registry.view<Component::Demo, Component::Selected>().each([](auto){return true;});
-                registry.view<Component::Knob, Component::Selected>().each([](auto){return true;});
-                break;
-        }
-        return false;
     }
 }
 
@@ -219,10 +232,11 @@ namespace System
                     break;
                 }
                 case MAYBE_DRAG:
+                    grab(registry, last_group);
                     state = DRAG;
                     // fall through
                 case DRAG:
-                    drag(registry, motion, last_group);
+                    drag(registry, motion);
                     break;
 
                 case MAYBE_SELECT_DRAG:
@@ -272,25 +286,26 @@ namespace System
                 {
                     if (not btn.pressed) break;
 
-                    auto grab = close_enough_to_grab(registry, btn.down_position);
-                    if (grab != entt::null) // got a grab
+                    auto grabbed = close_enough_to_grab(registry, btn.down_position);
+                    if (grabbed != entt::null) // got grabbed object
                     {
-                        last_group = group(registry, grab);
-                        if (selected(registry, grab))
+                        last_group = group(registry, grabbed);
+                        if (selected(registry, grabbed))
                         {
-                            maybe_drop = grab;
+                            maybe_drop = grabbed;
                             state = MAYBE_DRAG;
                             break;
                         }
                         else
                         {
                             if (not shift(registry)) unselect_all(registry, last_group);
-                            select(registry, grab);
+                            select(registry, grabbed);
+                            grab(registry, last_group);
                             state = DRAG;
                             break;
                         }
                     }
-                    else // no grab
+                    else // no grabbed object
                     {
                         untouch_all(registry);
                         state = MAYBE_SELECT_DRAG;
@@ -320,10 +335,10 @@ namespace System
                 case DRAG:
                 case SELECT_DRAG:
                     if (btn.pressed) break; // this should never happen
+                    ungrab(registry);
                     state = START;
                     break;
             }
-            std::cout << static_cast<int>(last_group) << std::endl;
         }
 
         void run(entt::registry& registry)
