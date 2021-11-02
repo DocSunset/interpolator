@@ -7,7 +7,6 @@
 #include "components/window.h"
 #include <simple/boundaries.h>
 #include <functional>
-#include <iostream>
 #include <vector>
 #include <numeric>
 
@@ -120,6 +119,7 @@ namespace
             }
         });
     }
+
 }
 
 namespace System

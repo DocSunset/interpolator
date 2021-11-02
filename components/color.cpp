@@ -6,6 +6,6 @@ namespace Component
     Color Color::Random()
     {
         using Utility::nrandf;
-        return {nrandf(),nrandf(),nrandf(),nrandf()};
+        return {nrandf(),nrandf(),nrandf(),1.0f};
     }
 }
