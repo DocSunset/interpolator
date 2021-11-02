@@ -4,119 +4,91 @@
 #include "components/color.h"
 #include "components/window.h"
 #include "components/draggable.h"
+#include "components/circle.h"
 #include "gl/vertex_array.h"
 
 #include "shader/demo_viewer.h"
 
+namespace
+{
+    struct DemoView
+    {
+        entt::entity ring;
+        entt::entity fill;
+    };
+
+    void update_circle(entt::registry& registry, entt::entity demo)
+    {
+        using Component::Color;
+        constexpr Color selected_ring{1,0.7,0.7,1};
+        constexpr Color default_ring{0.6,0.6,0.6,1};
+        constexpr Color highlight_ring{0.7,0.8,0.8,1};
+
+        auto demoview = registry.get<DemoView>(demo);
+
+        auto s = registry.get<Component::Selectable>(demo);
+        auto h = registry.get<Component::SelectionHovered>(demo);
+        Color ring_color = s ? selected_ring : h ? highlight_ring : default_ring;
+        auto fill_color = registry.get<Color>(demo);
+        auto position = registry.get<Component::Position>(demo);
+        auto radius = registry.get<Component::Draggable>(demo).radius;
+
+        auto emp_or_rep = [&](auto entity, auto radius, auto color)
+        {
+            registry.emplace_or_replace<Component::Circle>(entity,
+                    Component::Circle
+                    { radius
+                    , {position.x, position.y}
+                    , {color.r, color.g, color.b, color.a}
+                    });
+        };
+
+        emp_or_rep(demoview.ring, radius, ring_color);
+        emp_or_rep(demoview.fill, radius - 10, fill_color);
+    }
+
+    void on_demoview(entt::registry& registry, entt::entity entity)
+    {
+        auto& demoview = registry.get<DemoView>(entity);
+        demoview.ring = registry.create();
+        demoview.fill = registry.create();
+    }
+}
+
 namespace System
 {
-    using Component::Demo;
-    using Component::Position;
-    using Component::Color;
-    using Component::Selectable;
-    using Component::SelectionHovered;
 
     struct DemoViewer::Implementation
     {
-        entt::observer new_demos;
         entt::observer updated_demos;
-        GL::LL::Program program;
-        GL::VertexAttributeArray array;
-        GL::LL::VertexArray vao;
-        GL::LL::Buffer vbo;
-
-        void window_uniform(Component::Window& win)
-        {
-            program.use();
-            auto prog = program.gl_handle();
-            auto window = glGetUniformLocation(prog, "window");
-            glUniform2f(window, win.w, win.h);
-        }
-
-        void update_window(entt::registry& registry, entt::registry::entity_type entity)
-        {
-            Component::Window win = registry.get<Component::Window>(entity);
-            window_uniform(win);
-        }
+        entt::observer new_demos;
 
         Implementation()
-            : program{vertex_shader, fragment_shader}
-            , array{program}
-            , vao{}
-            , vbo(GL::LL::Buffer::Target::ARRAY, GL::LL::Buffer::Usage::DYNAMIC_DRAW)
         {
-            if (GL::LL::any_error()) GL::LL::error_print("demo viewer post-init gl error\n");
-            auto vaobind = bind(vao);
-            auto vbobind = bind(vbo);
-            const auto& attributes = array.attributes();
-
-            vaobind.enable_attrib_pointer(attributes, attributes.index_of("position"));
-            vaobind.enable_attrib_pointer(attributes, attributes.index_of("fill_color_in"));
-            vaobind.enable_attrib_pointer(attributes, attributes.index_of("ring_color_in"));
         }
 
         void setup_reactive_systems(entt::registry& registry)
         {
+            registry.on_construct<Component::Demo>().connect<&entt::registry::emplace<DemoView>>();
+            registry.on_construct<DemoView>().connect<&on_demoview>();
             updated_demos.connect(registry, entt::collector
-                    .update<Position>().where<Demo>()
-                    .update<Color>().where<Demo>()
-                    .update<Selectable>().where<Demo>()
-                    .update<SelectionHovered>().where<Demo>()
+                    .update<Component::Position>().where<Component::Demo>()
+                    .update<Component::Color>().where<Component::Demo>()
+                    .update<Component::Selectable>().where<Component::Demo>()
+                    .update<Component::SelectionHovered>().where<Component::Demo>()
                     );
-
-            new_demos.connect(registry, entt::collector.group<Demo>());
-
-            registry.on_update<Component::Window>().connect<&Implementation::update_window>(*this);
+            new_demos.connect(registry, entt::collector.group<Component::Demo>());
         }
 
         void prepare_registry(entt::registry& registry)
         {
-            auto view = registry.view<Component::Window>();
-            assert(view.size() == 1);
-            Component::Window win = **(view.raw());
-            window_uniform(win);
         }
 
         void run(entt::registry& registry)
         {
-            constexpr Color selected_ring{1,0.7,0.7,1};
-            constexpr Color default_ring{0.6,0.6,0.6,1};
-            constexpr Color highlight_ring{0.7,0.8,0.8,1};
-
-            auto emp_or_rep = [&](const auto entity)
-            {
-                // add a demoview
-                Position& p = registry.get<Position>(entity);
-                Color c = registry.get<Color>(entity);
-                Selectable s = registry.get<Selectable>(entity);
-                SelectionHovered h = registry.get<SelectionHovered>(entity);
-                Color r = s ? selected_ring : h ? highlight_ring : default_ring;
-                registry.emplace_or_replace<DemoViewerAttributes>(entity, 
-                        DemoViewerAttributes{ {p.x, p.y}, {c.r, c.g, c.b, c.a}, {r.r, r.b, r.g, r.a}});
-            };
-
-            new_demos.each(emp_or_rep);
-            updated_demos.each(emp_or_rep);
-
-            // it is assumed that demo entities will be destroyed wholesale,
-            // and that no action is needed to remove the DemoViewerAttributes component
-            // manually
-
-            auto view = registry.view<DemoViewerAttributes>();
-
-            auto size = view.size();
-            if (size == 0) return;
-
-            DemoViewerAttributes * dots = *(view.raw());
-
-            auto buffbind = bind(vbo);
-            buffbind.buffer_data(size * sizeof(DemoViewerAttributes), dots);
-
-            // draw dots
-            GL::LL::any_error();
-            program.use();
-            auto vaobind = bind(vao);
-            glDrawArrays(GL_POINTS, 0, size);
+            auto f = [&](auto entity){update_circle(registry, entity);};
+            new_demos.each(f);
+            updated_demos.each(f);
         }
     };
 
