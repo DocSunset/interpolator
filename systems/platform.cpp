@@ -18,6 +18,8 @@
 #include "gl/ll.h"
 #include "utility/mtof.h"
 
+#include "components/circle.h"
+
 namespace
 {
 }
@@ -88,6 +90,8 @@ namespace System
             else SDL_Log("Created GL context\n");
 
             SDL_GL_SetSwapInterval(1); // should check for errors
+            glEnable(GL_BLEND);
+            glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
             // set up audio
             SDL_AudioSpec want;

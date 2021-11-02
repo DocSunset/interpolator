@@ -14,6 +14,7 @@
 #include "systems/knob.h"
 #include "systems/knob_viewer.h"
 #include "systems/interpolator_visualizer.h"
+#include "systems/circle_painter.h"
 
 class App
 {
@@ -38,9 +39,9 @@ public:
         systems.push_back(std::make_unique<System::DemoDragger>());
         systems.push_back(std::make_unique<System::Knob>());
         systems.push_back(std::make_unique<System::Interpolator>());
-        systems.push_back(std::make_unique<System::InterpolatorVisualizer>());
         systems.push_back(std::make_unique<System::DemoViewer>());
         systems.push_back(std::make_unique<System::KnobViewer>());
+        systems.push_back(std::make_unique<System::CirclePainter>());
         systems.push_back(std::make_unique<System::DemoMaker>());
 
         for (auto& system : systems) system->setup_reactive_systems(registry);
