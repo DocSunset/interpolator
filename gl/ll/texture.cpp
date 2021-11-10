@@ -25,4 +25,10 @@ namespace GL::LL
 #endif
     }
 
+    TextureBinding::TextureBinding(const Texture& texture)
+        : t{texture}
+    {
+        glBindTexture(t.target, t.handle);
+    }
+
 }

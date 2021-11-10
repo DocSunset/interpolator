@@ -10,4 +10,9 @@ target_sources(interpolators-objects PRIVATE
     knob.h knob.cpp
     cursor_viewer.h cursor_viewer.cpp
     circle_painter.h circle_painter.cpp
+    glyph.h glyph.cpp
+    )
+
+target_sources(interpolators-tests PRIVATE
+    #glyph.test.cpp
     )

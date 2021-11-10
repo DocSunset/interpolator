@@ -6,6 +6,14 @@ namespace GL::LL
 {
     class Texture
     {
+    public:
+        enum class Target
+        {
+            TEX_2D,
+            TEX_3D,
+            TEX_2D_ARRAY,
+            TEX_CUBE_MAP,
+        };
     private:
         friend class TextureBinding;
         GLuint handle;
