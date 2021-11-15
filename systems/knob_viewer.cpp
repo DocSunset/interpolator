@@ -16,7 +16,6 @@ namespace
     {
         entt::entity background;
         entt::entity indicator;
-        entt::entity indicator_ring;
     };
 
     void construct_knobview(entt::registry& registry, entt::entity knob)
@@ -24,7 +23,6 @@ namespace
         auto& knobview = registry.get<KnobView>(knob);
         knobview.background = registry.create();
         knobview.indicator = registry.create();
-        knobview.indicator_ring = registry.create();
     }
 
     void destroy_knobview(entt::registry& registry, entt::entity knob)
@@ -32,13 +30,12 @@ namespace
         auto& knobview = registry.get<KnobView>(knob);
         registry.destroy(knobview.background);
         registry.destroy(knobview.indicator);
-        registry.destroy(knobview.indicator_ring);
     }
 
     Component::Position get_indicator_position(entt::registry& registry, entt::entity knob)
     {
         constexpr float deg_to_rad = Simple::pi / 180.0f;
-        auto radius = registry.get<Component::Draggable>(knob).radius/2.0f - 10;
+        auto radius = registry.get<Component::Draggable>(knob).radius/2.0f - 15;
         auto center = registry.get<Component::Position>(knob);
         auto angle = (-120.0f - registry.get<Component::Knob>(knob).value * 300.0f) * deg_to_rad;
         angle = Simple::wrap(angle, -Simple::pi, Simple::pi);
@@ -62,19 +59,20 @@ namespace
         auto radius = registry.get<Component::Draggable>(knob).radius;
         auto indicator_position = get_indicator_position(registry, knob);
 
-        auto emp_or_rep = [&](auto entity, auto radius, auto position, auto color)
+        auto emp_or_rep = [&](auto entity, auto radius, auto position, auto color, auto border, auto border_thick)
         {
             registry.emplace_or_replace<Component::Circle>(entity,
                     Component::Circle
-                    { radius
+                    { {color.r, color.g, color.b, color.a}
+                    , {border.r, border.g, border.b, border.a}
                     , {position.x, position.y}
-                    , {color.r, color.g, color.b, color.a}
+                    , radius
+                    , border_thick
                     });
         };
 
-        emp_or_rep(knobview.background, radius, position, ring_color);
-        emp_or_rep(knobview.indicator_ring, 15.0f, indicator_position, Color{0,0,0,1});
-        emp_or_rep(knobview.indicator, 10.0f, indicator_position, fill_color);
+        emp_or_rep(knobview.background, radius, position, ring_color, fill_color, 5.0f);
+        emp_or_rep(knobview.indicator, 15.0f, indicator_position, fill_color, Color{0,0,0,1}, 3.0f);
     }
 }
 

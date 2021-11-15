@@ -1,78 +1,51 @@
 #include "circle_painter.h"
 #include "components/circle.h"
 #include "components/window.h"
+#include "components/line.h"
 #include "gl/vertex_array.h"
 
 #include "shader/circle.h"
+
+namespace
+{
+    void circle_update(entt::registry& registry, entt::entity entity)
+    {
+        auto c = registry.get<Component::Circle>(entity);
+        registry.emplace_or_replace<Component::Line>(entity,
+                Component::Line
+                { {c.color[0], c.color[1], c.color[2], c.color[3]}
+                , {c.border[0], c.border[1], c.border[2], c.border[3]}
+                , {c.position[0], c.position[1]}
+                , {c.position[0], c.position[1]}
+                , c.radius
+                , c.border_thickness
+                , c.border_transition
+                , c.blur_radius
+                , Component::Line::Cap::Round
+                });
+    }
+}
 
 namespace System
 {
     struct CirclePainter::Implementation
     {
-        GL::LL::Program program;
-        GL::VertexAttributeArray array;
-        GL::LL::VertexArray vao;
-        GL::LL::Buffer vbo;
-
-        void window_uniform(Component::Window& win)
-        {
-            program.use();
-            auto prog = program.gl_handle();
-            auto window = glGetUniformLocation(prog, "window");
-            glUniform2f(window, win.w, win.h);
-        }
-
-        void update_window(entt::registry& registry, entt::registry::entity_type entity)
-        {
-            Component::Window win = registry.get<Component::Window>(entity);
-            window_uniform(win);
-        }
-
         Implementation()
-            : program{vertex_shader, fragment_shader}
-            , array{program}
-            , vao{}
-            , vbo(GL::LL::Buffer::Target::ARRAY, GL::LL::Buffer::Usage::DYNAMIC_DRAW)
         {
-            if (GL::LL::any_error()) GL::LL::error_print("circle painter post-init gl error\n");
-            auto vaobind = bind(vao);
-            auto vbobind = bind(vbo);
-            const auto& attributes = array.attributes();
-
-            for (int i = 0; i < attributes.size(); ++i)
-                vaobind.enable_attrib_pointer(attributes, attributes.index_of(attributes[i].name()));
         }
 
         void setup_reactive_systems(entt::registry& registry)
         {
-            registry.on_update<Component::Window>().connect<&Implementation::update_window>(*this);
+            registry.on_construct<Component::Circle>().connect<&circle_update>();
+            registry.on_update<Component::Circle>().connect<&circle_update>();
         }
 
         void prepare_registry(entt::registry& registry)
         {
-            auto view = registry.view<Component::Window>();
-            assert(view.size() == 1);
-            Component::Window win = **(view.raw());
-            window_uniform(win);
         }
 
         void run(entt::registry& registry)
         {
-            auto view = registry.view<Component::Circle>();
-
-            auto size = view.size();
-            if (size == 0) return;
-
-            auto * circles = *(view.raw());
-
-            auto buffbind = bind(vbo);
-            buffbind.buffer_data(size * sizeof(Component::Circle), circles);
-
-            // draw circles
-            GL::LL::any_error();
-            program.use();
-            auto vaobind = bind(vao);
-            glDrawArrays(GL_POINTS, 0, size);
         }
     };
 

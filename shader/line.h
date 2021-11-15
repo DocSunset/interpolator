@@ -29,18 +29,22 @@ out vec2 v_linespace_coord; // line-aligned coordinate in units of line radii
 
 void main()
 {
-    v_color = a_color;
-    v_border = a_border;
-    v_cap = a_cap;
-    vec2 direction = a_end_position - a_start_position;
+    // in case the line has zero length, set an arbitary direction so that it
+    // still gets tesselated and drawn with its end caps
+    vec2 direction = (a_end_position == a_start_position) ?  vec2(1.0, 0.0f) 
+                   : a_end_position - a_start_position;
     float norm = length(direction);
     float line_radius = a_line_thickness / 2.0f;
+
+    v_color = a_color;
+    v_border = a_border;
     if (a_line_thickness < 1.0f)
     {
         line_radius = 0.5f;
         v_color.a = v_color.a * a_line_thickness;
         v_border.a = v_border.a * a_line_thickness;
     }
+    v_cap = a_cap;
     v_half_length = 0.5f * norm / line_radius;
     v_blur_radius = a_blur_radius / line_radius;
     v_border_thickness = a_border_thickness / line_radius;
@@ -93,6 +97,10 @@ constexpr const char * fragment_shader = R"GLSL(
 precision highp float;
 #endif
 
+#define CAP_NONE 0
+#define CAP_ROUND 1
+#define CAP_SQUARE 2
+
 flat in int v_cap;
 flat in float v_pixel_length;
 flat in float v_half_length;
@@ -107,7 +115,7 @@ out vec4 color;
 
 float rect_signed_distance_field()
 {
-    vec2 edge_dist = abs(v_linespace_coord) - vec2(v_half_length, 1.0f);
+    vec2 edge_dist = abs(v_linespace_coord) - vec2(v_half_length + ( (v_cap == CAP_SQUARE) ? 1.0f : 0.0f), 1.0f);
     float inside = min(max(edge_dist.x, edge_dist.y), 0.0f);
     float outside = length(max(edge_dist, vec2(0.0f)));
     float sdf = inside + outside;
@@ -126,8 +134,8 @@ float slot_signed_distance_field()
 
 float signed_distance_field()
 {
-    if (v_cap == 0) return rect_signed_distance_field();
-    else return slot_signed_distance_field();
+    if (v_cap == CAP_ROUND) return slot_signed_distance_field();
+    else return rect_signed_distance_field();
 }
 
 void main()

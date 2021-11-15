@@ -8,6 +8,7 @@ namespace Component
         {
             None = 0,
             Round = 1,
+            Square = 2,
         };
 
         float color[4];
