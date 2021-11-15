@@ -23,6 +23,9 @@ namespace GL::LL
             for (GLint i = 0; i < active_attributes; ++i)
             {
                 attributes.push_back(Attribute(p.gl_handle(), i, namebuf, bufsize));
+                if (namebuf[0] == 'g'
+                        && namebuf[1] == 'l'
+                        && namebuf[2] == '_') attributes.pop_back(); // ignore gl built in attribs
             }
             free(namebuf);
         }

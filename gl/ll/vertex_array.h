@@ -28,6 +28,8 @@ namespace GL::LL
         void enable_attrib_array(const AttributeManifest&, std::size_t idx);
         void enable_attrib_pointer(const AttributeManifest&, const char * name);
         void enable_attrib_pointer(const AttributeManifest&, std::size_t idx);
+        void attrib_divisor(const AttributeManifest&, const char * name, unsigned int divisor);
+        void attrib_divisor(const AttributeManifest&, std::size_t idx, unsigned int divisor);
     };
 
     inline VertexArrayBinding bind(const VertexArray& vao) {return VertexArrayBinding(vao);}
