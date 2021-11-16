@@ -1,7 +1,6 @@
 #pragma once
 
-constexpr const char * vertex_shader = R"GLSL(
-#version 300 es
+constexpr const char * vertex_shader = R"GLSL(#version 300 es
 
 in vec4 a_color;
 in vec4 a_border;
@@ -91,8 +90,7 @@ void main()
 }
 )GLSL";
 
-constexpr const char * fragment_shader = R"GLSL(
-#version 300 es
+constexpr const char * fragment_shader = R"GLSL(#version 300 es
 #ifdef GL_ES
 precision highp float;
 #endif

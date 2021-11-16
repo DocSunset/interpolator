@@ -4,6 +4,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DDEBUG")
 
+if(EMSCRIPTEN)
+    set(CMAKE_EXECUTABLE_SUFFIX ".html")
+endif()
+
 add_subdirectory(3rdparty/entt)
 add_subdirectory(3rdparty/simplesound)
 
@@ -11,29 +15,48 @@ add_executable(interpolators app.h main.cpp)
     target_link_libraries(interpolators PUBLIC EnTT)
     target_link_libraries(interpolators PUBLIC simplesound)
     set_property(TARGET interpolators PROPERTY CXX_STANDARD 17)
+    if (EMSCRIPTEN)
+        target_link_libraries(interpolators PRIVATE "--shell-file=${CMAKE_CURRENT_LIST_DIR}/emscripten/shell.html")
+    endif()
 
 add_library(interpolators-objects OBJECT)
     set_property(TARGET interpolators-objects PROPERTY CXX_STANDARD 17)
     target_link_libraries(interpolators-objects PUBLIC EnTT)
     target_link_libraries(interpolators-objects PUBLIC simplesound)
 
-    find_package(SDL2 REQUIRED)
+
+    if(EMSCRIPTEN) 
+        #https://stackoverflow.com/questions/45260216/emscripten-cmake-pass-emscripten-options-in-cmakelist-file
+        target_compile_options(interpolators-objects PRIVATE -sUSE_SDL=2)
+        target_link_libraries(interpolators-objects PRIVATE -sUSE_WEBGL2=1 -sFULL_ES3=0 -sUSE_SDL=2)
+    else()
+        find_package(SDL2 REQUIRED)
+        target_link_libraries(interpolators-objects PRIVATE SDL2)
+    endif()
+
     include_directories(${SDL2_INCLUDE_DIRS})
     target_include_directories(interpolators-objects PRIVATE ${SDL2_INCLUDE_DIRS})
-    target_link_libraries(interpolators-objects PRIVATE SDL2::SDL2)
 
     find_package(OpenGL REQUIRED)
-    target_link_libraries(interpolators-objects PRIVATE OpenGL::GL)
+    target_link_libraries(interpolators-objects PRIVATE GL)
 
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
-add_executable(interpolators-tests testmain.cpp)
+if (EMSCRIPTEN)
+    add_executable(interpolators-tests)
+else()
+    add_executable(interpolators-tests testmain.cpp)
+endif()
     set_property(TARGET interpolators-tests PROPERTY CXX_STANDARD 17)
     target_link_libraries(interpolators-tests PUBLIC EnTT)
     target_link_libraries(interpolators-tests PUBLIC simplesound)
 
-    find_package(Catch2 REQUIRED)
-    target_link_libraries(interpolators-tests PRIVATE Catch2::Catch2)
+    if (EMSCRIPTEN)
+        set_target_properties(interpolators-tests PROPERTIES EXCLUDE_FROM_ALL true)
+    else()
+        find_package(Catch2 REQUIRED)
+        target_link_libraries(interpolators-tests PRIVATE Catch2::Catch2)
+    endif()
     target_include_directories(interpolators-tests PRIVATE "/home/tw/tw/repos/entt/single_include")
     target_include_directories(interpolators-tests PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
@@ -47,9 +70,11 @@ add_subdirectory(test)
 
 target_link_libraries(interpolators PRIVATE interpolators-objects)
 target_link_libraries(interpolators-tests PRIVATE interpolators-objects)
-
-include(CTest)
-include(Catch)
-catch_discover_tests(interpolators-tests)
+    
+if (NOT EMSCRIPTEN)
+    include(CTest)
+    include(Catch)
+    catch_discover_tests(interpolators-tests)
+endif()
 
 add_subdirectory(docs)

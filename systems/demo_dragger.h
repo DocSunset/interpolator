@@ -14,6 +14,6 @@ namespace System
         void setup_reactive_systems(entt::registry&) override;
         void prepare_registry(entt::registry&) override;
         ~DemoDragger();
-        void run(entt::registry&);
+        void run(entt::registry&) override;
     };
 }

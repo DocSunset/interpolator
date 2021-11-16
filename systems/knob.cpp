@@ -40,11 +40,11 @@ namespace
             if (!knobs.size()) for (int i = 0; i < Component::FMSynthParameters::N; ++i)
             {
                 auto knob = registry.create();
-                registry.emplace<Component::Position>(knob, 0, 100 * i);
+                registry.emplace<Component::Position>(knob, 0.0f, 100.0f * i);
                 registry.emplace<Component::Selectable>(knob, false, Component::Selectable::Group::Knob);
                 registry.emplace<Component::Color>(knob);
                 registry.emplace<Component::SelectionHovered>(knob, false);
-                registry.emplace<Component::Draggable>(knob, 75);
+                registry.emplace<Component::Draggable>(knob, 75.0f);
                 registry.emplace<Component::Knob>(knob, i);
             }
             break;

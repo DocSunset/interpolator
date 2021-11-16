@@ -32,6 +32,7 @@ namespace System
         SDL_Window * window;
         SDL_GLContext gl;
         SDL_AudioDeviceID audio;
+        bool audio_started = false;
         SDL_AudioSpec audio_spec;
         Component::Window win_size;
         Component::FMSynth synth;
@@ -92,14 +93,17 @@ namespace System
             SDL_GL_SetSwapInterval(1); // should check for errors
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+        }
 
+        void start_audio()
+        {
             // set up audio
             SDL_AudioSpec want;
             SDL_zero(want);
             want.freq = 48000;
             want.format = AUDIO_F32;
             want.channels = 1;
-            want.samples = 64;
+            want.samples = 256;
             want.callback = Component::fm_synth_audio_callback;
             want.userdata = (void *)(&synth);
 
@@ -115,8 +119,6 @@ namespace System
                 SDL_LogError(SDL_LOG_CATEGORY_AUDIO,
                         "Error opening audio device:\n    %s\n",
                         SDL_GetError());
-                if (not testing) if (not testing) SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "Error",
-                        "Couldn't open audio device :(", NULL);
             }
             else SDL_Log("Opened audio device\n");
 
@@ -141,7 +143,11 @@ namespace System
                         "Error: audio user data unexpectedly changed");
             }
             synth.init(audio_spec.freq, Component::FMSynthParameters{0.5f, 0.5f, 0.3f});
-            if (audio != 0) SDL_PauseAudioDevice(audio, 0);
+            if (audio != 0)
+            {
+                SDL_PauseAudioDevice(audio, 0);
+                audio_started = true;
+            }
         }
 
         void setup_reactive_systems(entt::registry& registry)
@@ -155,7 +161,7 @@ namespace System
         void prepare_registry(entt::registry& registry)
         {
             window_entity = registry.create();
-            registry.emplace<Component::Window>(window_entity, 500.0f, 500.0f);
+            registry.emplace<Component::Window>(window_entity, 500u, 500u);
             mouse_entity = registry.create();
             registry.emplace<Component::LeftMouseButton>(mouse_entity
                     , false
@@ -167,7 +173,7 @@ namespace System
                     , Component::Position::Zero()
                     );
             registry.emplace<Component::RelativeMouseMode>(mouse_entity, false);
-            registry.emplace<Component::MousePosition>(mouse_entity, false);
+            registry.emplace<Component::MousePosition>(mouse_entity, Component::Position::Zero());
             
             // set initial context
             registry.set<Component::ShiftModifier>(false);
@@ -199,7 +205,10 @@ namespace System
         {
             auto win = registry.get<Component::Window>(window_entity);
             SDL_Event ev;
-            while (SDL_PollEvent(&ev)) switch (ev.type)
+            while (SDL_PollEvent(&ev))
+            {
+                if (not audio_started) start_audio();
+            switch (ev.type)
             {
             case SDL_QUIT:
             case SDL_APP_TERMINATING:
@@ -318,7 +327,7 @@ namespace System
                 // default: generate a key command entity?
                 }
                 break;
-            }
+            } }
         }
 
         void run(entt::registry& registry)

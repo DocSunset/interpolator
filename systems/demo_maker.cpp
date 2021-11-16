@@ -14,7 +14,7 @@ namespace
         registry.emplace<Component::Selectable>(demo_entity, false, Component::Selectable::Group::Demo);
         registry.emplace<Component::SelectionHovered>(demo_entity, false);
         registry.emplace<Component::Draggable>(demo_entity
-                , 25
+                , 25.0f
                 , Component::Position::Zero()
                 , Component::Position::Zero()
                 , Component::Position::Zero()

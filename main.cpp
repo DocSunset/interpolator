@@ -5,9 +5,9 @@
 #include "app.h"
 
 #ifdef __EMSCRIPTEN__
-void loop(void * this)
+void loop(void * app)
 {
-    static_cast<App*>(this)->loop();
+    static_cast<App*>(app)->loop();
 }
 #endif
 
