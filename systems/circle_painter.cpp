@@ -28,44 +28,11 @@ namespace
 
 namespace System
 {
-    struct CirclePainter::Implementation
-    {
-        Implementation()
-        {
-        }
-
-        void setup_reactive_systems(entt::registry& registry)
-        {
-            registry.on_construct<Component::Circle>().connect<&circle_update>();
-            registry.on_update<Component::Circle>().connect<&circle_update>();
-        }
-
-        void prepare_registry(entt::registry& registry)
-        {
-        }
-
-        void run(entt::registry& registry)
-        {
-        }
-    };
-
-    CirclePainter::CirclePainter()
-    {
-        pimpl = new Implementation();
-    }
-
     void CirclePainter::setup_reactive_systems(entt::registry& registry)
     {
-        pimpl->setup_reactive_systems(registry);
+        registry.on_construct<Component::Circle>().connect<&circle_update>();
+        registry.on_update<Component::Circle>().connect<&circle_update>();
     }
 
-    void CirclePainter::prepare_registry(entt::registry& registry)
-    {
-        pimpl->prepare_registry(registry);
-    }
-
-
-    CirclePainter::~CirclePainter() { delete pimpl; }
-
-    void CirclePainter::run(entt::registry& registry) { pimpl->run(registry); }
+    CirclePainter::~CirclePainter() {}
 }

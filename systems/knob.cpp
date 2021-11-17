@@ -124,60 +124,21 @@ namespace
 
 namespace System
 {
-    struct Knob::Implementation
-    {
-        entt::observer dragged;
-
-        Implementation()
-        {
-        }
-
-        void setup_reactive_systems(entt::registry& registry)
-        {
-            registry.on_construct<Component::Knob>().connect<&position_knob>();
-            registry.on_update<Component::Window>().connect<&on_window_update>();
-            dragged.connect(registry, entt::collector
-                    .update<Component::Draggable>()
-                    .where<Component::Knob>()
-                    );
-        }
-
-        void prepare_registry(entt::registry& registry)
-        {
-        }
-
-        void run(entt::registry& registry)
-        {
-            manage_knob_lifetimes(registry);
-            sync_knob_values(registry);
-            drag_knobs(registry, dragged);
-        }
-    };
-
-    /* pimpl boilerplate *****************************************/
-
-    Knob::Knob()
-    {
-        pimpl = new Implementation();
-    }
-
     void Knob::setup_reactive_systems(entt::registry& registry)
     {
-        pimpl->setup_reactive_systems(registry);
+        registry.on_construct<Component::Knob>().connect<&position_knob>();
+        registry.on_update<Component::Window>().connect<&on_window_update>();
+        dragged.connect(registry, entt::collector
+                .update<Component::Draggable>()
+                .where<Component::Knob>()
+                );
     }
 
-    void Knob::prepare_registry(entt::registry& registry)
-    {
-        pimpl->prepare_registry(registry);
-    }
-
-    Knob::~Knob()
-    {
-        free(pimpl);
-    }
-    
     void Knob::run(entt::registry& registry)
     {
-        pimpl->run(registry);
+        manage_knob_lifetimes(registry);
+        sync_knob_values(registry);
+        drag_knobs(registry, dragged);
     }
+    Knob::~Knob() {}
 }

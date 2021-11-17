@@ -28,10 +28,6 @@ namespace
 
 namespace System
 {
-    DemoMaker::DemoMaker()
-    {
-    }
-
     void DemoMaker::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_construct<Component::Demo>().connect<&prepare_demo>();
@@ -46,7 +42,5 @@ namespace System
         }
     }
 
-    void DemoMaker::run(entt::registry& registry)
-    {
-    }
+    DemoMaker::~DemoMaker() {}
 }

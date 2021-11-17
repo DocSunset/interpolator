@@ -22,15 +22,15 @@ namespace System
 
         // Call registry.on_update etc. and construct registry observers.
         // This should not create any entities or context.
-        virtual void setup_reactive_systems(entt::registry&) = 0;
+        virtual void setup_reactive_systems(entt::registry&) {}
 
         // Create any initial registry components and set context components.
-        virtual void prepare_registry(entt::registry&) = 0;
+        virtual void prepare_registry(entt::registry&) {}
 
         // Free resources
         virtual ~System() = default;
 
         // Perform system behaviors
-        virtual void run(entt::registry&) = 0;
+        virtual void run(entt::registry&) {}
     };
 }

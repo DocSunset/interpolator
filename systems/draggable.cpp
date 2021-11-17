@@ -204,20 +204,12 @@ namespace System
         Component::Selectable::Group last_group = Component::Selectable::Group::All;
         Component::MousePosition drag_start_position;
 
-        Implementation()
-        {
-        }
-
         void setup_reactive_systems(entt::registry& registry)
         {
             registry.on_update<Component::MouseMotion>()
                 .connect<&Draggable::Implementation::on_mouse_motion>(*this);
             registry.on_update<Component::LeftMouseButton>()
                 .connect<&Draggable::Implementation::on_mouse_button>(*this);
-        }
-
-        void prepare_registry(entt::registry& registry)
-        {
         }
 
         void start_drag(entt::registry& registry)
@@ -387,12 +379,7 @@ namespace System
         pimpl->setup_reactive_systems(registry);
     }
 
-    void Draggable::prepare_registry(entt::registry& registry)
-    {
-        pimpl->prepare_registry(registry);
-    }
+    void Draggable::run(entt::registry& registry) { pimpl->run(registry); }
 
     Draggable::~Draggable() { delete pimpl; }
-
-    void Draggable::run(entt::registry& registry) { pimpl->run(registry); }
 }

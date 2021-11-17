@@ -38,56 +38,23 @@ namespace
 
 namespace System
 {
-
-    struct DemoViewer::Implementation
-    {
-        entt::observer updated_demos;
-        entt::observer new_demos;
-
-        Implementation()
-        {
-        }
-
-        void setup_reactive_systems(entt::registry& registry)
-        {
-            updated_demos.connect(registry, entt::collector
-                    .update<Component::Position>().where<Component::Demo>()
-                    .update<Component::Color>().where<Component::Demo>()
-                    .update<Component::Selectable>().where<Component::Demo>()
-                    .update<Component::SelectionHovered>().where<Component::Demo>()
-                    );
-            new_demos.connect(registry, entt::collector.group<Component::Demo>());
-        }
-
-        void prepare_registry(entt::registry& registry)
-        {
-        }
-
-        void run(entt::registry& registry)
-        {
-            auto f = [&](auto entity){update_circle(registry, entity);};
-            new_demos.each(f);
-            updated_demos.each(f);
-        }
-    };
-
-    DemoViewer::DemoViewer()
-    {
-        pimpl = new Implementation();
-    }
-
     void DemoViewer::setup_reactive_systems(entt::registry& registry)
     {
-        pimpl->setup_reactive_systems(registry);
+        updated_demos.connect(registry, entt::collector
+                .update<Component::Position>().where<Component::Demo>()
+                .update<Component::Color>().where<Component::Demo>()
+                .update<Component::Selectable>().where<Component::Demo>()
+                .update<Component::SelectionHovered>().where<Component::Demo>()
+                );
+        new_demos.connect(registry, entt::collector.group<Component::Demo>());
     }
 
-    void DemoViewer::prepare_registry(entt::registry& registry)
+    void DemoViewer::run(entt::registry& registry)
     {
-        pimpl->prepare_registry(registry);
+        auto f = [&](auto entity){update_circle(registry, entity);};
+        new_demos.each(f);
+        updated_demos.each(f);
     }
 
-
-    DemoViewer::~DemoViewer() { delete pimpl; }
-
-    void DemoViewer::run(entt::registry& registry) { pimpl->run(registry); }
+    DemoViewer::~DemoViewer() {}
 }

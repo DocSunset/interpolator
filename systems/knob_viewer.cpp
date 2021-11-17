@@ -78,64 +78,25 @@ namespace
 
 namespace System
 {
-    struct KnobViewer::Implementation
-    {
-        entt::observer new_knobs;
-        entt::observer updated_knobs;
-
-        Implementation()
-        {
-        }
-
-        void setup_reactive_systems(entt::registry& registry)
-        {
-            registry.on_construct<Component::Knob>().connect<&entt::registry::emplace<KnobView>>();
-            registry.on_destroy<Component::Knob>().connect<&destroy_knobview>();
-            registry.on_construct<KnobView>().connect<&construct_knobview>();
-
-            new_knobs.connect(registry, entt::collector.group<Component::Knob>());
-            updated_knobs.connect(registry, entt::collector
-                    .update<Component::Position>().where<Component::Knob>()
-                    .update<Component::Knob>()
-                    );
-        }
-
-        void prepare_registry(entt::registry& registry)
-        {
-        }
-
-        void run(entt::registry& registry)
-        {
-            auto f = [&](auto entity){update_knobview(registry, entity);};
-            new_knobs.each(f);
-            updated_knobs.each(f);
-        }
-    };
-
-    /* pimpl boilerplate *****************************************/
-
-    KnobViewer::KnobViewer()
-    {
-        pimpl = new Implementation();
-    }
-
     void KnobViewer::setup_reactive_systems(entt::registry& registry)
     {
-        pimpl->setup_reactive_systems(registry);
+        registry.on_construct<Component::Knob>().connect<&entt::registry::emplace<KnobView>>();
+        registry.on_destroy<Component::Knob>().connect<&destroy_knobview>();
+        registry.on_construct<KnobView>().connect<&construct_knobview>();
+
+        new_knobs.connect(registry, entt::collector.group<Component::Knob>());
+        updated_knobs.connect(registry, entt::collector
+                .update<Component::Position>().where<Component::Knob>()
+                .update<Component::Knob>()
+                );
     }
 
-    void KnobViewer::prepare_registry(entt::registry& registry)
-    {
-        pimpl->prepare_registry(registry);
-    }
-
-    KnobViewer::~KnobViewer()
-    {
-        free(pimpl);
-    }
-    
     void KnobViewer::run(entt::registry& registry)
     {
-        pimpl->run(registry);
+        auto f = [&](auto entity){update_knobview(registry, entity);};
+        new_knobs.each(f);
+        updated_knobs.each(f);
     }
+
+    KnobViewer::~KnobViewer() {}
 }

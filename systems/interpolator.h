@@ -12,8 +12,7 @@ namespace System
     public:
         Interpolator();
         void setup_reactive_systems(entt::registry&) override;
-        void prepare_registry(entt::registry&) override;
-        ~Interpolator();
         void run(entt::registry&) override;
+        ~Interpolator();
     };
 }

@@ -30,6 +30,7 @@ public:
         {
             system->run(registry);
         }
+        static_cast<System::Platform*>(systems[0].get())->swap_window();
     }
 
     App()

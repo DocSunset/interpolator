@@ -9,10 +9,9 @@ TEST_CASE("Shaders", "[shaders]")
     PLATFORM_SETUP();
     GL::LL::VertexArray vao{};
     GL::LL::Buffer vbo{GL::LL::Buffer::Target::ARRAY, GL::LL::Buffer::Usage::STATIC_DRAW};
-    auto window = (SDL_Window *)platform.window();
     glViewport(0, 0, 500, 500);
     glClear(GL_COLOR_BUFFER_BIT);
-    SDL_GL_SwapWindow(window);
+    platform.swap_window();
 
     SECTION("Demo viewer")
     {
@@ -36,7 +35,7 @@ TEST_CASE("Shaders", "[shaders]")
         while (SDL_GetTicks() - start < 500)
         {
             glDrawArrays(GL_POINTS, 0, 2);
-            SDL_GL_SwapWindow(window);
+            platform.swap_window();
         }
     }
 }

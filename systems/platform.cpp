@@ -90,7 +90,7 @@ namespace System
             }
             else SDL_Log("Created GL context\n");
 
-            SDL_GL_SetSwapInterval(1); // should check for errors
+            SDL_GL_SetSwapInterval(0); // should check for errors
             glEnable(GL_BLEND);
             glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         }
@@ -335,13 +335,12 @@ namespace System
             synth.p = registry.ctx<Component::FMSynthParameters>();
             poll_events(registry);
 
-            SDL_GL_SwapWindow(window);
             glClear(GL_COLOR_BUFFER_BIT);
         }
 
-        void * get_window() const
+        void swap_window() const
         {
-            return window;
+            SDL_GL_SwapWindow(window);
         }
     };
     
@@ -370,9 +369,9 @@ namespace System
         pimpl->run(registry);
     }
 
-    void * Platform::window() const
+    void Platform::swap_window() const
     {
-        return pimpl->get_window();
+        return pimpl->swap_window();
     }
 
 }
