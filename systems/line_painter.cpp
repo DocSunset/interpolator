@@ -98,7 +98,7 @@ namespace System
         }
     };
 
-    LinePainter::LinePainter()
+    void LinePainter::construct_system()
     {
         pimpl = new Implementation();
     }

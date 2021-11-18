@@ -6,7 +6,8 @@
 
 #define PLATFORM_SETUP()\
 entt::registry registry;\
-auto platform = System::Platform(true);\
+auto platform = System::Platform();\
+platform.testing = true;\
 platform.setup_reactive_systems(registry);\
 platform.prepare_registry(registry)
 

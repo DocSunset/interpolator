@@ -3,58 +3,33 @@
 #include <vector>
 #include <memory>
 #include <entt/entt.hpp>
-#include "systems/system.h"
 #include "components/quit_flag.h"
-#include "systems/platform.h"
-#include "systems/demo_maker.h"
-#include "systems/demo_viewer.h"
-#include "systems/draggable.h"
-#include "systems/demo_dragger.h"
-#include "systems/interpolator.h"
-#include "systems/knob.h"
-#include "systems/knob_viewer.h"
-#include "systems/interpolator_visualizer.h"
-#include "systems/circle_painter.h"
-#include "systems/line_painter.h"
 
+template<class ... Systems>
 class App
 {
     entt::registry registry;
-    std::vector<std::unique_ptr<System::System>> systems;
+    std::tuple<Systems...> systems;
+    static constexpr std::size_t n_systems = std::tuple_size_v<decltype(systems)>;
 
 public:
     void loop()
     {
         // system execution order == order in list (established by 2)
-        for (auto& system : systems)
-        {
-            system->run(registry);
-        }
-        static_cast<System::Platform*>(systems[0].get())->swap_window();
+        std::apply([&](auto& ... system) { (system.run(registry), ...) ;}, systems);
+        std::get<0>(systems).swap_window();
     }
 
     App()
+        : systems()
     {
-        // system constructor order == execution order
-        systems.push_back(std::make_unique<System::Platform>());
-        systems.push_back(std::make_unique<System::Draggable>());
-        systems.push_back(std::make_unique<System::DemoDragger>());
-        systems.push_back(std::make_unique<System::Knob>());
-        systems.push_back(std::make_unique<System::Interpolator>());
-        systems.push_back(std::make_unique<System::DemoViewer>());
-        systems.push_back(std::make_unique<System::KnobViewer>());
-        systems.push_back(std::make_unique<System::CirclePainter>());
-        systems.push_back(std::make_unique<System::LinePainter>());
-        systems.push_back(std::make_unique<System::DemoMaker>());
-
-        for (auto& system : systems) system->setup_reactive_systems(registry);
-        for (auto& system : systems) system->prepare_registry(registry);
+        std::apply([&](auto& ... system) { (system.construct_system(), ...) ;}, systems);
+        std::apply([&](auto& ... system) { (system.setup_reactive_systems(registry), ...) ;}, systems);
+        std::apply([&](auto& ... system) { (system.prepare_registry(registry), ...) ;}, systems);
     }
 
     ~App()
     {
-        // system destructor order == reverse of constructor order
-        while (not systems.empty()) systems.pop_back(); 
     }
 
     bool ready_to_quit() const

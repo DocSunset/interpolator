@@ -344,7 +344,7 @@ namespace System
         }
     };
     
-    Platform::Platform(bool testing)
+    void Platform::construct_system()
     {
         pimpl = new Implementation(testing);
     }

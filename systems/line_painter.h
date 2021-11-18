@@ -10,7 +10,7 @@ namespace System
         class Implementation;
         Implementation * pimpl;
     public:
-        LinePainter();
+        void construct_system() override;
         void setup_reactive_systems(entt::registry&) override;
         void prepare_registry(entt::registry&) override;
         ~LinePainter();

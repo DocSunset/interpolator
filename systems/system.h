@@ -19,6 +19,7 @@ namespace System
         // Allocate basic necessary resources not covered by other setup phases.
         // This should take no arguments, and may therefore not access the
         // registry.
+        virtual void construct_system() {};
 
         // Call registry.on_update etc. and construct registry observers.
         // This should not create any entities or context.
