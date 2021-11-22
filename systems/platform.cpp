@@ -15,6 +15,7 @@
 #include "components/mouse_position.h"
 #include "components/modifier_keys.h"
 #include "components/fmsynth.h"
+#include "components/repaint_timer.h"
 #include "gl/ll.h"
 #include "utility/mtof.h"
 
@@ -29,6 +30,7 @@ namespace System
 
     class Platform::Implementation
     {
+        unsigned int last_time = 0;
         SDL_Window * window;
         SDL_GLContext gl;
         SDL_AudioDeviceID audio;
@@ -334,6 +336,13 @@ namespace System
         {
             synth.p = registry.ctx<Component::FMSynthParameters>();
             poll_events(registry);
+            auto now = SDL_GetTicks();
+            // repaint roughly 30 frames per second
+            if ((now - last_time) > 33)
+            {
+                registry.ctx<Component::RepaintTimer>().set();
+                last_time = now;
+            }
         }
 
         void paint(entt::registry& registry)

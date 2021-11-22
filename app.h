@@ -5,6 +5,7 @@
 #include <entt/entt.hpp>
 #include "components/quit_flag.h"
 #include "components/paint_flag.h"
+#include "components/repaint_timer.h"
 
 template<class ... Systems>
 class App
@@ -18,12 +19,13 @@ public:
     {
         // system execution order == order in list (established by 2)
         std::apply([&](auto& ... system) { (system.run(registry), ...) ;}, systems);
-        if (registry.ctx<Component::PaintFlag>())
+        if (registry.ctx<Component::PaintFlag>() && registry.ctx<Component::RepaintTimer>())
         {
             std::apply([&](auto& ... system) { (system.prepare_to_paint(registry), ...) ;}, systems);
             std::apply([&](auto& ... system) { (system.paint(registry), ...) ;}, systems);
             std::get<0>(systems).swap_window();
             registry.ctx<Component::PaintFlag>().clear();
+            registry.ctx<Component::RepaintTimer>().clear();
         }
     }
 
@@ -32,6 +34,7 @@ public:
     {
         registry.set<Component::QuitFlag>(false);
         registry.set<Component::PaintFlag>(true);
+        registry.set<Component::RepaintTimer>(true);
         std::apply([&](auto& ... system) { (system.construct_system(), ...) ;}, systems);
         std::apply([&](auto& ... system) { (system.setup_reactive_systems(registry), ...) ;}, systems);
         std::apply([&](auto& ... system) { (system.prepare_registry(registry), ...) ;}, systems);
