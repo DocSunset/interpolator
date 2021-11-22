@@ -56,7 +56,6 @@ namespace System
         auto f = [&](auto entity){update_circle(registry, entity);};
         new_demos.each(f);
         updated_demos.each(f);
-        registry.ctx<Component::PaintFlag>().set();
     }
 
     DemoViewer::~DemoViewer() {}

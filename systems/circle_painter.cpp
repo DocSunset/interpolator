@@ -24,7 +24,6 @@ namespace
                 , c.blur_radius
                 , Component::Line::Cap::Round
                 });
-        registry.ctx<Component::PaintFlag>().set();
     }
 }
 

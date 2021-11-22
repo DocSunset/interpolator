@@ -47,7 +47,6 @@ namespace
                 registry.emplace<Component::SelectionHovered>(knob, false);
                 registry.emplace<Component::Draggable>(knob, 75.0f);
                 registry.emplace<Component::Knob>(knob, i);
-                registry.ctx<Component::PaintFlag>().set();
             }
             break;
         }
@@ -56,7 +55,6 @@ namespace
             for (auto knob : knobs)
             {
                 registry.destroy(knob);
-                registry.ctx<Component::PaintFlag>().set();
             }
         }
     }
@@ -77,17 +75,12 @@ namespace
                 auto p = registry.get<Component::FMSynthParameters>(demo_entity);
                 return p.parameters[knob.index];
             };
-            float old_value = knob.value;
             knob.value = std::transform_reduce
                 ( selected_demos.begin(), selected_demos.end()
                 , 0.0f, std::plus<float>(), get_param
                 );
             knob.value = knob.value / (float)n_demos;
-            if (knob.value != old_value)
-            {
-                registry.replace<Component::Knob>(knob_entity, knob);
-                registry.ctx<Component::PaintFlag>().set();
-            }
+            registry.replace<Component::Knob>(knob_entity, knob);
         }
 
         auto color = std::transform_reduce
@@ -105,11 +98,7 @@ namespace
 
         for (auto knob_entity : knobs)
         {
-            if (color != registry.get<Component::Color>(knob_entity))
-            {
-                registry.replace<Component::Color>(knob_entity, color);
-                registry.ctx<Component::PaintFlag>().set();
-            }
+            registry.replace<Component::Color>(knob_entity, color);
         }
     }
 
@@ -133,7 +122,6 @@ namespace
                 p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
             }
         });
-        registry.ctx<Component::PaintFlag>().set();
     }
 }
 

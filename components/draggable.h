@@ -2,6 +2,7 @@
 
 #include "position.h"
 #include "flag.h"
+#include <typeindex>
 
 namespace Component
 {

@@ -8,10 +8,11 @@
 #include "components/knob.h"
 #include "components/position.h"
 #include "components/draggable.h"
-#include "entt/entity/entity.hpp"
 #include "components/fmsynth.h"
 #include "components/mouse_mode.h"
 #include "components/mouse_position.h"
+#include "components/paint_flag.h"
+#include "entt/entity/entity.hpp"
 
 namespace
 {
@@ -78,11 +79,13 @@ namespace
     void highlight(entt::registry& registry, entt::entity entity)
     {
         registry.replace<Component::SelectionHovered>(entity, true);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void unhighlight(entt::registry& registry, entt::entity entity)
     {
         registry.replace<Component::SelectionHovered>(entity, false);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void select(entt::registry& registry, entt::entity entity)
@@ -90,6 +93,7 @@ namespace
         auto s = registry.get<Component::Selectable>(entity);
         registry.replace<Component::Selectable>(entity, true, s.group);
         registry.emplace_or_replace<Component::Selected>(entity);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void unselect(entt::registry& registry, entt::entity entity)
@@ -98,6 +102,7 @@ namespace
         registry.replace<Component::Selectable>(entity, false, s.group);
         if (registry.all_of<Component::Selected>(entity))
             registry.erase<Component::Selected>(entity);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void toggle_selection(entt::registry& registry, entt::entity entity)
@@ -105,6 +110,7 @@ namespace
         auto current = registry.get<Component::Selectable>(entity);
         if (current) unselect(registry, entity);
         else select(registry, entity);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void select_all(entt::registry& registry
@@ -177,6 +183,7 @@ namespace
                     , motion.delta + draggable.delta
                     );
         }
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void set_relative_mouse(entt::registry& registry, bool mode)
