@@ -33,9 +33,6 @@ namespace
                     , radius
                     , 5
                     });
-
-        //emp_or_rep(demoview.ring, radius, ring_color);
-        //emp_or_rep(demoview.fill, radius - 10, fill_color);
     }
 }
 
