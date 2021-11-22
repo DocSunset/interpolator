@@ -2,6 +2,7 @@
 #include "components/circle.h"
 #include "components/window.h"
 #include "components/line.h"
+#include "components/paint_flag.h"
 #include "gl/vertex_array.h"
 
 #include "shader/circle.h"
@@ -23,6 +24,7 @@ namespace
                 , c.blur_radius
                 , Component::Line::Cap::Round
                 });
+        registry.ctx<Component::PaintFlag>().set();
     }
 }
 

@@ -28,10 +28,16 @@ namespace System
         // Create any initial registry components and set context components.
         virtual void prepare_registry(entt::registry&) {}
 
-        // Free resources
-        virtual ~System() = default;
-
         // Perform system behaviors
         virtual void run(entt::registry&) {}
+
+        // Prepare to draw to the screen. This method may not call gl functions.
+        virtual void prepare_to_paint(entt::registry&) {}
+
+        // Draw to the screen. Only called when Component::PaintFlag is set()
+        virtual void paint(entt::registry&) {}
+
+        // Free resources
+        virtual ~System() = default;
     };
 }

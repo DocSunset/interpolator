@@ -16,6 +16,7 @@ namespace System
         void prepare_registry(entt::registry&) override;
         ~Platform();
         void run(entt::registry&) override;
+        void paint(entt::registry&) override;
         void swap_window() const;
     };
 }

@@ -334,7 +334,10 @@ namespace System
         {
             synth.p = registry.ctx<Component::FMSynthParameters>();
             poll_events(registry);
+        }
 
+        void paint(entt::registry& registry)
+        {
             glClear(GL_COLOR_BUFFER_BIT);
         }
 
@@ -367,6 +370,11 @@ namespace System
     void Platform::run(entt::registry& registry)
     {
         pimpl->run(registry);
+    }
+
+    void Platform::paint(entt::registry& registry)
+    {
+        pimpl->paint(registry);
     }
 
     void Platform::swap_window() const

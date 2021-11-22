@@ -13,7 +13,7 @@ namespace System
         void construct_system() override;
         void setup_reactive_systems(entt::registry&) override;
         void prepare_registry(entt::registry&) override;
+        void paint(entt::registry&) override;
         ~LinePainter();
-        void run(entt::registry&) override;
     };
 }

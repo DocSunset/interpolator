@@ -8,7 +8,7 @@ namespace System
     struct KnobViewer : public System
     {
         void setup_reactive_systems(entt::registry&) override;
-        void run(entt::registry&) override;
+        void prepare_to_paint(entt::registry&) override;
         ~KnobViewer();
     private:
         entt::observer new_knobs;

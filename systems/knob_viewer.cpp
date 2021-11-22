@@ -91,7 +91,7 @@ namespace System
                 );
     }
 
-    void KnobViewer::run(entt::registry& registry)
+    void KnobViewer::prepare_to_paint(entt::registry& registry)
     {
         auto f = [&](auto entity){update_knobview(registry, entity);};
         new_knobs.each(f);

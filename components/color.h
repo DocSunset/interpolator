@@ -10,4 +10,7 @@ namespace Component
         float a;
         static Color Random();
     };
+
+    bool operator==(const Color&, const Color&);
+    bool operator!=(const Color&, const Color&);
 }

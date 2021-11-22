@@ -4,6 +4,7 @@
 #include <memory>
 #include <entt/entt.hpp>
 #include "components/quit_flag.h"
+#include "components/paint_flag.h"
 
 template<class ... Systems>
 class App
@@ -17,12 +18,20 @@ public:
     {
         // system execution order == order in list (established by 2)
         std::apply([&](auto& ... system) { (system.run(registry), ...) ;}, systems);
-        std::get<0>(systems).swap_window();
+        if (registry.ctx<Component::PaintFlag>())
+        {
+            std::apply([&](auto& ... system) { (system.prepare_to_paint(registry), ...) ;}, systems);
+            std::apply([&](auto& ... system) { (system.paint(registry), ...) ;}, systems);
+            std::get<0>(systems).swap_window();
+            registry.ctx<Component::PaintFlag>().clear();
+        }
     }
 
     App()
         : systems()
     {
+        registry.set<Component::QuitFlag>(false);
+        registry.set<Component::PaintFlag>(true);
         std::apply([&](auto& ... system) { (system.construct_system(), ...) ;}, systems);
         std::apply([&](auto& ... system) { (system.setup_reactive_systems(registry), ...) ;}, systems);
         std::apply([&](auto& ... system) { (system.prepare_registry(registry), ...) ;}, systems);

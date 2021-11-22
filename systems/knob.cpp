@@ -5,6 +5,7 @@
 #include "components/knob.h"
 #include "components/fmsynth.h"
 #include "components/window.h"
+#include "components/paint_flag.h"
 #include <simple/boundaries.h>
 #include <functional>
 #include <vector>
@@ -46,6 +47,7 @@ namespace
                 registry.emplace<Component::SelectionHovered>(knob, false);
                 registry.emplace<Component::Draggable>(knob, 75.0f);
                 registry.emplace<Component::Knob>(knob, i);
+                registry.ctx<Component::PaintFlag>().set();
             }
             break;
         }
@@ -54,6 +56,7 @@ namespace
             for (auto knob : knobs)
             {
                 registry.destroy(knob);
+                registry.ctx<Component::PaintFlag>().set();
             }
         }
     }
@@ -74,12 +77,17 @@ namespace
                 auto p = registry.get<Component::FMSynthParameters>(demo_entity);
                 return p.parameters[knob.index];
             };
+            float old_value = knob.value;
             knob.value = std::transform_reduce
                 ( selected_demos.begin(), selected_demos.end()
                 , 0.0f, std::plus<float>(), get_param
                 );
             knob.value = knob.value / (float)n_demos;
-            registry.replace<Component::Knob>(knob_entity, knob);
+            if (knob.value != old_value)
+            {
+                registry.replace<Component::Knob>(knob_entity, knob);
+                registry.ctx<Component::PaintFlag>().set();
+            }
         }
 
         auto color = std::transform_reduce
@@ -96,11 +104,18 @@ namespace
                 };
 
         for (auto knob_entity : knobs)
-            registry.replace<Component::Color>(knob_entity, color);
+        {
+            if (color != registry.get<Component::Color>(knob_entity))
+            {
+                registry.replace<Component::Color>(knob_entity, color);
+                registry.ctx<Component::PaintFlag>().set();
+            }
+        }
     }
 
     void drag_knobs(entt::registry& registry, entt::observer& dragged)
     {
+        if (dragged.empty()) return;
         const auto& win = *registry.view<Component::Window>().raw()[0];
         dragged.each([&](const auto entity)
         {
@@ -118,8 +133,8 @@ namespace
                 p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
             }
         });
+        registry.ctx<Component::PaintFlag>().set();
     }
-
 }
 
 namespace System

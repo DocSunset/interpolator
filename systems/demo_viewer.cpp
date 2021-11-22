@@ -5,6 +5,7 @@
 #include "components/window.h"
 #include "components/draggable.h"
 #include "components/circle.h"
+#include "components/paint_flag.h"
 #include "gl/vertex_array.h"
 
 #include "shader/demo_viewer.h"
@@ -51,9 +52,11 @@ namespace System
 
     void DemoViewer::run(entt::registry& registry)
     {
+        if (new_demos.empty() && updated_demos.empty()) return;
         auto f = [&](auto entity){update_circle(registry, entity);};
         new_demos.each(f);
         updated_demos.each(f);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     DemoViewer::~DemoViewer() {}

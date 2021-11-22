@@ -1,6 +1,7 @@
 #include "line_painter.h"
 #include "components/line.h"
 #include "components/window.h"
+#include "components/paint_flag.h"
 #include "gl/vertex_array.h"
 #include "simple/constants/pi.h"
 #include <cmath>
@@ -29,6 +30,7 @@ namespace System
         {
             Component::Window win = registry.get<Component::Window>(entity);
             window_uniform(win);
+            registry.ctx<Component::PaintFlag>().set();
         }
 
         Implementation()
@@ -77,7 +79,7 @@ namespace System
             }
         }
 
-        void run(entt::registry& registry)
+        void paint(entt::registry& registry)
         {
             auto view = registry.view<Component::Line>();
 
@@ -113,8 +115,7 @@ namespace System
         pimpl->prepare_registry(registry);
     }
 
+    void LinePainter::paint(entt::registry& registry) { pimpl->paint(registry); }
 
     LinePainter::~LinePainter() { delete pimpl; }
-
-    void LinePainter::run(entt::registry& registry) { pimpl->run(registry); }
 }
