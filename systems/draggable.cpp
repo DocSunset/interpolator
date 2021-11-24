@@ -78,14 +78,16 @@ namespace
      */
     void highlight(entt::registry& registry, entt::entity entity)
     {
+        bool old_value = registry.get<Component::SelectionHovered>(entity);
         registry.replace<Component::SelectionHovered>(entity, true);
-        registry.ctx<Component::PaintFlag>().set();
+        if (not old_value) registry.ctx<Component::PaintFlag>().set();
     }
 
     void unhighlight(entt::registry& registry, entt::entity entity)
     {
+        bool old_value = registry.get<Component::SelectionHovered>(entity);
         registry.replace<Component::SelectionHovered>(entity, false);
-        registry.ctx<Component::PaintFlag>().set();
+        if (old_value) registry.ctx<Component::PaintFlag>().set();
     }
 
     void select(entt::registry& registry, entt::entity entity)
@@ -254,14 +256,19 @@ namespace System
             {
                 case START:
                 {
-                    if (registry.valid(hovered)) unhighlight(registry, hovered);
                     auto hover = close_enough_to_grab(registry, motion.position);
                     if (hover != entt::null) // got a hover
                     {
+                        if (registry.valid(hovered) && hover != hovered) 
+                            unhighlight(registry, hovered);
                         highlight(registry, hover);
                         hovered = hover;
                     }
-                    else hovered = entt::null;
+                    else 
+                    {
+                        if (registry.valid(hovered)) unhighlight(registry, hovered);
+                        hovered = entt::null;
+                    }
                     break;
                 }
                 case MAYBE_DRAG:
