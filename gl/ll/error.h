@@ -16,7 +16,11 @@ namespace GL::LL
         N_ERRORS,
     };
 
-    Error get_error();
+    Error always_get_error(); // checks for error even on release build
+
+    Error get_error(); // debug-only error check
+
+    Error always_last_error(Error prev = Error::NO_ERROR);
 
     Error last_error(Error prev = Error::NO_ERROR);
 
@@ -25,4 +29,6 @@ namespace GL::LL
     void error_print(const char * message);
 
     bool any_error();
+
+    bool always_any_error();
 }

@@ -48,12 +48,17 @@ namespace GL::LL
             DYNAMIC_READ,
             DYNAMIC_COPY
         };
+
     private:
         friend class BufferBinding;
         GLuint handle;
         GLenum target;
         GLenum usage;
+
     public:
+        // return the raw GL handle
+        // this is mainly provided for internal use and testing
+        GLuint gl_handle() const {return handle;}
         Buffer(Target t, Usage u);
         Buffer(Buffer&& move);
         ~Buffer();

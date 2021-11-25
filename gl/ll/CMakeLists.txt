@@ -8,6 +8,8 @@ target_sources(interpolators-objects PRIVATE
     buffer.h buffer.cpp
     vertex_array.h vertex_array.cpp
     attribute_element.h
+    texture.cpp texture.h
+    sampler.cpp sampler.h
     )
 
 target_sources(interpolators-tests PRIVATE
@@ -19,4 +21,6 @@ target_sources(interpolators-tests PRIVATE
     buffer.test.cpp
     vertex_array.test.cpp
     attribute_element.test.cpp
+    texture.test.cpp
+    sampler.test.cpp
     )

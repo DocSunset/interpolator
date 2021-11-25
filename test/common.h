@@ -8,6 +8,7 @@
 entt::registry registry;\
 auto platform = System::Platform();\
 platform.testing = true;\
+platform.construct_system();\
 platform.setup_reactive_systems(registry);\
 platform.prepare_registry(registry)
 

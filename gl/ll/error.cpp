@@ -56,25 +56,35 @@ namespace
 }
 namespace GL::LL
 {
-    Error get_error()
+    Error always_get_error()
     {
-#ifdef DEBUG
         auto gle = glGetError();
         auto e = error_code(gle);
         if (e != Error::NO_ERROR)
             std::cerr << "GL Error: " << error_name(e) << "\n";
         return e;
+    }
+
+    Error get_error()
+    {
+#ifdef DEBUG
+        return always_get_error();
 #else
         return Error::NO_ERROR;
 #endif
     }
 
-    Error last_error(Error prev)
+    Error always_last_error(Error prev)
     {
-#ifdef DEBUG
         auto next = get_error();
         if (next == Error::NO_ERROR) return prev;
         else return last_error(next);
+    }
+
+    Error last_error(Error prev)
+    {
+#ifdef DEBUG
+        return always_last_error();
 #else
         return Error::NO_ERROR;
 #endif
@@ -98,9 +108,8 @@ namespace GL::LL
 #endif
     }
 
-    bool any_error()
+    bool always_any_error()
     {
-#ifdef DEBUG
         auto error = get_error();
         if (error == Error::NO_ERROR) return false;
         else
@@ -108,6 +117,12 @@ namespace GL::LL
             last_error();
             return true;
         }
+    }
+
+    bool any_error()
+    {
+#ifdef DEBUG
+        return always_any_error();
 #else
         return false;
 #endif
