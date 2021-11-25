@@ -24,7 +24,6 @@ add_library(interpolators-objects OBJECT)
     target_link_libraries(interpolators-objects PUBLIC EnTT)
     target_link_libraries(interpolators-objects PUBLIC simplesound)
 
-
     if(EMSCRIPTEN) 
         #https://stackoverflow.com/questions/45260216/emscripten-cmake-pass-emscripten-options-in-cmakelist-file
         target_compile_options(interpolators-objects PRIVATE -sUSE_SDL=2)
@@ -41,6 +40,7 @@ add_library(interpolators-objects OBJECT)
     target_link_libraries(interpolators-objects PRIVATE GL)
 
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR})
+    target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/artery-font-format)
 
 if (EMSCRIPTEN)
     add_executable(interpolators-tests)
@@ -57,7 +57,6 @@ endif()
         find_package(Catch2 REQUIRED)
         target_link_libraries(interpolators-tests PRIVATE Catch2::Catch2)
     endif()
-    target_include_directories(interpolators-tests PRIVATE "/home/tw/tw/repos/entt/single_include")
     target_include_directories(interpolators-tests PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
 add_subdirectory(systems)

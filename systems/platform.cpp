@@ -15,6 +15,7 @@
 #include "components/mouse_position.h"
 #include "components/modifier_keys.h"
 #include "components/fmsynth.h"
+#include "components/paint_flag.h"
 #include "components/repaint_timer.h"
 #include "gl/ll.h"
 #include "utility/mtof.h"
@@ -225,6 +226,7 @@ namespace System
                     win_size = {(unsigned int)ev.window.data1, (unsigned int)ev.window.data2};
                     registry.replace<Component::Window>(window_entity , win_size.w , win_size.h);
                     glViewport(0, 0 , win_size.w , win_size.h);
+                    registry.ctx<Component::PaintFlag>().set();
                     break;
                 case SDL_WINDOWEVENT_CLOSE:
                     quit(registry);

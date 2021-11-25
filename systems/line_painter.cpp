@@ -2,7 +2,10 @@
 #include "components/line.h"
 #include "components/window.h"
 #include "components/paint_flag.h"
-#include "gl/vertex_array.h"
+#include "gl/ll/attribute_manifest.h"
+#include "gl/ll/buffer.h"
+#include "gl/ll/vertex_array.h"
+#include "gl/ll/error.h"
 #include "simple/constants/pi.h"
 #include <cmath>
 
@@ -14,7 +17,6 @@ namespace System
     struct LinePainter::Implementation
     {
         GL::LL::Program program;
-        GL::VertexAttributeArray array;
         GL::LL::VertexArray vao;
         GL::LL::Buffer attrib_buffer;
 
@@ -30,17 +32,15 @@ namespace System
         {
             Component::Window win = registry.get<Component::Window>(entity);
             window_uniform(win);
-            registry.ctx<Component::PaintFlag>().set();
         }
 
         Implementation()
             : program{vertex_shader, fragment_shader}
-            , array{program}
             , vao{}
             , attrib_buffer(GL::LL::Buffer::Target::ARRAY, GL::LL::Buffer::Usage::DYNAMIC_DRAW)
         {
             if (GL::LL::any_error()) GL::LL::error_print("line painter post-init gl error\n");
-            const auto& attributes = array.attributes();
+            const auto& attributes = GL::LL::AttributeManifest(program);
 
             auto vaobind = bind(vao);
 

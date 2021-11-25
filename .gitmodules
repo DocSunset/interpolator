@@ -4,3 +4,6 @@
 [submodule "3rdparty/simplesound"]
 	path = 3rdparty/simplesound
 	url = git@github.com:docsunset/simplesound
+[submodule "3rdparty/artery-font-format"]
+	path = 3rdparty/artery-font-format
+	url = git@github.com:Chlumsky/artery-font-format.git
