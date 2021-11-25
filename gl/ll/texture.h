@@ -25,6 +25,7 @@ namespace GL::LL
         // this is mainly provided for internal use and testing
         GLuint gl_handle() const {return handle;}
 
+        Texture() = delete;
         Texture(Target t);
         ~Texture();
 

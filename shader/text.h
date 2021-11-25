@@ -2,20 +2,14 @@
 
 constexpr const char * vertex_shader = R"GLSL(#version 300 es
 
-//in vec4 a_color;
-//in vec4 a_border;
+in float a_field_range_pixels;
+in vec4 a_color;
 in vec4 a_bbox;
 in vec4 a_tbox;
-//in float a_border_thickness;
-//in float a_border_transition;
-//in float a_blur_radius;
 in int a_vertex_id;
 
-//flat out float v_blur_radius;
-//flat out float v_border_thickness;
-//flat out float v_border_transition;
-//flat out vec4 v_color;
-//flat out vec4 v_border;
+flat out float v_field_range_pixels;
+flat out vec4 v_color;
 out vec2 v_texture_coord;
 
 void main()
@@ -42,7 +36,8 @@ void main()
         v_texture_coord = vec2(a_tbox[2], a_tbox[3]);
     }
     gl_Position = vec4(position, 0.0, 1.0);
-    //v_color = a_color;
+    v_field_range_pixels = a_field_range_pixels;
+    v_color = a_color;
 }
 )GLSL";
 
@@ -51,18 +46,26 @@ constexpr const char * fragment_shader = R"GLSL(#version 300 es
 precision highp float;
 #endif
 
-//uniform sampler2D glyph;
+uniform sampler2D u_atlas;
 
-//flat in vec4 v_color;
+flat in float v_field_range_pixels;
+flat in vec4 v_color;
 in vec2 v_texture_coord;
 out vec4 color;
 
+float median(float r, float g, float b)
+{
+    return max(min(r, g), min(max(r, g), b));
+}
+
 void main()
 {
-    //float sdf = texture(glyph, v_texture_coord);
-    //float alpha = 1.0f - smoothstep(0.0f, v_blur_radius, sdf);
-    //color = mix(v_color, v_border, smoothstep(-v_border_thickness, -v_border_thickness + v_border_transition, sdf));
-    //color.a = color.a * alpha;
-    color = vec4(v_texture_coord,1.0,0.1);
+    vec4 mtsd = texture(u_atlas, v_texture_coord) - 0.5;
+    float sd = median(mtsd.r, mtsd.g, mtsd.b);
+    float sd_pixels = v_field_range_pixels * sd;
+    float tsd_pixels = v_field_range_pixels * mtsd.a;
+    float alpha = smoothstep(-1.0, 1.0, tsd_pixels);
+    color = v_color;
+    color.a = alpha;
 }
 )GLSL";

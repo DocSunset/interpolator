@@ -9,11 +9,12 @@ namespace Component
         std::string string;
 
         Color color;
+
         // in pixels
         float left;
         float bottom;
         float right;
         float top;
-        float font_size = 38;
+        float font_size = 20;
     };
 }
