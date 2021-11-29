@@ -10,9 +10,8 @@ namespace System
         class Implementation;
         Implementation * pimpl;
     public:
-        Interpolator();
+        void construct_system() override;
         void setup_reactive_systems(entt::registry&) override;
-        void run(entt::registry&) override;
         ~Interpolator();
     };
 }

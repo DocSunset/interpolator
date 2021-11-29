@@ -49,28 +49,7 @@ namespace System
         std::vector<Scalar> distance;
         std::vector<Scalar> weight;
 
-        void setup_reactive_systems(entt::registry& registry)
-        {
-            registry.on_update<Component::MouseMotion>()
-                .connect<&Interpolator::Implementation::on_mouse_motion>(*this);
-            registry.on_update<Component::LeftMouseButton>()
-                .connect<&Interpolator::Implementation::on_mouse_button>(*this);
-        }
-
-        void on_mouse_button(entt::registry& registry, entt::registry::entity_type entity)
-        {
-            auto button = registry.get<Component::LeftMouseButton>(entity);
-            pressed = button.pressed;
-            position = button.pressed ? button.down_position : button.up_position;
-        }
-
-        void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
-        {
-            auto motion = registry.get<Component::MouseMotion>(entity);
-            position = motion.position;
-        }
-
-        void run(entt::registry& registry)
+        void query(entt::registry& registry)
         {
             using P = Component::Position;
             using S = Component::FMSynthParameters;
@@ -110,11 +89,34 @@ namespace System
             if (not pressed) set_amplitude(s, 0);
             registry.set<S>(s);
         }
+
+        void setup_reactive_systems(entt::registry& registry)
+        {
+            registry.on_update<Component::MouseMotion>()
+                .connect<&Interpolator::Implementation::on_mouse_motion>(*this);
+            registry.on_update<Component::LeftMouseButton>()
+                .connect<&Interpolator::Implementation::on_mouse_button>(*this);
+        }
+
+        void on_mouse_button(entt::registry& registry, entt::registry::entity_type entity)
+        {
+            auto button = registry.get<Component::LeftMouseButton>(entity);
+            pressed = button.pressed;
+            position = button.pressed ? button.down_position : button.up_position;
+            query(registry);
+        }
+
+        void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
+        {
+            auto motion = registry.get<Component::MouseMotion>(entity);
+            position = motion.position;
+            query(registry);
+        }
     };
 
     /* pimpl boilerplate *****************************************/
 
-    Interpolator::Interpolator()
+    void Interpolator::construct_system()
     {
         pimpl = new Implementation();
     }
@@ -124,11 +126,6 @@ namespace System
         pimpl->setup_reactive_systems(registry);
     }
     
-    void Interpolator::run(entt::registry& registry)
-    {
-        pimpl->run(registry);
-    }
-
     Interpolator::~Interpolator()
     {
         free(pimpl);
