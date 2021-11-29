@@ -10,7 +10,6 @@
 #include "systems/demo_dragger.h"
 #include "systems/interpolator.h"
 #include "systems/knob.h"
-#include "systems/knob_viewer.h"
 #include "systems/interpolator_visualizer.h"
 #include "systems/circle_painter.h"
 #include "systems/line_painter.h"
@@ -32,7 +31,6 @@ int main()
         , System::Knob
         , System::Interpolator
         , System::DemoViewer
-        , System::KnobViewer
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
