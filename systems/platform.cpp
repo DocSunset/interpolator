@@ -7,6 +7,7 @@
 #include <SDL_video.h>
 #include <SDL_audio.h>
 #include <iostream>
+#include "SDL_events.h"
 #include "components/quit_flag.h"
 #include "components/window.h"
 #include "components/mouse_button.h"
@@ -208,7 +209,8 @@ namespace System
         {
             auto win = registry.get<Component::Window>(window_entity);
             SDL_Event ev;
-            while (SDL_PollEvent(&ev))
+            SDL_WaitEvent(&ev);
+            do
             {
                 if (not audio_started) start_audio();
             switch (ev.type)
@@ -331,7 +333,8 @@ namespace System
                 // default: generate a key command entity?
                 }
                 break;
-            } }
+            } // switch (ev.type)
+            } while (SDL_PollEvent(&ev));
         }
 
         void run(entt::registry& registry)
@@ -339,8 +342,8 @@ namespace System
             synth.p = registry.ctx<Component::FMSynthParameters>();
             poll_events(registry);
             auto now = SDL_GetTicks();
-            // repaint roughly 30 frames per second
-            if ((now - last_time) > 33)
+            // repaint roughly 60 frames per second
+            if ((now - last_time) > 16)
             {
                 registry.ctx<Component::RepaintTimer>().set();
                 last_time = now;
