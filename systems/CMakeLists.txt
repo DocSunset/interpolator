@@ -14,4 +14,5 @@ target_sources(interpolators-objects PRIVATE
     recent_memory.h recent_memory.cpp
     cursor.h cursor.cpp
     common/draggable.h common/draggable.cpp
+    common/interpolator.h common/interpolator.cpp
     )

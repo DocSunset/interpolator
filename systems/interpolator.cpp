@@ -49,7 +49,30 @@ namespace System
         std::vector<Scalar> distance;
         std::vector<Scalar> weight;
 
-        void query(entt::registry& registry)
+        auto query(entt::registry& registry)
+        {
+            using P = Component::Position;
+            using S = Component::FMSynthParameters;
+
+            std::size_t i = 0;
+            for (auto && [entity, demo, position, params] : registry.view<Component::Demo, P, S>().each())
+            {
+                demo.source = &position;
+                demo.destination = &params;
+                ++i;
+            }
+            distance.resize(i);
+            radius.resize(i);
+            weight.resize(i);
+            auto demo = registry.view<Component::Demo>().each();
+            Scalar dummy;
+            ::Interpolator::intersecting_spheres_update<Scalar>(position, demo, radius);
+            ::Interpolator::intersecting_spheres_query<Scalar>(position, demo, radius, dummy, distance, weight);
+            S s = S::Zero();
+            return ::Interpolator::Utility::normalized_weighted_sum<Scalar>(demo, weight, s);
+        }
+
+        void run_query(entt::registry& registry)
         {
             using P = Component::Position;
             using S = Component::FMSynthParameters;
@@ -70,22 +93,7 @@ namespace System
                 return;
             }
 
-            std::size_t i = 0;
-            for (auto && [entity, demo, position, params] : registry.view<Component::Demo, P, S>().each())
-            {
-                demo.source = &position;
-                demo.destination = &params;
-                ++i;
-            }
-            distance.resize(i);
-            radius.resize(i);
-            weight.resize(i);
-            auto demo = registry.view<Component::Demo>().each();
-            Scalar dummy;
-            ::Interpolator::intersecting_spheres_update<Scalar>(position, demo, radius);
-            ::Interpolator::intersecting_spheres_query<Scalar>(position, demo, radius, dummy, distance, weight);
-            S s = S::Zero();
-            s = ::Interpolator::Utility::normalized_weighted_sum<Scalar>(demo, weight, s);
+            auto s = query(registry);
             if (not pressed) set_amplitude(s, 0);
             registry.set<S>(s);
         }
@@ -103,14 +111,14 @@ namespace System
             auto button = registry.get<Component::LeftMouseButton>(entity);
             pressed = button.pressed;
             position = button.pressed ? button.down_position : button.up_position;
-            query(registry);
+            run_query(registry);
         }
 
         void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
         {
             auto motion = registry.get<Component::MouseMotion>(entity);
             position = motion.position;
-            query(registry);
+            run_query(registry);
         }
     };
 
@@ -125,7 +133,12 @@ namespace System
     {
         pimpl->setup_reactive_systems(registry);
     }
-    
+
+    void Interpolator::prepare_registry(entt::registry& registry)
+    {
+        registry.set<Interpolator*>(this);
+    }
+
     Interpolator::~Interpolator()
     {
         free(pimpl);

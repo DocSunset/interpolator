@@ -56,6 +56,46 @@ namespace Interpolator
     }
 
     template < typename Scalar
+             , typename Src
+             , typename Demo
+             , typename DemoList
+             >
+    Scalar intersecting_spheres_radius(const Src& q, const Demo& demo1, const DemoList& demo)
+    {
+        return std::transform_reduce(std::begin(demo), std::end(demo), std::numeric_limits<Scalar>::max(),
+                [&](Scalar r, Scalar radius) { return std::min(r, radius); },
+                [&](const auto& demo2)
+                {
+                    if (id(demo1) == id(demo2)) return std::numeric_limits<Scalar>::max();
+                    return norm(source(demo1) - source(demo2));
+                });
+    }
+
+    template < typename Scalar
+             , typename Src
+             , typename DemoList
+             , typename Dst
+             >
+    void intersecting_spheres_lite_query(const Src& q, const DemoList& demo, Dst& out)
+    {
+        Scalar r_q = std::transform_reduce(std::begin(demo), std::end(demo), std::numeric_limits<Scalar>::max()
+                , [](const auto a, const auto b){return std::min(a, b);}
+                , [&](const auto& d){return norm(source(d) - q);}
+                );
+
+        Scalar sum_of_weights = 1;
+
+        for (const auto& d : demo)
+        {
+            Scalar radius = intersecting_spheres_radius<Scalar>(q, d, demo);
+            Scalar distance = norm(source(d) - q);
+            Scalar weight = intersecting_spheres_weight(r_q, radius, distance);
+            sum_of_weights += weight;
+            out += (weight / sum_of_weights) * (destination(d) - out);
+        }
+    }
+
+    template < typename Scalar
              , typename Vector
              , typename DemoList
              , typename RadiusList
@@ -66,14 +106,7 @@ namespace Interpolator
         std::transform(std::begin(demo), std::end(demo), std::begin(radius),
                 [&](const auto& demo1)
         {
-            return std::transform_reduce(std::begin(demo), std::end(demo), std::numeric_limits<Scalar>::max(),
-                    [&](Scalar r, Scalar radius) { return std::min(r, radius); },
-                    [&](const auto& demo2)
-                    {
-                        if (id(demo1) == id(demo2)) return std::numeric_limits<Scalar>::max();
-                        return norm(source(demo1) - source(demo2));
-                    }
-            );
+            return intersecting_spheres_radius<Scalar>(q, demo1, demo);
         });
     }
 

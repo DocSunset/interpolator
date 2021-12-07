@@ -1,6 +1,5 @@
 #pragma once
 
-#include <entt/entt.hpp>
 #include "system.h"
 
 namespace System
@@ -12,6 +11,7 @@ namespace System
     public:
         void construct_system() override;
         void setup_reactive_systems(entt::registry&) override;
+        void prepare_registry(entt::registry&) override;
         ~Interpolator();
     };
 }

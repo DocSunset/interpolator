@@ -19,6 +19,14 @@ namespace Component
         return {0, 0, 0};
     }
 
+    FMSynthParameters operator-(const FMSynthParameters& lhs, const FMSynthParameters& rhs)
+    {
+        return { lhs.parameters[0] - rhs.parameters[0]
+               , lhs.parameters[1] - rhs.parameters[1]
+               , lhs.parameters[2] - rhs.parameters[2]
+               };
+    }
+
     FMSynthParameters operator+(const FMSynthParameters& lhs, const FMSynthParameters& rhs)
     {
         return { lhs.parameters[0] + rhs.parameters[0]

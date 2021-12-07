@@ -29,6 +29,7 @@ namespace Component
     FMSynthParameters& set_amplitude(FMSynthParameters& p, float a);
     FMSynthParameters& set_feedback(FMSynthParameters& p, float fb);
 
+    FMSynthParameters operator-(const FMSynthParameters& lhs, const FMSynthParameters& rhs);
     FMSynthParameters operator+(const FMSynthParameters& lhs, const FMSynthParameters& rhs);
     FMSynthParameters operator*(float lhs, const FMSynthParameters& rhs);
     FMSynthParameters operator*(const FMSynthParameters& lhs, float rhs);
