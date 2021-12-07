@@ -14,6 +14,7 @@ namespace Component
         {
             Demo,
             Knob,
+            Cursor,
             All,
         } group;
         bool _touched;

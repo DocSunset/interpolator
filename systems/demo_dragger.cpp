@@ -3,6 +3,7 @@
 #include "components/demo.h"
 #include "components/draggable.h"
 #include "components/position.h"
+#include "systems/common/draggable.h"
 
 namespace System
 {
@@ -16,13 +17,7 @@ namespace System
 
     void DemoDragger::run(entt::registry& registry)
     {
-        dragged.each([&](const auto entity)
-        {
-            auto& p    = registry.get<Component::Position>(entity);
-            auto& drag = registry.get<Component::Draggable>(entity);
-            registry.replace<Component::Position>(entity, p + drag.delta);
-            drag.delta = {0, 0};
-        });
+        drag_update_position(registry, dragged);
     }
 
     DemoDragger::~DemoDragger() {}

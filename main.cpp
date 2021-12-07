@@ -15,6 +15,7 @@
 #include "systems/line_painter.h"
 #include "systems/text_painter.h"
 #include "systems/recent_memory.h"
+#include "systems/cursor.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -35,6 +36,7 @@ int main()
         , System::DemoDragger
         , System::Knob
         , System::Interpolator
+        , System::Cursor
         //, System::RecentMemory
         , System::DemoMaker
         >();

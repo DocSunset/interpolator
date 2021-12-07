@@ -44,13 +44,11 @@ namespace System
         {
             indices.emplace(entity, lines.size());
             lines.push_back(registry.get<Component::Line>(entity));
-            std::cout << lines.size() << "new line\n";
         }
 
         void line_update(entt::registry& registry, entt::entity entity)
         {
             lines[indices[entity]] = registry.get<Component::Line>(entity);
-            std::cout << lines.size() << " line update\n";
         }
 
         void line_destroy(entt::registry& registry, entt::entity entity)
@@ -62,7 +60,6 @@ namespace System
             {
                 if (entity_index_pair.second >= idx) --entity_index_pair.second;
             }
-            std::cout << lines.size() << " destry line\n";
         }
 
         Implementation()

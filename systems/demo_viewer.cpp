@@ -7,6 +7,7 @@
 #include "components/circle.h"
 #include "components/paint_flag.h"
 #include "gl/vertex_array.h"
+#include "systems/common/draggable.h"
 
 #include "shader/demo_viewer.h"
 
@@ -19,9 +20,11 @@ namespace
         constexpr Color default_ring{0.6,0.6,0.6,1};
         constexpr Color highlight_ring{0.7,0.8,0.8,1};
 
-        auto s = registry.get<Component::Selectable>(demo);
-        auto h = registry.get<Component::SelectionHovered>(demo);
-        Color ring_color = s ? selected_ring : h ? highlight_ring : default_ring;
+        Color ring_color = System::hover_select_color(registry, demo
+                , default_ring
+                , highlight_ring
+                , selected_ring
+                );
         auto fill_color = registry.get<Color>(demo);
         auto position = registry.get<Component::Position>(demo);
         auto radius = registry.get<Component::Draggable>(demo).radius;

@@ -12,4 +12,6 @@ target_sources(interpolators-objects PRIVATE
     line_painter.h line_painter.cpp
     text_painter.h text_painter.cpp
     recent_memory.h recent_memory.cpp
+    cursor.h cursor.cpp
+    common/draggable.h common/draggable.cpp
     )
