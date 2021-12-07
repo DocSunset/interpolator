@@ -6,6 +6,7 @@
 #include "components/quit_flag.h"
 #include "components/paint_flag.h"
 #include "components/repaint_timer.h"
+#include "gl/ll/error.h"
 
 template<class ... Systems>
 class App
@@ -24,6 +25,7 @@ public:
             std::apply([&](auto& ... system) { (system.prepare_to_paint(registry), ...) ;}, systems);
             std::apply([&](auto& ... system) { (system.paint(registry), ...) ;}, systems);
             std::get<0>(systems).swap_window();
+            GL::LL::always_any_error();
             registry.ctx<Component::PaintFlag>().clear();
             registry.ctx<Component::RepaintTimer>().clear();
         }

@@ -7,10 +7,14 @@
 #include "gl/ll/vertex_array.h"
 #include "gl/ll/error.h"
 #include "simple/constants/pi.h"
-#include <cmath>
-
 #include "shader/line.h"
+
 #include <GLES3/gl3.h>
+
+#include <iostream>
+#include <cmath>
+#include <unordered_map>
+#include <vector>
 
 namespace System
 {
@@ -19,6 +23,8 @@ namespace System
         GL::LL::Program program;
         GL::LL::VertexArray vao;
         GL::LL::Buffer attrib_buffer;
+        std::unordered_map<entt::entity, std::size_t> indices;
+        std::vector<Component::Line> lines;
 
         void window_uniform(Component::Window& win)
         {
@@ -32,6 +38,31 @@ namespace System
         {
             Component::Window win = registry.get<Component::Window>(entity);
             window_uniform(win);
+        }
+
+        void line_construct(entt::registry& registry, entt::entity entity)
+        {
+            indices.emplace(entity, lines.size());
+            lines.push_back(registry.get<Component::Line>(entity));
+            std::cout << lines.size() << "new line\n";
+        }
+
+        void line_update(entt::registry& registry, entt::entity entity)
+        {
+            lines[indices[entity]] = registry.get<Component::Line>(entity);
+            std::cout << lines.size() << " line update\n";
+        }
+
+        void line_destroy(entt::registry& registry, entt::entity entity)
+        {
+            auto idx = indices[entity];
+            lines.erase(lines.begin() + idx);
+            indices.erase(entity);
+            for (auto& entity_index_pair : indices)
+            {
+                if (entity_index_pair.second >= idx) --entity_index_pair.second;
+            }
+            std::cout << lines.size() << " destry line\n";
         }
 
         Implementation()
@@ -51,11 +82,12 @@ namespace System
                 if (i == attributes.size() - 1) continue;
                 // The last attribute is a_vertex_id; it is not an instanced
                 // attribute, and is the same for every instance of the line
-                // primitive. It is used to determine which vertex is currently
-                // processed by the vertex shader so that it can be positioned
-                // appropriately by the vertex shader. A geometry shader would be
-                // preferable, but these are not available in the subset of OpenGL
-                // ES 3 available on the web, which we intend to target.
+                // primitive (attrib_divisor == the default). It is used to
+                // determine which vertex is currently processed by the vertex
+                // shader so that it can be positioned appropriately by the
+                // vertex shader. A geometry shader would be preferable, but
+                // these are not available in the subset of OpenGL ES 3
+                // available on the web, which we intend to target.
                 vaobind.attrib_divisor(attributes, attributes.index_of(attributes[i].name()), 1);
             }
         }
@@ -63,6 +95,9 @@ namespace System
         void setup_reactive_systems(entt::registry& registry)
         {
             registry.on_update<Component::Window>().connect<&Implementation::update_window>(*this);
+            registry.on_construct<Component::Line>().connect<&Implementation::line_construct>(*this);
+            registry.on_update<Component::Line>().connect<&Implementation::line_update>(*this);
+            registry.on_destroy<Component::Line>().connect<&Implementation::line_destroy>(*this);
         }
 
         void prepare_registry(entt::registry& registry)
@@ -81,18 +116,13 @@ namespace System
 
         void paint(entt::registry& registry)
         {
-            auto view = registry.view<Component::Line>();
-
-            auto size = view.size();
+            auto size = lines.size();
             if (size == 0) return;
 
-            auto * lines = *(view.raw());
-
             auto buffbind = bind(attrib_buffer);
-            buffbind.buffer_data(size * sizeof(Component::Line), lines);
+            buffbind.buffer_data(size * sizeof(Component::Line), lines.data());
 
             // draw lines
-            GL::LL::any_error();
             program.use();
             auto vaobind = bind(vao);
             //glDrawArrays(GL_POINTS, 0, size);

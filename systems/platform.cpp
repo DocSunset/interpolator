@@ -6,7 +6,7 @@
 #include <SDL_mouse.h>
 #include <SDL_video.h>
 #include <SDL_audio.h>
-#include <iostream>
+#include <chrono>
 #include "SDL_events.h"
 #include "components/quit_flag.h"
 #include "components/window.h"
@@ -165,7 +165,7 @@ namespace System
         void prepare_registry(entt::registry& registry)
         {
             window_entity = registry.create();
-            registry.emplace<Component::Window>(window_entity, 500u, 500u);
+            registry.emplace<Component::Window>(window_entity, 500.0f, 500.0f);
             mouse_entity = registry.create();
             registry.emplace<Component::LeftMouseButton>(mouse_entity
                     , false
@@ -207,11 +207,12 @@ namespace System
 
         void poll_events(entt::registry& registry)
         {
-            auto win = registry.get<Component::Window>(window_entity);
             SDL_Event ev;
-            SDL_WaitEvent(&ev);
-            do
+            auto got_event = SDL_WaitEventTimeout(&ev, 33);
+            registry.set<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
+            if (got_event) do
             {
+                auto win = registry.get<Component::Window>(window_entity);
                 if (not audio_started) start_audio();
             switch (ev.type)
             {
@@ -225,7 +226,7 @@ namespace System
                 switch (ev.window.event)
                 {
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
-                    win_size = {(unsigned int)ev.window.data1, (unsigned int)ev.window.data2};
+                    win_size = {(float)ev.window.data1, (float)ev.window.data2};
                     registry.replace<Component::Window>(window_entity , win_size.w , win_size.h);
                     glViewport(0, 0 , win_size.w , win_size.h);
                     registry.ctx<Component::PaintFlag>().set();

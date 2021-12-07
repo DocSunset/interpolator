@@ -4,7 +4,7 @@ namespace Component
 {
     struct Window
     {
-        unsigned int w;
-        unsigned int h;
+        float w;
+        float h;
     };
 }

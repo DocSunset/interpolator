@@ -11,4 +11,5 @@ target_sources(interpolators-objects PRIVATE
     glyph.h glyph.cpp
     line_painter.h line_painter.cpp
     text_painter.h text_painter.cpp
+    recent_memory.h recent_memory.cpp
     )

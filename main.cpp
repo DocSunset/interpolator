@@ -14,6 +14,7 @@
 #include "systems/circle_painter.h"
 #include "systems/line_painter.h"
 #include "systems/text_painter.h"
+#include "systems/recent_memory.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -26,14 +27,15 @@ int main()
 {
     auto app = App
         < System::Platform
-        , System::Draggable
-        , System::DemoDragger
-        , System::Knob
-        , System::Interpolator
         , System::DemoViewer
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
+        , System::Draggable
+        , System::DemoDragger
+        , System::Knob
+        , System::Interpolator
+        //, System::RecentMemory
         , System::DemoMaker
         >();
 
