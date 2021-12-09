@@ -38,7 +38,7 @@ namespace System
         for (int i = 0; i < 5; ++i)
         {
             auto entity = registry.create();
-            registry.emplace<Component::Demo>(entity, i);
+            registry.emplace<Component::Demo>(entity, (long long)entity);
         }
     }
 

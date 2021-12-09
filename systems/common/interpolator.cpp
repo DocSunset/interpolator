@@ -31,18 +31,18 @@ namespace System
 {
     Component::FMSynthParameters query(entt::registry& registry, Component::Position q)
     {
-        using P = Component::Position;
-        using S = Component::FMSynthParameters;
+        using Src = Component::Position;
+        using Dst = Component::FMSynthParameters;
 
         std::size_t i = 0;
-        for (auto && [entity, demo, position, params] : registry.view<Component::Demo, P, S>().each())
+        for (auto && [entity, demo, source, destination] : registry.view<Component::Demo, Src, Dst>().each())
         {
-            demo.source = &position;
-            demo.destination = &params;
+            demo.source = &source;
+            demo.destination = &destination;
             ++i;
         }
         auto demo = registry.view<Component::Demo>().each();
-        S ret{};
+        Dst ret{};
         Interpolator::intersecting_spheres_lite_query<float>(q, demo, ret);
         return ret;
     }

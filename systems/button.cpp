@@ -50,11 +50,6 @@ namespace
         for (auto e : registry.view<Component::ButtonPress>())
             registry.erase<Component::ButtonPress>(e);
     }
-
-    void test(entt::registry& registry, entt::entity entity)
-    {
-        std::cout << "button press!\n";
-    }
 }
 
 namespace System
@@ -62,13 +57,6 @@ namespace System
     void Button::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_update<Component::LeftMouseButton>().connect<&on_left_mouse_button>();
-        registry.on_construct<Component::ButtonPress>().connect<&test>();
-    }
-
-    void Button::prepare_registry(entt::registry& registry)
-    {
-        auto e = registry.create();
-        registry.emplace<Component::Button>(e, 50);
     }
 
     void Button::prepare_to_paint(entt::registry& registry)

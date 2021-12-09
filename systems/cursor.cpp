@@ -1,9 +1,12 @@
 #include "cursor.h"
+#include "components/fmsynth.h"
 #include "components/position.h"
 #include "components/color.h"
 #include "components/draggable.h"
 #include "components/line.h"
 #include "components/paint_flag.h"
+#include "components/button.h"
+#include "components/demo.h"
 #include "systems/common/draggable.h"
 #include "systems/common/interpolator.h"
 #include "systems/interpolator.h"
@@ -52,6 +55,22 @@ namespace
         registry.emplace_or_replace<Line>(viewer.v, line_v);
         registry.ctx<PaintFlag>().set();
     }
+
+    struct NewDemoButton {};
+
+    void maybe_make_new_demo(entt::registry& registry, entt::entity entity)
+    {
+        if (not registry.all_of<NewDemoButton>(entity)) return;
+        for (auto cursor : registry.view<CursorView>())
+        {
+            auto demo = registry.create();
+            auto position = registry.get<Component::Position>(cursor);
+            auto fm = registry.get<Component::FMSynthParameters>(cursor);
+            registry.emplace<Component::Demo>(demo, (long long)demo);
+            registry.replace<Component::Position>(demo, position);
+            registry.replace<Component::FMSynthParameters>(demo, fm);
+        }
+    }
 }
 
 namespace System
@@ -67,16 +86,17 @@ namespace System
                 .update<Component::Selectable>().where<CursorView>()
                 .update<Component::SelectionHovered>().where<CursorView>()
                 );
+        registry.on_construct<Component::ButtonPress>().connect<&maybe_make_new_demo>();
     }
 
     void Cursor::prepare_registry(entt::registry& registry)
     {
-        auto entity = registry.create();
-        registry.emplace<Component::FMSynthParameters>(entity, query(registry, Component::Position{0,0}));
-        registry.emplace<Component::Position>(entity, 0.0f, 0.0f);
-        registry.emplace<Component::Selectable>(entity, false, Component::Selectable::Group::Cursor);
-        registry.emplace<Component::SelectionHovered>(entity, false);
-        registry.emplace<Component::Draggable>(entity
+        auto cursor = registry.create();
+        registry.emplace<Component::FMSynthParameters>(cursor);
+        registry.emplace<Component::Position>(cursor, 0.0f, 0.0f);
+        registry.emplace<Component::Selectable>(cursor, false, Component::Selectable::Group::Cursor);
+        registry.emplace<Component::SelectionHovered>(cursor, false);
+        registry.emplace<Component::Draggable>(cursor
                 , 25.0f
                 , Component::Position::Zero()
                 , Component::Position::Zero()
@@ -84,8 +104,14 @@ namespace System
                 , Component::Position::Zero()
                 );
         auto viewer = CursorView{registry.create(), registry.create()};
-        registry.emplace<CursorView>(entity, viewer);
-        update_cursor(registry, entity);
+        registry.emplace<CursorView>(cursor, viewer);
+        update_cursor(registry, cursor);
+
+        auto btn = registry.create();
+        registry.emplace<NewDemoButton>(btn);
+        registry.emplace<Component::Button>(btn, 50.0f);
+        registry.emplace<Component::Position>(btn, -200.0f, -200.0f);
+        registry.emplace<Component::Color>(btn, 0.5f, 0.9f, 0.7f, 1.0f);
     }
 
     void Cursor::run(entt::registry& registry)

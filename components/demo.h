@@ -6,7 +6,7 @@ namespace Component
 {
     struct Demo
     {
-        int id;
+        long long id;
         Position * source;
         FMSynthParameters * destination;
     };

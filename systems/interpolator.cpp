@@ -6,10 +6,10 @@
 #include "components/fmsynth.h"
 #include "components/draggable.h"
 #include "components/knob.h"
+#include "systems/common/interpolator.h"
 #include "entt/entity/entity.hpp"
 
 #include <vector>
-#include <iostream>
 
 namespace
 {
@@ -45,38 +45,9 @@ namespace System
         using Scalar = float;
         bool pressed = false;
         Component::Position position = Component::Position::Zero();
-        std::vector<Scalar> radius;
-        std::vector<Scalar> distance;
-        std::vector<Scalar> weight;
-
-        auto query(entt::registry& registry)
-        {
-            using P = Component::Position;
-            using S = Component::FMSynthParameters;
-
-            std::size_t i = 0;
-            for (auto && [entity, demo, position, params] : registry.view<Component::Demo, P, S>().each())
-            {
-                demo.source = &position;
-                demo.destination = &params;
-                ++i;
-            }
-            distance.resize(i);
-            radius.resize(i);
-            weight.resize(i);
-            auto demo = registry.view<Component::Demo>().each();
-            Scalar dummy;
-            ::Interpolator::intersecting_spheres_update<Scalar>(position, demo, radius);
-            ::Interpolator::intersecting_spheres_query<Scalar>(position, demo, radius, dummy, distance, weight);
-            S s = S::Zero();
-            return ::Interpolator::Utility::normalized_weighted_sum<Scalar>(demo, weight, s);
-        }
 
         void run_query(entt::registry& registry)
         {
-            using P = Component::Position;
-            using S = Component::FMSynthParameters;
-
             // if grabbed knob, play a demo
             auto grabbed_knob = registry.view<Component::Knob, Component::Grabbed>();
             for (auto && [entity, knob] : grabbed_knob.each())
@@ -88,14 +59,14 @@ namespace System
                 if (first_demo == entt::null) break; // this should never happen
 
                 // play first selected demo's parameters
-                auto s = registry.get<S>(first_demo);
-                registry.set<S>(s);
+                auto s = registry.get<Component::FMSynthParameters>(first_demo);
+                registry.set<Component::FMSynthParameters>(s);
                 return;
             }
 
-            auto s = query(registry);
+            auto s = query(registry, position);
             if (not pressed) set_amplitude(s, 0);
-            registry.set<S>(s);
+            registry.set<Component::FMSynthParameters>(s);
         }
 
         void setup_reactive_systems(entt::registry& registry)
@@ -110,7 +81,6 @@ namespace System
         {
             auto button = registry.get<Component::LeftMouseButton>(entity);
             pressed = button.pressed;
-            position = button.pressed ? button.down_position : button.up_position;
             run_query(registry);
         }
 
@@ -132,11 +102,6 @@ namespace System
     void Interpolator::setup_reactive_systems(entt::registry& registry)
     {
         pimpl->setup_reactive_systems(registry);
-    }
-
-    void Interpolator::prepare_registry(entt::registry& registry)
-    {
-        registry.set<Interpolator*>(this);
     }
 
     Interpolator::~Interpolator()
