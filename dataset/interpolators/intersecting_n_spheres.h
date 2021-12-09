@@ -50,9 +50,10 @@ namespace Interpolator
     Scalar intersecting_spheres_weight(const Scalar& R, const Scalar& r, const Scalar& d)
     {
         constexpr Scalar an_arbitrary_slop_factor = std::numeric_limits<Scalar>::epsilon() * 5;
+        const Scalar _r = std::min(r, d);
         if (d < an_arbitrary_slop_factor) return std::numeric_limits<Scalar>::max(); // distance is nearly 0
-        else if ((R + r) < d) return (Scalar)0; // the circles are non-intersecting
-        else return circle_circle_intersection_area(R, r, d) / circle_area(r);
+        else if ((R + _r) <= d) return (Scalar)0; // the circles are non-intersecting
+        else return circle_circle_intersection_area(R, _r, d) / circle_area(_r);
     }
 
     template < typename Scalar
@@ -83,15 +84,19 @@ namespace Interpolator
                 , [&](const auto& d){return norm(source(d) - q);}
                 );
 
-        Scalar sum_of_weights = 1;
+        Scalar sum_of_weights = 0;
 
         for (const auto& d : demo)
         {
             Scalar radius = intersecting_spheres_radius<Scalar>(q, d, demo);
             Scalar distance = norm(source(d) - q);
             Scalar weight = intersecting_spheres_weight(r_q, radius, distance);
+            const Dst& dest = destination(d);
             sum_of_weights += weight;
-            out += (weight / sum_of_weights) * (destination(d) - out);
+            Dst step = dest - out;
+            Scalar scale = sum_of_weights <= (Scalar)0 ? (Scalar)0 : weight / sum_of_weights;
+            Dst inc = scale * step;
+            out += inc;
         }
     }
 
@@ -129,7 +134,7 @@ namespace Interpolator
         std::transform(std::begin(distance), std::end(distance), std::begin(radius), std::begin(weights),
                 [&](Scalar d_n, Scalar r_n)
         {
-            return intersecting_spheres_weight(r_q, std::min(d_n, r_n), d_n);
+            return intersecting_spheres_weight(r_q, r_n, d_n);
         });
     }
 }
