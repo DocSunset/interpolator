@@ -15,4 +15,5 @@ target_sources(interpolators-objects PRIVATE
     cursor.h cursor.cpp
     common/draggable.h common/draggable.cpp
     common/interpolator.h common/interpolator.cpp
+    button.h button.cpp
     )

@@ -10,4 +10,5 @@ target_sources(interpolators-objects PRIVATE
     mouse_motion.h
     fmsynth.h fmsynth.cpp
     mouse_mode.h
+    button.h
     )
