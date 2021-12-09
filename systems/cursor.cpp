@@ -1,5 +1,4 @@
 #include "cursor.h"
-#include "components/cursor.h"
 #include "components/position.h"
 #include "components/color.h"
 #include "components/draggable.h"
@@ -73,7 +72,6 @@ namespace System
     void Cursor::prepare_registry(entt::registry& registry)
     {
         auto entity = registry.create();
-        registry.emplace<Component::Cursor>(entity);
         registry.emplace<Component::FMSynthParameters>(entity, query(registry, Component::Position{0,0}));
         registry.emplace<Component::Position>(entity, 0.0f, 0.0f);
         registry.emplace<Component::Selectable>(entity, false, Component::Selectable::Group::Cursor);
