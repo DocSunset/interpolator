@@ -7,9 +7,12 @@
 #include "components/paint_flag.h"
 #include "components/button.h"
 #include "components/demo.h"
+#include "components/draggable.h"
+#include "components/paint_flag.h"
 #include "systems/common/draggable.h"
 #include "systems/common/interpolator.h"
 #include "systems/interpolator.h"
+#include <iostream>
 
 namespace
 {
@@ -30,8 +33,6 @@ namespace
                 , Color{0.7,0.8,0.8,1.0}
                 , Color{1.0,0.7,0.7,1.0}
                 );
-
-        registry.replace<FMSynthParameters>(entity, System::query(registry, position));
 
         Line line_h, line_v;
         line_h = line_v = Line
@@ -57,18 +58,30 @@ namespace
     }
 
     struct NewDemoButton {};
+    struct DeleteDemoButton {};
 
-    void maybe_make_new_demo(entt::registry& registry, entt::entity entity)
+    void demo_buttons(entt::registry& registry, entt::entity entity)
     {
-        if (not registry.all_of<NewDemoButton>(entity)) return;
-        for (auto cursor : registry.view<CursorView>())
+        if (registry.all_of<NewDemoButton>(entity))
         {
-            auto demo = registry.create();
-            auto position = registry.get<Component::Position>(cursor);
-            auto fm = registry.get<Component::FMSynthParameters>(cursor);
-            registry.emplace<Component::Demo>(demo, (long long)demo);
-            registry.replace<Component::Position>(demo, position);
-            registry.replace<Component::FMSynthParameters>(demo, fm);
+            for (auto cursor : registry.view<CursorView>())
+            {
+                auto demo = registry.create();
+                auto position = registry.get<Component::Position>(cursor);
+                auto fm = System::query(registry, position);
+                registry.emplace<Component::Demo>(demo, (long long)demo);
+                registry.replace<Component::Position>(demo, position);
+                registry.replace<Component::FMSynthParameters>(demo, fm);
+                registry.replace<Component::Selectable>(demo, true, Component::Selectable::Group::Demo);
+                registry.emplace<Component::Selected>(demo);
+            }
+            registry.ctx<Component::PaintFlag>().set();
+        }
+        else if (registry.all_of<DeleteDemoButton>(entity))
+        {
+            auto view = registry.view<Component::Demo, Component::Selected>();
+            registry.destroy(view.begin(), view.end());
+            registry.ctx<Component::PaintFlag>().set();
         }
     }
 }
@@ -86,13 +99,12 @@ namespace System
                 .update<Component::Selectable>().where<CursorView>()
                 .update<Component::SelectionHovered>().where<CursorView>()
                 );
-        registry.on_construct<Component::ButtonPress>().connect<&maybe_make_new_demo>();
+        registry.on_construct<Component::ButtonPress>().connect<&demo_buttons>();
     }
 
     void Cursor::prepare_registry(entt::registry& registry)
     {
         auto cursor = registry.create();
-        registry.emplace<Component::FMSynthParameters>(cursor);
         registry.emplace<Component::Position>(cursor, 0.0f, 0.0f);
         registry.emplace<Component::Selectable>(cursor, false, Component::Selectable::Group::Cursor);
         registry.emplace<Component::SelectionHovered>(cursor, false);
@@ -107,11 +119,17 @@ namespace System
         registry.emplace<CursorView>(cursor, viewer);
         update_cursor(registry, cursor);
 
-        auto btn = registry.create();
-        registry.emplace<NewDemoButton>(btn);
-        registry.emplace<Component::Button>(btn, 50.0f);
-        registry.emplace<Component::Position>(btn, -200.0f, -200.0f);
-        registry.emplace<Component::Color>(btn, 0.5f, 0.9f, 0.7f, 1.0f);
+        auto new_demo_button = registry.create();
+        registry.emplace<NewDemoButton>(new_demo_button);
+        registry.emplace<Component::Button>(new_demo_button, 50.0f);
+        registry.emplace<Component::Position>(new_demo_button, -200.0f, -200.0f);
+        registry.emplace<Component::Color>(new_demo_button, 0.2f, 0.7f, 0.2f, 1.0f);
+
+        auto delete_demo_button = registry.create();
+        registry.emplace<DeleteDemoButton>(delete_demo_button);
+        registry.emplace<Component::Button>(delete_demo_button, 50.0f);
+        registry.emplace<Component::Position>(delete_demo_button, -145.0f, -200.0f);
+        registry.emplace<Component::Color>(delete_demo_button, 0.7f, 0.2f, 0.2f, 1.0f);
     }
 
     void Cursor::run(entt::registry& registry)

@@ -33,12 +33,12 @@ int main()
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
+        , System::Button
         , System::Draggable
         , System::DemoDragger
         , System::Knob
         , System::Interpolator
         , System::Cursor
-        , System::Button
         //, System::RecentMemory
         , System::DemoMaker
         >();

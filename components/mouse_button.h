@@ -11,6 +11,8 @@ namespace Component
 
         Position down_position;
         Position up_position;
+
+        bool consumed = false;
     };
 
     struct LeftMouseButton : public _MouseButton {};

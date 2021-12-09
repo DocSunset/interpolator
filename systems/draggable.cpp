@@ -318,6 +318,7 @@ namespace System
             using Component::LeftMouseButton;
 
             auto btn = registry.get<LeftMouseButton>(entity);
+            if (btn.consumed) return;
 
             switch (state)
             {
