@@ -1,5 +1,6 @@
 #include "interpolator.h"
 #include "components/demo.h"
+#include "components/paint_flag.h"
 #include "components/position.h"
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
@@ -56,7 +57,10 @@ namespace System
                 entt::entity first_demo = entt::null;
                 auto first_demo_view = registry.view<Component::Selected, Component::Demo>();
                 for (auto e : first_demo_view) { first_demo = e; break; }
-                if (first_demo == entt::null) break; // this should never happen
+                if (first_demo == entt::null)
+                {
+                    return; // don't edit context if dragging knob with no sel
+                }
 
                 // play first selected demo's parameters
                 auto s = registry.get<Component::FMSynthParameters>(first_demo);
@@ -65,8 +69,8 @@ namespace System
             }
 
             auto s = query(registry, position);
-            if (not pressed) set_amplitude(s, 0);
             registry.set<Component::FMSynthParameters>(s);
+            registry.ctx<Component::PaintFlag>().set();
         }
 
         void setup_reactive_systems(entt::registry& registry)
@@ -80,12 +84,18 @@ namespace System
         void on_mouse_button(entt::registry& registry, entt::registry::entity_type entity)
         {
             auto button = registry.get<Component::LeftMouseButton>(entity);
+            if (button.consumed) return;
             pressed = button.pressed;
-            run_query(registry);
+            if (pressed)
+            {
+                position = button.down_position;
+                run_query(registry);
+            }
         }
 
         void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
         {
+            if (not pressed) return;
             auto motion = registry.get<Component::MouseMotion>(entity);
             position = motion.position;
             run_query(registry);

@@ -36,75 +36,47 @@ namespace
         for (auto knob : knobs) position_knob(registry, knob);
     }
 
-    void manage_knob_lifetimes(entt::registry& registry)
-    {
-        bool any_selected_demos = false;
-        auto knobs = registry.view<Component::Knob>();
-        auto selected_demos = registry.view<Component::Demo, Component::Selected>();
-        for (auto demo_entity : selected_demos)
-        {
-            any_selected_demos = true;
-            if (!knobs.size()) for (int i = 0; i < Component::FMSynthParameters::N; ++i)
-            {
-                auto knob = registry.create();
-                registry.emplace<Component::Position>(knob, 0.0f, 100.0f * i);
-                registry.emplace<Component::Selectable>(knob, false, Component::Selectable::Group::Knob);
-                registry.emplace<Component::Color>(knob);
-                registry.emplace<Component::SelectionHovered>(knob, false);
-                registry.emplace<Component::Draggable>(knob, 75.0f);
-                registry.emplace<Component::Knob>(knob, i);
-            }
-            break;
-        }
-        if (!any_selected_demos && knobs.size())
-        {
-            for (auto knob : knobs)
-            {
-                registry.destroy(knob);
-            }
-        }
-    }
-
     void sync_knob_values(entt::registry& registry)
     {
         auto knobs = registry.view<Component::Knob>();
         auto selected_demos = registry.view<Component::Demo, Component::Selected>();
 
-        int n_demos;
-        for (auto knob_entity : knobs)
+        int n_demos = 0;
+        Component::FMSynthParameters p{};
+        Component::Color color{0.0f,0.0f,0.0f,0.0f};
+        for (auto demo : selected_demos)
         {
-            n_demos = 0;
-            auto knob = registry.get<Component::Knob>(knob_entity);
-            auto get_param = [&](auto demo_entity)
-            {
-                ++n_demos;
-                auto p = registry.get<Component::FMSynthParameters>(demo_entity);
-                return p.parameters[knob.index];
-            };
-            knob.value = std::transform_reduce
-                ( selected_demos.begin(), selected_demos.end()
-                , 0.0f, std::plus<float>(), get_param
-                );
-            knob.value = knob.value / (float)n_demos;
-            registry.replace<Component::Knob>(knob_entity, knob);
+            auto dcolor = registry.get<Component::Color>(demo);
+            ++n_demos;
+            p += (1.0 / n_demos) * (registry.get<Component::FMSynthParameters>(demo) - p);
+            color.r += (1.0 / n_demos) * (dcolor.r - color.r);
+            color.g += (1.0 / n_demos) * (dcolor.g - color.g);
+            color.b += (1.0 / n_demos) * (dcolor.b - color.b);
+            color.a += (1.0 / n_demos) * (dcolor.a - color.a);
         }
 
-        auto color = std::transform_reduce
-            ( selected_demos.begin(), selected_demos.end()
-            , Component::Color{0.0f,0.0f,0.0f,0.0f}
-            , [](auto a, auto b){return Component::Color{a.r + b.r, a.g + b.g, a.b + b.b, a.a + b.a};}
-            , [&](auto entity){return registry.get<Component::Color>(entity);}
-            );
-
-        color = { color.r / (float)n_demos
-                , color.g / (float)n_demos
-                , color.b / (float)n_demos
-                , color.a / (float)n_demos
-                };
-
-        for (auto knob_entity : knobs)
+        if (n_demos == 0)
         {
-            registry.replace<Component::Color>(knob_entity, color);
+            color = {0.8f,0.8f,0.8f,1.0f};
+            p = registry.ctx<Component::FMSynthParameters>();
+            for (auto knob_entity : knobs)
+            {
+                auto knob = registry.get<Component::Knob>(knob_entity);
+                knob.value = p.parameters[knob.index];
+                registry.replace<Component::Knob>(knob_entity, knob);
+                registry.replace<Component::Color>(knob_entity, color);
+            }
+        }
+        else
+        {
+            for (auto knob_entity : knobs)
+            {
+                n_demos = 0;
+                auto knob = registry.get<Component::Knob>(knob_entity);
+                knob.value = p.parameters[knob.index];
+                registry.replace<Component::Knob>(knob_entity, knob);
+                registry.replace<Component::Color>(knob_entity, color);
+            }
         }
     }
 
@@ -121,10 +93,17 @@ namespace
             registry.replace<Component::Knob>(entity, knob.index, Simple::clip(knob.value + delta));
             drag.delta = {0,0};
 
+            std::size_t num_selected_demos = 0;
             auto view = registry.view<Component::Selected, Component::Demo>();
             for (auto entity : view)
             {
                 auto& p = registry.get<Component::FMSynthParameters>(entity);
+                p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
+                ++num_selected_demos;
+            }
+            if (num_selected_demos == 0)
+            {
+                auto& p = registry.ctx<Component::FMSynthParameters>();
                 p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
             }
         });
@@ -215,9 +194,18 @@ namespace System
                 );
     }
 
-    void Knob::run(entt::registry& registry)
+    void Knob::prepare_registry(entt::registry& registry)
     {
-        manage_knob_lifetimes(registry);
+        for (int i = 0; i < Component::FMSynthParameters::N; ++i)
+        {
+            auto knob = registry.create();
+            registry.emplace<Component::Position>(knob, 0.0f, 100.0f * i);
+            registry.emplace<Component::Selectable>(knob, false, Component::Selectable::Group::Knob);
+            registry.emplace<Component::Color>(knob);
+            registry.emplace<Component::SelectionHovered>(knob, false);
+            registry.emplace<Component::Draggable>(knob, 75.0f);
+            registry.emplace<Component::Knob>(knob, i);
+        }
     }
 
     void Knob::prepare_to_paint(entt::registry& registry)
