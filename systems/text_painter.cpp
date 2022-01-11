@@ -139,7 +139,7 @@ namespace System
     {
         auto view = registry.view<Component::Window>();
         assert(view.size() == 1);
-        pimpl->window = **(view.raw());
+        pimpl->window = **(view.storage().raw());
 
         for (Glyph i{}; i._id < 4; ++i._id)
         {
@@ -155,7 +155,7 @@ namespace System
         auto size = view.size();
         if (size == 0) return;
 
-        auto * texts = *(view.raw());
+        auto * texts = *(view.storage().raw());
 
         std::size_t num_codepoints = std::transform_reduce(texts, texts + size, 0, 
                 std::plus(), 

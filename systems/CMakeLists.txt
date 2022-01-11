@@ -8,10 +8,10 @@ target_sources(interpolators-objects PRIVATE
     interpolator.h interpolator.cpp
     knob.h knob.cpp
     circle_painter.h circle_painter.cpp
-    glyph.h glyph.cpp
+    #glyph.h glyph.cpp
     line_painter.h line_painter.cpp
     text_painter.h text_painter.cpp
-    recent_memory.h recent_memory.cpp
+    #recent_memory.h recent_memory.cpp
     cursor.h cursor.cpp
     common/draggable.h common/draggable.cpp
     common/interpolator.h common/interpolator.cpp

@@ -18,7 +18,6 @@ class App
 public:
     void loop()
     {
-        // system execution order == order in list (established by 2)
         std::apply([&](auto& ... system) { (system.run(registry), ...) ;}, systems);
         if (registry.ctx<Component::PaintFlag>() && registry.ctx<Component::RepaintTimer>())
         {

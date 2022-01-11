@@ -101,7 +101,7 @@ namespace System
         {
             auto view = registry.view<Component::Window>();
             assert(view.size() == 1);
-            Component::Window win = **(view.raw());
+            Component::Window win = **(view.storage().raw());
             window_uniform(win);
 
             for (Component::Line i{}; i._id < 4; ++i._id)

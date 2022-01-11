@@ -83,7 +83,7 @@ namespace
     void drag_knobs(entt::registry& registry, entt::observer& dragged)
     {
         if (dragged.empty()) return;
-        const auto& win = *registry.view<Component::Window>().raw()[0];
+        const auto& win = *registry.view<Component::Window>().storage().raw()[0];
         dragged.each([&](const auto entity)
         {
             auto& drag = registry.get<Component::Draggable>(entity);

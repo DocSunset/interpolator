@@ -30,19 +30,20 @@ int main()
 {
     auto app = App
         < System::Platform
-        , System::DemoViewer
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
         , System::Libmapper
         , System::Button
         , System::Draggable
-        , System::DemoDragger
         , System::Knob
+
+        , System::DemoViewer
+        , System::DemoDragger
+        , System::DemoMaker
         , System::Interpolator
         , System::Cursor
         //, System::RecentMemory
-        , System::DemoMaker
         >();
 
 #ifdef __EMSCRIPTEN__
