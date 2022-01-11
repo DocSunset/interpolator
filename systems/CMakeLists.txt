@@ -16,4 +16,5 @@ target_sources(interpolators-objects PRIVATE
     common/draggable.h common/draggable.cpp
     common/interpolator.h common/interpolator.cpp
     button.h button.cpp
+    libmapper.h libmapper.cpp
     )

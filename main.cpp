@@ -17,6 +17,7 @@
 #include "systems/recent_memory.h"
 #include "systems/cursor.h"
 #include "systems/button.h"
+#include "systems/libmapper.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -33,6 +34,7 @@ int main()
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
+        , System::Libmapper
         , System::Button
         , System::Draggable
         , System::DemoDragger

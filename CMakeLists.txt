@@ -41,6 +41,9 @@ add_library(interpolators-objects OBJECT)
 
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/artery-font-format)
+    target_include_directories(interpolators-objects PRIVATE /usr/local/include)
+    target_link_libraries(interpolators-objects PRIVATE /usr/local/lib/libmapper.so)
+    target_link_libraries(interpolators-objects PRIVATE /usr/local/lib/liblo.so)
 
 if (EMSCRIPTEN)
     add_executable(interpolators-tests)
