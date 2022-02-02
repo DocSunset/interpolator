@@ -8,6 +8,8 @@
 #include "components/position.h"
 #include "components/demo.h"
 
+#include "systems/common/interpolator.h"
+
 namespace
 {
     constexpr unsigned int num_inputs = 2;
@@ -15,9 +17,9 @@ namespace
 
     void signal_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
-        auto * registry = (entt::registry*)(sig.device()["registry"]);
+        auto * registry = (entt::registry*)(void*)(sig.device()["registry"]);
         auto& demo = registry->ctx<Component::Demo>();
-        auto index = (int)sig["index"];
+        auto index = (uintptr_t)(void*)sig["index"];
         demo.source[index] = val;
     }
 }
@@ -35,14 +37,10 @@ namespace System
         pimpl = new Implementation;
     };
 
-    void Libmapper::setup_reactive_systems(entt::registry& registry)
-    {
-    }
-
     void Libmapper::prepare_registry(entt::registry& registry)
     {
         registry.set<mapper::Device>(pimpl->dev);
-        registry.set<Component::Demo>(Component::Demo{});
+        registry.set<Component::Demo>();
 
         auto& dev = pimpl->dev;
 
@@ -52,7 +50,7 @@ namespace System
         std::string output_name{"output"};
         float min = 0;
         float max = 1;
-        for (int i = 0; i < Component::Demo::num_sources; ++i)
+        for (uintptr_t i = 0; i < Component::Demo::num_sources; ++i)
         {
             dev .add_signal(mapper::Direction::INCOMING, input_name+std::to_string(i),
                     1, mapper::Type::FLOAT, "normalized", &min, &max)
@@ -70,7 +68,22 @@ namespace System
     void Libmapper::run(entt::registry& registry)
     {
         auto& dev = pimpl->dev;
-        dev.poll();
+        auto signals = dev.signals(mapper::Direction::OUTGOING);
+        auto destination = registry.ctx<Component::Demo>().destination;
+        if (dev.poll())
+        {
+            auto& demo = registry.ctx<Component::Demo>();
+            demo.destination = query(registry, demo.source);
+            std::cout << demo.source[0] << " " << demo.source[1] << "\n";
+        }
+        for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
+        {
+            float * network_val_ptr = (float*)(signals[i].value());
+            float network = network_val_ptr == nullptr ? 0 : network_val_ptr[0];
+            float local = destination[i];
+            if (network != local) signals[i].set_value(local);
+        }
+        dev.poll();// can we please avoid doing this twice?
     }
 
     Libmapper::~Libmapper()

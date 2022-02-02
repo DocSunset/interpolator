@@ -1,4 +1,5 @@
 #include "interpolator.h"
+#include <iostream>
 #include "components/demo.h"
 #include "components/paint_flag.h"
 #include "components/position.h"
@@ -9,8 +10,6 @@
 #include "components/knob.h"
 #include "systems/common/interpolator.h"
 #include "entt/entity/entity.hpp"
-
-#include <vector>
 
 namespace System
 {
@@ -45,6 +44,7 @@ namespace System
             demo.destination = query(registry, demo.source); 
             //registry.set<Component::FMSynthParameters>(s);
             //registry.ctx<Component::PaintFlag>().set();
+            std::cout << demo.destination[0] << "\n";
         }
 
         void setup_reactive_systems(entt::registry& registry)
