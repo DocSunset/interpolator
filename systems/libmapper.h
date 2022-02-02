@@ -6,7 +6,8 @@ namespace System
 {
     class Libmapper : public System
     {
-        void * pimpl;
+        struct Implementation;
+        Implementation * pimpl;
     public:
         void construct_system() override;
         void setup_reactive_systems(entt::registry&) override;

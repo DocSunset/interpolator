@@ -1,9 +1,8 @@
 #pragma once
 #include <entt/entt.hpp>
-#include "components/position.h"
-#include "components/fmsynth.h"
+#include "components/demo.h"
 
 namespace System
 {
-    Component::FMSynthParameters query(entt::registry&, Component::Position);
+    Component::Demo::Destination query(entt::registry&, Component::Demo::Source);
 }

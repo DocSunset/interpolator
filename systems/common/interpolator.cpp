@@ -4,45 +4,42 @@
 namespace
 {
     template<typename ViewEachPack>
-    Component::Position source(ViewEachPack& pack)
+    Component::Demo::Source source(ViewEachPack& pack)
     {
         auto &&[entity, demo] = pack;
-        return *demo.source;
+        return demo.source;
     }
 
     template<typename ViewEachPack>
-    Component::FMSynthParameters destination(ViewEachPack& pack)
+    Component::Demo::Destination destination(ViewEachPack& pack)
     {
         auto &&[entity, demo] = pack;
-        return *demo.destination;
+        return demo.destination;
     }
 
     template<typename ViewEachPack>
-    int id(ViewEachPack& pack)
+    long long id(ViewEachPack& pack)
     {
         auto &&[entity, demo] = pack;
         return demo.id;
     }
+
+    template<typename T>
+    float norm(const T& s) {return s.norm();}
 }
 
 #include "dataset/interpolators/intersecting_n_spheres.h"
 
 namespace System
 {
-    Component::FMSynthParameters query(entt::registry& registry, Component::Position q)
+    Component::Demo::Destination query(entt::registry& registry, Component::Demo::Source q)
     {
-        using Src = Component::Position;
-        using Dst = Component::FMSynthParameters;
+        using Src = Component::Demo::Source;
+        using Dst = Component::Demo::Destination;
 
         std::size_t i = 0;
-        for (auto && [entity, demo, source, destination] : registry.view<Component::Demo, Src, Dst>().each())
-        {
-            demo.source = &source;
-            demo.destination = &destination;
-            ++i;
-        }
         auto demo = registry.view<Component::Demo>().each();
-        Dst ret{};
+        Dst ret = Component::Demo::zero_destination();
         Interpolator::intersecting_spheres_lite_query<float>(q, demo, ret);
         return ret;
     }

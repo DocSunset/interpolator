@@ -18,6 +18,7 @@
 #include "systems/cursor.h"
 #include "systems/button.h"
 #include "systems/libmapper.h"
+#include "systems/demo_vis.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -30,19 +31,21 @@ int main()
 {
     auto app = App
         < System::Platform
+        , System::Libmapper
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
-        , System::Libmapper
         , System::Button
         , System::Draggable
-        , System::Knob
 
-        , System::DemoViewer
-        , System::DemoDragger
         , System::DemoMaker
-        , System::Interpolator
-        , System::Cursor
+
+        //, System::Knob
+        , System::DemoViewer
+        //, System::DemoDragger
+        //, System::Interpolator
+        //, System::Cursor
+        , System::DemoVis
         //, System::RecentMemory
         >();
 

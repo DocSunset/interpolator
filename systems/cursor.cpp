@@ -66,14 +66,14 @@ namespace
         {
             for (auto cursor : registry.view<CursorView>())
             {
-                auto demo = registry.create();
-                auto position = registry.get<Component::Position>(cursor);
-                auto fm = System::query(registry, position);
-                registry.emplace<Component::Demo>(demo, (long long)demo);
-                registry.replace<Component::Position>(demo, position);
-                registry.replace<Component::FMSynthParameters>(demo, fm);
-                registry.replace<Component::Selectable>(demo, true, Component::Selectable::Group::Demo);
-                registry.emplace<Component::Selected>(demo);
+                //auto demo = registry.create();
+                //auto position = registry.get<Component::Position>(cursor);
+                //auto fm = System::query(registry, position);
+                //registry.emplace<Component::Demo>(demo, (long long)demo);
+                //registry.replace<Component::Position>(demo, position);
+                //registry.replace<Component::FMSynthParameters>(demo, fm);
+                //registry.replace<Component::Selectable>(demo, true, Component::Selectable::Group::Demo);
+                //registry.emplace<Component::Selected>(demo);
             }
             registry.ctx<Component::PaintFlag>().set();
         }

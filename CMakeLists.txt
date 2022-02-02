@@ -39,6 +39,9 @@ add_library(interpolators-objects OBJECT)
     find_package(OpenGL REQUIRED)
     target_link_libraries(interpolators-objects PRIVATE GL)
 
+    find_package(Eigen3 REQUIRED NO_MODULE)
+    target_link_libraries(interpolators-objects PRIVATE Eigen3::Eigen)
+
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/artery-font-format)
     target_include_directories(interpolators-objects PRIVATE /usr/local/include)

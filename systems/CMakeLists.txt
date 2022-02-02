@@ -17,4 +17,5 @@ target_sources(interpolators-objects PRIVATE
     common/interpolator.h common/interpolator.cpp
     button.h button.cpp
     libmapper.h libmapper.cpp
+    demo_vis.h demo_vis.cpp
     )

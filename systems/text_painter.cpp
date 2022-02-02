@@ -139,7 +139,7 @@ namespace System
     {
         auto view = registry.view<Component::Window>();
         assert(view.size() == 1);
-        pimpl->window = **(view.storage().raw());
+        pimpl->window = registry.ctx<Component::Window>();
 
         for (Glyph i{}; i._id < 4; ++i._id)
         {

@@ -12,33 +12,6 @@
 
 #include <vector>
 
-namespace
-{
-    template<typename ViewEachPack>
-    Component::Position source(ViewEachPack& pack)
-    {
-        auto &&[entity, demo] = pack;
-        return *demo.source;
-    }
-
-    template<typename ViewEachPack>
-    Component::FMSynthParameters destination(ViewEachPack& pack)
-    {
-        auto &&[entity, demo] = pack;
-        return *demo.destination;
-    }
-
-    template<typename ViewEachPack>
-    int id(ViewEachPack& pack)
-    {
-        auto &&[entity, demo] = pack;
-        return demo.id;
-    }
-}
-
-#include "dataset/interpolators/intersecting_n_spheres.h"
-#include "dataset/interpolators/utility/weights.h"
-
 namespace System
 {
     struct Interpolator::Implementation
@@ -49,28 +22,29 @@ namespace System
 
         void run_query(entt::registry& registry)
         {
-            // if grabbed knob, play a demo
-            auto grabbed_knob = registry.view<Component::Knob, Component::Grabbed>();
-            for (auto && [entity, knob] : grabbed_knob.each())
-            {
-                // get first selected demo
-                entt::entity first_demo = entt::null;
-                auto first_demo_view = registry.view<Component::Selected, Component::Demo>();
-                for (auto e : first_demo_view) { first_demo = e; break; }
-                if (first_demo == entt::null)
-                {
-                    return; // don't edit context if dragging knob with no sel
-                }
+            //// if grabbed knob, play a demo
+            //auto grabbed_knob = registry.view<Component::Knob, Component::Grabbed>();
+            //for (auto && [entity, knob] : grabbed_knob.each())
+            //{
+            //    // get first selected demo
+            //    entt::entity first_demo = entt::null;
+            //    auto first_demo_view = registry.view<Component::Selected, Component::Demo>();
+            //    for (auto e : first_demo_view) { first_demo = e; break; }
+            //    if (first_demo == entt::null)
+            //    {
+            //        return; // don't edit context if dragging knob with no sel
+            //    }
 
-                // play first selected demo's parameters
-                auto s = registry.get<Component::FMSynthParameters>(first_demo);
-                registry.set<Component::FMSynthParameters>(s);
-                return;
-            }
+            //    // play first selected demo's parameters
+            //    auto s = registry.get<Component::FMSynthParameters>(first_demo);
+            //    registry.set<Component::FMSynthParameters>(s);
+            //    return;
+            //}
 
-            auto s = query(registry, position);
-            registry.set<Component::FMSynthParameters>(s);
-            registry.ctx<Component::PaintFlag>().set();
+            auto& demo = registry.ctx<Component::Demo>();
+            demo.destination = query(registry, demo.source); 
+            //registry.set<Component::FMSynthParameters>(s);
+            //registry.ctx<Component::PaintFlag>().set();
         }
 
         void setup_reactive_systems(entt::registry& registry)

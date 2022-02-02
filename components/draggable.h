@@ -30,9 +30,9 @@ namespace Component
     struct Draggable
     {
         float radius;
-        Position start;
-        Position previous;
-        Position current;
-        Position delta;
+        Position start = Position::Zero();
+        Position previous = Position::Zero();
+        Position current = Position::Zero();
+        Position delta = Position::Zero();
     };
 }
