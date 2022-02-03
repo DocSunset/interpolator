@@ -74,7 +74,6 @@ namespace System
         {
             auto& demo = registry.ctx<Component::Demo>();
             demo.destination = query(registry, demo.source);
-            std::cout << demo.source[0] << " " << demo.source[1] << "\n";
         }
         for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
         {

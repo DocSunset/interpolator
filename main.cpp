@@ -42,7 +42,7 @@ int main()
 
         //, System::Knob
         , System::DemoViewer
-        //, System::DemoDragger
+        , System::DemoDragger
         //, System::Interpolator
         //, System::Cursor
         , System::DemoVis

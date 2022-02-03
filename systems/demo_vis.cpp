@@ -1,26 +1,21 @@
 #include "demo_vis.h"
+#include <iostream>
 #include "components/demo.h"
 #include "components/position.h"
 #include "components/color.h"
 #include "components/window.h"
+#include "common/vis.h"
 
 namespace
 {
     void update_demo(entt::registry& registry, entt::entity entity)
     {
-        auto& demo = registry.get<Component::Demo>(entity);
-        auto window = registry.ctx<Component::Window>();
-
         registry.emplace_or_replace<Component::Position>(entity
-                , window.w * (demo.source[0] * 2 - 1)
-                , window.h * (demo.source[1] * 2 - 1)
+                , System::source_to_position(registry, entity)
                 );
 
         registry.emplace_or_replace<Component::Color>(entity
-                , demo.destination[0]
-                , demo.destination[1]
-                , demo.destination[2]
-                , 1.0f
+                , System::destination_to_color(registry, entity)
                 );
     }
 }
@@ -38,6 +33,7 @@ namespace System
 
     void DemoVis::run(entt::registry& registry)
     {
+        auto window = registry.ctx<Component::Window>();
         auto f = [&](auto entity)
         {
             auto& demo = registry.get<Component::Demo>(entity);
@@ -46,8 +42,7 @@ namespace System
             // we assign here instead of using registry.replace
             // to ensure that we don't trigger an update event that would cause
             // the position to be updated again...
-            demo.source[0] = position.x;
-            demo.source[1] = position.y;
+            demo.source = position_to_source(registry, position);
         };
         updated_demos.each(f);
     }
