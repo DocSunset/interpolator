@@ -18,9 +18,9 @@ namespace
     void signal_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
         auto * registry = (entt::registry*)(void*)(sig.device()["registry"]);
-        auto& demo = registry->ctx<Component::Demo>();
         auto index = (uintptr_t)(void*)sig["index"];
-        demo.source[index] = val;
+        auto& source = registry->ctx<Component::Demo::Source>();
+        source[index] = val;
     }
 }
 
@@ -40,7 +40,8 @@ namespace System
     void Libmapper::prepare_registry(entt::registry& registry)
     {
         registry.set<mapper::Device>(pimpl->dev);
-        registry.set<Component::Demo>();
+        registry.set<Component::Demo::Source>(Component::Demo::Source::Zero());
+        registry.set<Component::Demo::Destination>(Component::Demo::Destination::Zero());
 
         auto& dev = pimpl->dev;
 
@@ -69,11 +70,11 @@ namespace System
     {
         auto& dev = pimpl->dev;
         auto signals = dev.signals(mapper::Direction::OUTGOING);
-        auto destination = registry.ctx<Component::Demo>().destination;
+        const auto& source = registry.ctx<Component::Demo::Source>();
+        auto& destination = registry.ctx<Component::Demo::Destination>();
         if (dev.poll())
         {
-            auto& demo = registry.ctx<Component::Demo>();
-            demo.destination = query(registry, demo.source);
+            destination = query(registry, source);
         }
         for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
         {

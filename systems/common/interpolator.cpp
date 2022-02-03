@@ -6,22 +6,22 @@ namespace
     template<typename ViewEachPack>
     Component::Demo::Source source(ViewEachPack& pack)
     {
-        auto &&[entity, demo] = pack;
-        return demo.source;
+        auto &&[entity, demo, src, dst] = pack;
+        return src;
     }
 
     template<typename ViewEachPack>
     Component::Demo::Destination destination(ViewEachPack& pack)
     {
-        auto &&[entity, demo] = pack;
-        return demo.destination;
+        auto &&[entity, demo, src, dst] = pack;
+        return dst;
     }
 
     template<typename ViewEachPack>
-    long long id(ViewEachPack& pack)
+    auto id(ViewEachPack& pack)
     {
-        auto &&[entity, demo] = pack;
-        return demo.id;
+        auto &&[entity, demo, src, dst] = pack;
+        return entity;
     }
 
     template<typename T>
@@ -38,8 +38,8 @@ namespace System
         using Dst = Component::Demo::Destination;
 
         std::size_t i = 0;
-        auto demo = registry.view<Component::Demo>().each();
-        Dst ret = Component::Demo::zero_destination();
+        auto demo = registry.view<Component::Demo, Src, Dst>().each();
+        Dst ret = Dst::Zero();
         Interpolator::intersecting_spheres_lite_query<float>(q, demo, ret);
         return ret;
     }

@@ -5,11 +5,11 @@ namespace System
 {
     Component::Position source_to_position(const entt::registry& registry, entt::entity entity)
     {
-        const auto& demo = registry.get<Component::Demo>(entity);
+        const auto& source = registry.get<Component::Demo::Source>(entity);
         const auto& window = registry.ctx<Component::Window>();
 
-        return { window.w * (demo.source[0] - 0.5f)
-               , window.h * (demo.source[1] - 0.5f)
+        return { window.w * (source[0] - 0.5f)
+               , window.h * (source[1] - 0.5f)
                };
     }
 
@@ -23,10 +23,10 @@ namespace System
 
     Component::Color destination_to_color(const entt::registry& registry, entt::entity entity)
     {
-        const auto& demo = registry.get<Component::Demo>(entity);
-        return { demo.destination[0]
-               , demo.destination[1]
-               , demo.destination[2]
+        const auto& destination = registry.get<Component::Demo::Destination>(entity);
+        return { destination[0]
+               , destination[1]
+               , destination[2]
                , 1.0f
                };
     }

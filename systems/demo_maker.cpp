@@ -7,11 +7,17 @@
 
 namespace
 {
-    void prepare_demo(entt::registry& registry, entt::entity demo_entity)
+    void prepare_demo(entt::registry& registry, entt::entity entity)
     {
-        registry.emplace<Component::Selectable>(demo_entity, false, Component::Selectable::Group::Demo);
-        registry.emplace<Component::SelectionHovered>(demo_entity, false);
-        registry.emplace<Component::Draggable>(demo_entity, 25.0f);
+        registry.emplace<Component::Demo::Source>(entity
+                , Component::Demo::Source::Random().array() * 0.5f + 0.5f
+                );
+        registry.emplace<Component::Demo::Destination>(entity
+                , Component::Demo::Destination::Random().array() * 0.5f + 0.5f
+                );
+        registry.emplace<Component::Selectable>(entity, false, Component::Selectable::Group::Demo);
+        registry.emplace<Component::SelectionHovered>(entity, false);
+        registry.emplace<Component::Draggable>(entity, 25.0f);
     }
 }
 
@@ -27,10 +33,7 @@ namespace System
         for (int i = 0; i < 5; ++i)
         {
             auto entity = registry.create();
-            registry.emplace<Component::Demo>(entity, (long long)entity
-                    , Component::Demo::Source::Random().array() * 0.5f + 0.5f
-                    , Component::Demo::Destination::Random().array() * 0.5f + 0.5f
-                    );
+            registry.emplace<Component::Demo>(entity, entity);
         }
     }
 

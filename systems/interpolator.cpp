@@ -40,11 +40,11 @@ namespace System
             //    return;
             //}
 
-            auto& demo = registry.ctx<Component::Demo>();
-            demo.destination = query(registry, demo.source); 
+            // auto& source = registry.ctx<Component::Demo::Source>();
+            // auto& destination = registry.ctx<Component::Demo::Destination>();
+            // destination = query(registry, source); 
             //registry.set<Component::FMSynthParameters>(s);
             //registry.ctx<Component::PaintFlag>().set();
-            std::cout << demo.destination[0] << "\n";
         }
 
         void setup_reactive_systems(entt::registry& registry)
