@@ -22,10 +22,28 @@ namespace
     struct EditInteractButton {bool editing;};
     struct Editing : public Component::Flag {};
 
+    constexpr unsigned int cursor_radius = 30;
+    constexpr float button_radius = 50;
+
+
     void update_window(entt::registry& registry, entt::entity entity)
     {
-        // get window
-        // reposition buttons
+        const auto& window = registry.ctx<Component::Window>();
+        constexpr float padding = 10;
+        constexpr float step = padding + button_radius;
+        const float start[] = { -window.w/2.0f + step
+                              , -window.h/2.0f + step
+                              };
+
+        int i = 0;
+        auto position_button = [&](auto button_entity)
+        {
+            registry.replace<Component::Position>(button_entity, start[0] + i++ * step, start[1]);
+        };
+
+        for (auto ent : registry.view<NewDemoButton>()) position_button(ent);
+        for (auto ent : registry.view<DeleteDemoButton>()) position_button(ent);
+        for (auto ent : registry.view<EditInteractButton>()) position_button(ent);
     }
 
     void demo_buttons(entt::registry& registry, entt::entity entity)
@@ -79,15 +97,13 @@ namespace System
 
     void EditInteract::prepare_registry(entt::registry& registry)
     {
-        unsigned int radius = 30;
-
         registry.set<Editing>(true);
 
         auto edit_cursor_entity = registry.create();
         registry.emplace<EditCursor>(edit_cursor_entity, edit_cursor_entity);
-        registry.emplace<Component::Cursor>(edit_cursor_entity, radius);
+        registry.emplace<Component::Cursor>(edit_cursor_entity, cursor_radius);
         registry.emplace<Component::Draggable>(edit_cursor_entity
-                , (float)radius
+                , (float)cursor_radius
                 , Component::Position::Zero()
                 , Component::Position::Zero()
                 , Component::Position::Zero()
@@ -97,7 +113,7 @@ namespace System
 
         auto interact_cursor_entity = registry.create();
         registry.emplace<InteractCursor>(interact_cursor_entity, interact_cursor_entity);
-        registry.emplace<Component::Cursor>(interact_cursor_entity, radius);
+        registry.emplace<Component::Cursor>(interact_cursor_entity, cursor_radius);
         registry.emplace<Component::Demo::Source>(interact_cursor_entity);
         registry.emplace<Component::Demo::Destination>(interact_cursor_entity);
         registry.emplace<Component::Vis>(interact_cursor_entity);
@@ -105,19 +121,19 @@ namespace System
 
         auto new_demo_button = registry.create();
         registry.emplace<NewDemoButton>(new_demo_button);
-        registry.emplace<Component::Button>(new_demo_button, 50.0f);
+        registry.emplace<Component::Button>(new_demo_button, button_radius);
         registry.emplace<Component::Position>(new_demo_button, -200.0f, -200.0f);
         registry.emplace<Component::Color>(new_demo_button, 0.2f, 0.7f, 0.2f, 1.0f);
 
         auto delete_demo_button = registry.create();
         registry.emplace<DeleteDemoButton>(delete_demo_button);
-        registry.emplace<Component::Button>(delete_demo_button, 50.0f);
+        registry.emplace<Component::Button>(delete_demo_button, button_radius);
         registry.emplace<Component::Position>(delete_demo_button, -145.0f, -200.0f);
         registry.emplace<Component::Color>(delete_demo_button, 0.7f, 0.2f, 0.2f, 1.0f);
 
         auto mode_button = registry.create();
         registry.emplace<EditInteractButton>(mode_button);
-        registry.emplace<Component::Button>(mode_button, 50.0f);
+        registry.emplace<Component::Button>(mode_button, button_radius);
         registry.emplace<Component::Position>(mode_button, -90.0f, -200.0f);
         registry.emplace<Component::Color>(mode_button, 0.2f, 0.2f, 0.2f, 1.0f);
 
