@@ -2,7 +2,6 @@
 #include <iostream>
 #include "components/demo.h"
 #include "components/paint_flag.h"
-#include "components/position.h"
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
 #include "components/draggable.h"
@@ -14,12 +13,13 @@ namespace System
 {
     struct Interpolator::Implementation
     {
-        using Scalar = float;
         bool pressed = false;
-        Component::Position position = Component::Position::Zero();
+        bool hid_override = false;
+        Component::Demo::Source cache = Component::Demo::Source::Zero();
 
-        void run_query(entt::registry& registry)
+        void hid_override_query(entt::registry& registry)
         {
+            hid_override = true;
             //// if grabbed knob, play a demo
             //auto grabbed_knob = registry.view<Component::Knob, Component::Grabbed>();
             //for (auto && [entity, knob] : grabbed_knob.each())
@@ -38,12 +38,18 @@ namespace System
             //    registry.set<Component::FMSynthParameters>(s);
             //    return;
             //}
+        }
 
-            // auto& source = registry.ctx<Component::Demo::Source>();
-            // auto& destination = registry.ctx<Component::Demo::Destination>();
-            // destination = query(registry, source); 
-            //registry.set<Component::FMSynthParameters>(s);
-            //registry.ctx<Component::PaintFlag>().set();
+        void normal_query(entt::registry& registry)
+        {
+            auto& source = registry.ctx<Component::Demo::Source>();
+            auto& destination = registry.ctx<Component::Demo::Destination>();
+            if (source != cache)
+            {
+                destination = query(registry, source); 
+                cache = source;
+                registry.ctx<Component::PaintFlag>().set();
+            }
         }
 
         void setup_reactive_systems(entt::registry& registry)
@@ -59,19 +65,20 @@ namespace System
             auto button = registry.get<Component::LeftMouseButton>(entity);
             if (button.consumed) return;
             pressed = button.pressed;
-            if (pressed)
-            {
-                position = button.down_position;
-                run_query(registry);
-            }
+            if (pressed) hid_override_query(registry);
         }
 
         void on_mouse_motion(entt::registry& registry, entt::registry::entity_type entity)
         {
             if (not pressed) return;
             auto motion = registry.get<Component::MouseMotion>(entity);
-            position = motion.position;
-            run_query(registry);
+            hid_override_query(registry);
+        }
+
+        void run(entt::registry& registry)
+        {
+            if (hid_override) hid_override = false;
+            else normal_query(registry);
         }
     };
 
@@ -85,6 +92,11 @@ namespace System
     void Interpolator::setup_reactive_systems(entt::registry& registry)
     {
         pimpl->setup_reactive_systems(registry);
+    }
+
+    void Interpolator::run(entt::registry& registry)
+    {
+        pimpl->run(registry);
     }
 
     Interpolator::~Interpolator()

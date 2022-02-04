@@ -31,8 +31,7 @@ void loop(void * app)
 int main()
 {
     auto app = App
-        < System::Platform
-        , System::Libmapper
+        < System::Platform // also polls libmapper
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter
@@ -44,12 +43,12 @@ int main()
         , System::Knob
         , System::DemoViewer
         , System::DemoDragger
-        //, System::Interpolator
+        , System::Interpolator
         , System::Cursor
-        //, System::DemoButtons
         , System::DemoVis
         , System::EditInteract
         //, System::RecentMemory
+        , System::Libmapper // syncs destination signals with registry
         >();
 
 #ifdef __EMSCRIPTEN__

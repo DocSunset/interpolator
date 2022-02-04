@@ -1,6 +1,7 @@
 #include "libmapper.h"
 
 #include <string>
+#include <iostream>
 #include <mapper/mapper_cpp.h>
 
 #include "components/button.h"
@@ -23,6 +24,8 @@ namespace
         auto& source = registry->ctx<Component::Demo::Source>();
         source[index] = val;
     }
+
+    using SignalArray = mapper::Signal[Component::Demo::num_destinations];
 }
 
 namespace System
@@ -31,7 +34,6 @@ namespace System
     {
         mapper::Device dev{"preset_interpolator"};
         Component::Demo demo{};
-        mapper::Signal signal[Component::Demo::num_destinations];
     };
 
     void Libmapper::construct_system()
@@ -44,6 +46,7 @@ namespace System
         registry.set<mapper::Device>(pimpl->dev);
         registry.set<Component::Demo::Source>(Component::Demo::Source::Zero());
         registry.set<Component::Demo::Destination>(Component::Demo::Destination::Zero());
+        auto& signals = registry.set<SignalArray>();
 
         auto& dev = pimpl->dev;
 
@@ -63,7 +66,7 @@ namespace System
 
         for (int i = 0; i < Component::Demo::num_destinations; ++i)
         {
-            pimpl->signal[i] = dev.add_signal(mapper::Direction::OUTGOING, output_name+std::to_string(i),
+            signals[i] = dev.add_signal(mapper::Direction::OUTGOING, output_name+std::to_string(i),
                     1, mapper::Type::FLOAT, "normalized", &min, &max);
         }
     }
@@ -71,14 +74,9 @@ namespace System
     void Libmapper::run(entt::registry& registry)
     {
         auto& dev = pimpl->dev;
-        auto& signal = pimpl->signal;
         const auto& source = registry.ctx<Component::Demo::Source>();
+        auto& signal = registry.ctx<SignalArray>();
         auto& destination = registry.ctx<Component::Demo::Destination>();
-        if (dev.poll())
-        {
-            destination = query(registry, source);
-            registry.ctx<Component::PaintFlag>().set();
-        }
         for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
         {
             float * network_val_ptr = (float*)(signal[i].value());
@@ -86,7 +84,6 @@ namespace System
             float local = destination[i];
             if (network != local) signal[i].set_value(local);
         }
-        dev.poll();// can we please avoid doing this twice?
     }
 
     Libmapper::~Libmapper()

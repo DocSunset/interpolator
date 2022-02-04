@@ -1,11 +1,12 @@
 #include "platform.h"
 
+#include <chrono>
 #include <GLES3/gl3.h>
 #include <SDL.h>
 #include <SDL_log.h>
 #include <SDL_mouse.h>
 #include <SDL_video.h>
-#include <chrono>
+#include <mapper/mapper_cpp.h>
 #include "SDL_events.h"
 #include "components/quit_flag.h"
 #include "components/window.h"
@@ -146,7 +147,9 @@ namespace System
 
         void poll_events(entt::registry& registry)
         {
+            auto& dev = registry.ctx<mapper::Device>();
             SDL_Event ev;
+            dev.poll();
             auto got_event = SDL_WaitEventTimeout(&ev, 10);
             registry.set<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
             if (got_event) do
