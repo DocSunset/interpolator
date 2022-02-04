@@ -50,7 +50,7 @@ namespace
             const auto cursor_entity = registry.ctx<EditCursor>().entity;
             const auto& position = registry.get<Component::Position>(cursor_entity);
             const auto source = System::position_to_source(registry, position);
-            const auto destination = System::query(registry, source);
+            const auto destination = registry.ctx<Component::Demo::Destination>();
             auto demo = registry.create();
             registry.emplace<Component::Demo>(demo, demo);
             registry.replace<Component::Demo::Source>(demo, source);

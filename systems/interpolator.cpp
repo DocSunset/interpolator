@@ -20,36 +20,54 @@ namespace System
         bool hid_override = false;
         Component::Demo::Source cache = Component::Demo::Source::Zero();
 
+        void audition(entt::registry& registry, Component::Demo::Destination d)
+        {
+            registry.set<Component::Demo::Destination>(d);
+            registry.ctx<Component::PaintFlag>().set();
+        }
+
         void audition(entt::registry& registry, entt::entity entity)
         {
             const auto& d = registry.get<Component::Demo::Destination>(entity);
-            registry.set<Component::Demo::Destination>(d);
-            registry.ctx<Component::PaintFlag>().set();
+            audition(registry, d);
         }
 
         void audition(entt::registry& registry, const Component::Position& position)
         {
             auto source = position_to_source(registry, position);
             auto& destination = registry.ctx<Component::Demo::Destination>();
-            destination = query(registry, source);
-            registry.ctx<Component::PaintFlag>().set();
+            audition(registry, query(registry, source));
         }
 
         void hid_override_query(entt::registry& registry, const Component::Position& position)
         {
+            bool knobs = false;
             auto grabbed_knob = registry.view<Component::Knob, Component::Grabbed>();
-            for (auto && [entity, knob] : grabbed_knob.each())
+            for (auto _ : grabbed_knob)
             {
                 // get first selected demo
                 auto selected_demo = registry.view<Component::Selected, Component::Demo>();
                 for (auto entity : selected_demo) return audition(registry, entity);
+                knobs = true;
                 break;
             }
+            if (knobs)
+            // if there are knobs but no selected demos,
+            // construct a destination vector from the knobs
+            {
+                Component::Demo::Destination d;
+                for (auto && [entity, knob] : registry.view<Component::Knob>().each())
+                {
+                    d[knob.index] = knob.value;
+                }
+                return audition(registry, d);
+            }
 
-            // play first grabbed demo; should really be closest grabbed demo...
+            // play first if any grabbed demo; should really be closest grabbed demo...
             auto grabbed_demo = registry.view<Component::Grabbed, Component::Demo>();
             for (auto entity : grabbed_demo) return audition(registry, entity);
 
+            // play first if any grabbed cursor. Fine since there's only one grabbable cursor
             auto grabbed_cursor = registry.view<Component::Grabbed, Component::Cursor>();
             for (auto entity : grabbed_cursor)
                 return audition(registry, registry.get<Component::Position>(entity));
@@ -97,7 +115,10 @@ namespace System
 
         void run(entt::registry& registry)
         {
-            if (!hid_override) normal_query(registry);
+            if (hid_override) return;
+            auto selected_cursor = registry.view<Component::Selected, Component::Cursor>();
+            for (auto _ : selected_cursor) return;
+            normal_query(registry);
         }
     };
 
