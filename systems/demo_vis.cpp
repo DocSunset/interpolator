@@ -36,7 +36,7 @@ namespace System
         registry.on_construct<Component::Demo>().connect<&on_construct>();
         registry.on_update<Component::Demo::Source>().connect<&update_source>();
         registry.on_update<Component::Demo::Destination>().connect<&update_destination>();
-        updated_demos.connect(registry, entt::collector
+        updated_positions.connect(registry, entt::collector
                 .update<Component::Position>().where<Component::Demo>()
                 );
     }
@@ -44,7 +44,7 @@ namespace System
     void DemoVis::run(entt::registry& registry)
     {
         auto window = registry.ctx<Component::Window>();
-        auto f = [&](auto entity)
+        updated_positions.each([&](auto entity)
         {
             auto& source = registry.get<Component::Demo::Source>(entity);
             const auto& position = registry.get<Component::Position>(entity);
@@ -53,7 +53,6 @@ namespace System
             // to ensure that we don't trigger an update event that would cause
             // the position to be updated again...
             source = position_to_source(registry, position);
-        };
-        updated_demos.each(f);
+        });
     }
 }

@@ -8,7 +8,6 @@ target_sources(interpolators-objects PRIVATE
     mouse_button.h
     modifier_keys.h
     mouse_motion.h
-    fmsynth.h fmsynth.cpp
     mouse_mode.h
     button.h
     )

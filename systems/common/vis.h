@@ -8,6 +8,8 @@
 namespace System
 {
     Component::Position source_to_position(const entt::registry&, entt::entity);
+    Component::Position source_to_position(const entt::registry&, const Component::Demo::Source&);
     Component::Demo::Source position_to_source(const entt::registry&, const Component::Position&);
     Component::Color destination_to_color(const entt::registry&, entt::entity);
+    Component::Color destination_to_color(const entt::registry&, const Component::Demo::Destination&);
 }

@@ -14,7 +14,6 @@
 #include "components/mouse_mode.h"
 #include "components/mouse_position.h"
 #include "components/modifier_keys.h"
-#include "components/fmsynth.h"
 #include "components/paint_flag.h"
 #include "components/repaint_timer.h"
 #include "gl/ll.h"
@@ -35,7 +34,6 @@ namespace System
         SDL_Window * window;
         SDL_GLContext gl;
         Component::Window win_size;
-        Component::FMSynth synth;
         entt::registry::entity_type window_entity, mouse_entity;
 
     public:
@@ -106,8 +104,8 @@ namespace System
         void prepare_registry(entt::registry& registry)
         {
             window_entity = registry.create();
-            registry.emplace<Component::Window>(window_entity, 500.0f, 500.0f);
             registry.set<Component::Window>(500.0f, 500.0f);
+            registry.emplace<Component::Window>(window_entity, 500.0f, 500.0f);
             mouse_entity = registry.create();
             registry.emplace<Component::LeftMouseButton>(mouse_entity
                     , false
@@ -123,7 +121,6 @@ namespace System
             
             // set initial context
             registry.set<Component::ShiftModifier>(false);
-            registry.set<Component::FMSynthParameters>(synth.p);
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
@@ -168,8 +165,8 @@ namespace System
                 {
                 case SDL_WINDOWEVENT_SIZE_CHANGED:
                     win_size = {(float)ev.window.data1, (float)ev.window.data2};
-                    registry.replace<Component::Window>(window_entity, win_size.w, win_size.h);
                     registry.set<Component::Window>(win_size.w, win_size.h);
+                    registry.replace<Component::Window>(window_entity, win_size.w, win_size.h);
                     glViewport(0, 0 , win_size.w , win_size.h);
                     registry.ctx<Component::PaintFlag>().set();
                     break;
@@ -282,7 +279,6 @@ namespace System
 
         void run(entt::registry& registry)
         {
-            synth.p = registry.ctx<Component::FMSynthParameters>();
             poll_events(registry);
             auto now = SDL_GetTicks();
             // repaint roughly 60 frames per second

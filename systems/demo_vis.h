@@ -6,7 +6,7 @@ namespace System
 {
     class DemoVis : public System
     {
-        entt::observer updated_demos;
+        entt::observer updated_positions;
     public:
         // void construct_system() override;
         void setup_reactive_systems(entt::registry&) override;

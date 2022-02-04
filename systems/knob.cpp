@@ -3,11 +3,12 @@
 #include "components/draggable.h"
 #include "components/demo.h"
 #include "components/knob.h"
-#include "components/fmsynth.h"
 #include "components/window.h"
 #include "components/paint_flag.h"
 #include "components/position.h"
 #include "components/circle.h"
+#include "systems/common/draggable.h"
+#include "systems/common/vis.h"
 #include "shader/knob_viewer.h"
 #include <simple/constants/pi.h>
 #include <simple/boundaries.h>
@@ -19,61 +20,63 @@ namespace
 {
     // interaction
 
-    void position_knob(entt::registry& registry, entt::entity entity)
+    void position_knob_w(entt::registry& registry, entt::entity entity, const Component::Window& window)
     {
         constexpr float padding = 5;
         auto knob = registry.get<Component::Knob>(entity);
         auto radius = padding + registry.get<Component::Draggable>(entity).radius;
-        auto window = registry.get<Component::Window>(registry.view<Component::Window>()[0]);
         float top_left_x = (window.w / 2.0f) - radius;
         float top_left_y = (window.h / 2.0f) - radius;
         registry.replace<Component::Position>(entity, top_left_x, top_left_y - (knob.index * radius));
     }
 
+    void position_knob(entt::registry& registry, entt::entity entity)
+    {
+        const auto& window = registry.ctx<Component::Window>();
+        position_knob_w(registry, entity, window);
+    }
+
     void on_window_update(entt::registry& registry, entt::entity entity)
     {
+        const auto& window = registry.ctx<Component::Window>();
         auto knobs = registry.view<Component::Knob>();
-        for (auto knob : knobs) position_knob(registry, knob);
+        for (auto knob : knobs) position_knob_w(registry, knob, window);
     }
 
     void sync_knob_values(entt::registry& registry)
     {
         auto knobs = registry.view<Component::Knob>();
         auto selected_demos = registry.view<Component::Demo, Component::Selected>();
+        Component::Color color{0.0f,0.0f,0.0f,0.0f};
 
         int n_demos = 0;
-        Component::FMSynthParameters p{};
-        Component::Color color{0.0f,0.0f,0.0f,0.0f};
-        for (auto demo : selected_demos)
-        {
-            auto dcolor = registry.get<Component::Color>(demo);
-            ++n_demos;
-            p += (1.0 / n_demos) * (registry.get<Component::FMSynthParameters>(demo) - p);
-            color.r += (1.0 / n_demos) * (dcolor.r - color.r);
-            color.g += (1.0 / n_demos) * (dcolor.g - color.g);
-            color.b += (1.0 / n_demos) * (dcolor.b - color.b);
-            color.a += (1.0 / n_demos) * (dcolor.a - color.a);
-        }
-
+        for (auto demo : selected_demos) ++n_demos;
         if (n_demos == 0)
         {
-            color = {0.8f,0.8f,0.8f,1.0f};
-            p = registry.ctx<Component::FMSynthParameters>();
+            auto p = registry.ctx<Component::Demo::Destination>();
+            color = System::destination_to_color(registry, p);
             for (auto knob_entity : knobs)
             {
                 auto knob = registry.get<Component::Knob>(knob_entity);
-                knob.value = p.parameters[knob.index];
+                knob.value = p[knob.index];
                 registry.replace<Component::Knob>(knob_entity, knob);
                 registry.replace<Component::Color>(knob_entity, color);
             }
         }
         else
         {
+            Component::Demo::Destination p = Component::Demo::Destination::Zero();
+            for (auto demo : selected_demos)
+            {
+                auto dcolor = registry.get<Component::Color>(demo);
+                p += (1.0 / n_demos) * (registry.get<Component::Demo::Destination>(demo) - p);
+            }
+            color = System::destination_to_color(registry, p);
             for (auto knob_entity : knobs)
             {
                 n_demos = 0;
                 auto knob = registry.get<Component::Knob>(knob_entity);
-                knob.value = p.parameters[knob.index];
+                knob.value = p[knob.index];
                 registry.replace<Component::Knob>(knob_entity, knob);
                 registry.replace<Component::Color>(knob_entity, color);
             }
@@ -83,7 +86,7 @@ namespace
     void drag_knobs(entt::registry& registry, entt::observer& dragged)
     {
         if (dragged.empty()) return;
-        const auto& win = *registry.view<Component::Window>().storage().raw()[0];
+        const auto& win = registry.ctx<Component::Window>();
         dragged.each([&](const auto entity)
         {
             auto& drag = registry.get<Component::Draggable>(entity);
@@ -97,16 +100,22 @@ namespace
             auto view = registry.view<Component::Selected, Component::Demo>();
             for (auto entity : view)
             {
-                auto& p = registry.get<Component::FMSynthParameters>(entity);
-                p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
+                auto& p = registry.get<Component::Demo::Destination>(entity);
+                p[knob.index] = Simple::clip(p[knob.index] + delta);
                 ++num_selected_demos;
             }
             if (num_selected_demos == 0)
             {
-                auto& p = registry.ctx<Component::FMSynthParameters>();
-                p.parameters[knob.index] = Simple::clip(p.parameters[knob.index] + delta);
+                auto& p = registry.ctx<Component::Demo::Destination>();
+                p[knob.index] = Simple::clip(p[knob.index] + delta);
             }
         });
+        auto view = registry.view<Component::Selected, Component::Demo>();
+        for (auto entity : view)
+        {
+            // trigger update events
+            registry.patch<Component::Demo::Destination>(entity, [&](auto& p){return;});
+        }
     }
 
     // view
@@ -129,17 +138,9 @@ namespace
 
     void update_knobview(entt::registry& registry, entt::entity knob)
     {
-        using Component::Color;
-        constexpr Color selected_ring{1,0.7,0.7,1};
-        constexpr Color default_ring{0.6,0.6,0.6,1};
-        constexpr Color highlight_ring{0.7,0.8,0.8,1};
-
         auto knobview = registry.get<KnobView>(knob);
-
-        auto s = registry.get<Component::Selectable>(knob);
-        auto h = registry.get<Component::SelectionHovered>(knob);
-        Color ring_color = s ? selected_ring : h ? highlight_ring : default_ring;
-        auto fill_color = registry.get<Color>(knob);
+        auto ring_color = System::hover_select_color(registry, knob);
+        auto fill_color = registry.get<Component::Color>(knob);
         auto position = registry.get<Component::Position>(knob);
         auto radius = registry.get<Component::Draggable>(knob).radius;
         auto indicator_position = get_indicator_position(registry, knob);
@@ -157,7 +158,7 @@ namespace
         };
 
         emp_or_rep(knobview.background, radius, position, ring_color, fill_color, 5.0f);
-        emp_or_rep(knobview.indicator, 15.0f, indicator_position, fill_color, Color{0,0,0,1}, 3.0f);
+        emp_or_rep(knobview.indicator, 15.0f, indicator_position, fill_color, Component::Color{0,0,0,1}, 3.0f);
     }
 
     void construct_knobview(entt::registry& registry, entt::entity knob)
@@ -179,14 +180,14 @@ namespace System
     void Knob::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_construct<Component::Knob>().connect<&position_knob>();
+        registry.on_construct<Component::Knob>().connect<&construct_knobview>();
+        registry.on_destroy<Component::Knob>().connect<&destroy_knobview>();
         registry.on_update<Component::Window>().connect<&on_window_update>();
+
         dragged.connect(registry, entt::collector
                 .update<Component::Draggable>()
                 .where<Component::Knob>()
                 );
-
-        registry.on_construct<Component::Knob>().connect<&construct_knobview>();
-        registry.on_destroy<Component::Knob>().connect<&destroy_knobview>();
 
         updated_knobs.connect(registry, entt::collector
                 .update<Component::Position>().where<Component::Knob>()
@@ -196,7 +197,7 @@ namespace System
 
     void Knob::prepare_registry(entt::registry& registry)
     {
-        for (int i = 0; i < Component::FMSynthParameters::N; ++i)
+        for (int i = 0; i < Component::Demo::num_destinations; ++i)
         {
             auto knob = registry.create();
             registry.emplace<Component::Position>(knob, 0.0f, 100.0f * i);

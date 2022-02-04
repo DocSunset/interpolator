@@ -8,7 +8,6 @@
 #include "components/knob.h"
 #include "components/position.h"
 #include "components/draggable.h"
-#include "components/fmsynth.h"
 #include "components/mouse_mode.h"
 #include "components/mouse_position.h"
 #include "components/paint_flag.h"

@@ -40,7 +40,7 @@ int main()
 
         , System::DemoMaker
 
-        //, System::Knob
+        , System::Knob
         , System::DemoViewer
         , System::DemoDragger
         //, System::Interpolator

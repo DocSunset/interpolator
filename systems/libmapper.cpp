@@ -7,6 +7,7 @@
 #include "components/color.h"
 #include "components/position.h"
 #include "components/demo.h"
+#include "components/paint_flag.h"
 
 #include "systems/common/interpolator.h"
 
@@ -30,6 +31,7 @@ namespace System
     {
         mapper::Device dev{"preset_interpolator"};
         Component::Demo demo{};
+        mapper::Signal signal[Component::Demo::num_destinations];
     };
 
     void Libmapper::construct_system()
@@ -61,7 +63,7 @@ namespace System
 
         for (int i = 0; i < Component::Demo::num_destinations; ++i)
         {
-            dev.add_signal(mapper::Direction::OUTGOING, output_name+std::to_string(i),
+            pimpl->signal[i] = dev.add_signal(mapper::Direction::OUTGOING, output_name+std::to_string(i),
                     1, mapper::Type::FLOAT, "normalized", &min, &max);
         }
     }
@@ -69,19 +71,20 @@ namespace System
     void Libmapper::run(entt::registry& registry)
     {
         auto& dev = pimpl->dev;
-        auto signals = dev.signals(mapper::Direction::OUTGOING);
+        auto& signal = pimpl->signal;
         const auto& source = registry.ctx<Component::Demo::Source>();
         auto& destination = registry.ctx<Component::Demo::Destination>();
         if (dev.poll())
         {
             destination = query(registry, source);
+            registry.ctx<Component::PaintFlag>().set();
         }
         for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
         {
-            float * network_val_ptr = (float*)(signals[i].value());
+            float * network_val_ptr = (float*)(signal[i].value());
             float network = network_val_ptr == nullptr ? 0 : network_val_ptr[0];
             float local = destination[i];
-            if (network != local) signals[i].set_value(local);
+            if (network != local) signal[i].set_value(local);
         }
         dev.poll();// can we please avoid doing this twice?
     }

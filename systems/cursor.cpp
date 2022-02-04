@@ -1,5 +1,4 @@
 #include "cursor.h"
-#include "components/fmsynth.h"
 #include "components/position.h"
 #include "components/color.h"
 #include "components/draggable.h"

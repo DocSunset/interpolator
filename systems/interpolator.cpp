@@ -5,7 +5,6 @@
 #include "components/position.h"
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
-#include "components/fmsynth.h"
 #include "components/draggable.h"
 #include "components/knob.h"
 #include "systems/common/interpolator.h"

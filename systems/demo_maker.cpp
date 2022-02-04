@@ -3,7 +3,6 @@
 #include "components/color.h"
 #include "components/position.h"
 #include "components/draggable.h"
-#include "components/fmsynth.h"
 
 namespace
 {

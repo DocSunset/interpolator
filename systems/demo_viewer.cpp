@@ -15,17 +15,8 @@ namespace
 {
     void update_circle(entt::registry& registry, entt::entity demo)
     {
-        using Component::Color;
-        constexpr Color selected_ring{1,0.7,0.7,1};
-        constexpr Color default_ring{0.6,0.6,0.6,1};
-        constexpr Color highlight_ring{0.7,0.8,0.8,1};
-
-        Color ring_color = System::hover_select_color(registry, demo
-                , default_ring
-                , highlight_ring
-                , selected_ring
-                );
-        auto fill_color = registry.get<Color>(demo);
+        auto ring_color = System::hover_select_color(registry, demo);
+        auto fill_color = registry.get<Component::Color>(demo);
         auto position = registry.get<Component::Position>(demo);
         auto radius = registry.get<Component::Draggable>(demo).radius;
 

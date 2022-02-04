@@ -1,8 +1,6 @@
 #pragma once
 #include <Eigen/Dense>
 #include <entt/entt.hpp>
-#include "position.h"
-#include "fmsynth.h"
 
 namespace Component
 {
