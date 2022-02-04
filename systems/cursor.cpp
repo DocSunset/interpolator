@@ -30,7 +30,7 @@ namespace
         auto position = registry.get<Position>(entity);
         auto color = registry.all_of<Selectable>(entity) ?
             System::hover_select_color(registry, entity
-                , Color{0.5,0.5,0.5,1.0}
+                , registry.get<Color>(entity)
                 )
             : registry.get<Color>(entity);
 
@@ -54,7 +54,7 @@ namespace
 
         registry.emplace_or_replace<Line>(viewer.h, line_h);
         registry.emplace_or_replace<Line>(viewer.v, line_v);
-        registry.ctx<PaintFlag>().set();
+        registry.ctx<PaintFlag>().set(); // for when this is called from construct_cursor
     }
 
     void construct_cursor(entt::registry& registry, entt::entity entity)

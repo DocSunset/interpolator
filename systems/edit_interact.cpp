@@ -124,8 +124,23 @@ namespace System
 
     void EditInteract::prepare_to_paint(entt::registry& registry)
     {
-        auto entity = registry.ctx<InteractCursor>().entity;
-        registry.replace<Component::Demo::Source>(entity, registry.ctx<Component::Demo::Source>());
-        registry.replace<Component::Demo::Destination>(entity, registry.ctx<Component::Demo::Destination>());
+        constexpr auto hide = [](auto& color) {color.a = 0;};
+        constexpr auto show = [](auto& color) {color.a = 1;};
+        auto interact_cursor = registry.ctx<InteractCursor>().entity;
+        auto edit_cursor = registry.ctx<EditCursor>().entity;
+        auto source = registry.ctx<Component::Demo::Source>();
+        auto destination = query(registry, source);
+        registry.replace<Component::Demo::Source>(interact_cursor, source);
+        registry.replace<Component::Demo::Destination>(interact_cursor, destination);
+        if (destination != registry.ctx<Component::Demo::Destination>())
+        {
+            registry.patch<Component::Color>(interact_cursor, hide);
+            registry.patch<Component::Color>(edit_cursor, show);
+        }
+        else
+        {
+            registry.patch<Component::Color>(interact_cursor, show);
+            registry.patch<Component::Color>(edit_cursor, hide);
+        }
     }
 }

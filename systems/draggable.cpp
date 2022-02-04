@@ -159,7 +159,7 @@ namespace
     void grab(entt::registry& registry, Component::Selectable::Group grab_group)
     {
         auto view = registry.view<Component::Selected, Component::Selectable, Component::Draggable>();
-        for (auto &&[entity, selectable, draggable] : view.each())
+        for (auto entity : view)
         {
             if (group(registry, entity) == grab_group)
                 registry.emplace_or_replace<Component::Grabbed>(entity);
