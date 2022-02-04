@@ -1,11 +1,14 @@
 #include "draggable.h"
 
+#include <cassert>
 #include <limits>
+
 #include "components/mouse_button.h"
 #include "components/mouse_motion.h"
 #include "components/modifier_keys.h"
 #include "components/demo.h"
 #include "components/knob.h"
+#include "components/cursor.h"
 #include "components/position.h"
 #include "components/draggable.h"
 #include "components/mouse_mode.h"
@@ -192,6 +195,18 @@ namespace
         auto mouse_entity = registry.view<Component::RelativeMouseMode>()[0];
         registry.replace<Component::RelativeMouseMode>(mouse_entity, mode);
     }
+
+    void set_group(entt::registry& registry, entt::entity entity)
+    {
+        auto& selectable = registry.get<Component::Selectable>(entity);
+        if (registry.all_of<Component::Demo>(entity)) selectable.group = Component::Selectable::Group::Demo;
+        else if (registry.all_of<Component::Knob>(entity)) selectable.group = Component::Selectable::Group::Knob;
+        else if (registry.all_of<Component::Cursor>(entity)) selectable.group = Component::Selectable::Group::Cursor;
+        else
+        {
+            assert(false); // you need to add a group for this new draggable component type
+        }
+    }
 }
 
 namespace System
@@ -214,6 +229,12 @@ namespace System
 
         void setup_reactive_systems(entt::registry& registry)
         {
+            registry.on_construct<Component::Selectable>()
+                .connect<&entt::registry::emplace_or_replace<Component::SelectionHovered>>();
+            registry.on_construct<Component::Draggable>()
+                .connect<&entt::registry::emplace_or_replace<Component::Selectable>>();
+            registry.on_construct<Component::Draggable>()
+                .connect<&set_group>();
             registry.on_update<Component::MouseMotion>()
                 .connect<&Draggable::Implementation::on_mouse_motion>(*this);
             registry.on_update<Component::LeftMouseButton>()

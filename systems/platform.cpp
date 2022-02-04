@@ -147,7 +147,7 @@ namespace System
         void poll_events(entt::registry& registry)
         {
             SDL_Event ev;
-            auto got_event = SDL_WaitEventTimeout(&ev, 33);
+            auto got_event = SDL_WaitEventTimeout(&ev, 10);
             registry.set<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
             if (got_event) do
             {

@@ -12,35 +12,28 @@
 #include "shader/knob_viewer.h"
 #include <simple/constants/pi.h>
 #include <simple/boundaries.h>
-#include <functional>
-#include <vector>
-#include <numeric>
+#include <iostream>
 
 namespace
 {
     // interaction
 
-    void position_knob_w(entt::registry& registry, entt::entity entity, const Component::Window& window)
+    void position_knob(entt::registry& registry, entt::entity entity, const Component::Window& window)
     {
         constexpr float padding = 5;
         auto knob = registry.get<Component::Knob>(entity);
-        auto radius = padding + registry.get<Component::Draggable>(entity).radius;
+        auto radius = padding + knob.radius;
         float top_left_x = (window.w / 2.0f) - radius;
         float top_left_y = (window.h / 2.0f) - radius;
-        registry.replace<Component::Position>(entity, top_left_x, top_left_y - (knob.index * radius));
-    }
 
-    void position_knob(entt::registry& registry, entt::entity entity)
-    {
-        const auto& window = registry.ctx<Component::Window>();
-        position_knob_w(registry, entity, window);
+        registry.replace<Component::Position>(entity, top_left_x, top_left_y - (knob.index * radius));
     }
 
     void on_window_update(entt::registry& registry, entt::entity entity)
     {
         const auto& window = registry.ctx<Component::Window>();
         auto knobs = registry.view<Component::Knob>();
-        for (auto knob : knobs) position_knob_w(registry, knob, window);
+        for (auto knob : knobs) position_knob(registry, knob, window);
     }
 
     void sync_knob_values(entt::registry& registry)
@@ -58,8 +51,9 @@ namespace
             for (auto knob_entity : knobs)
             {
                 auto knob = registry.get<Component::Knob>(knob_entity);
-                knob.value = p[knob.index];
-                registry.replace<Component::Knob>(knob_entity, knob);
+                registry.patch<Component::Knob>(knob_entity
+                        , [&](auto& knob) { knob.value = p[knob.index]; }
+                        );
                 registry.replace<Component::Color>(knob_entity, color);
             }
         }
@@ -76,8 +70,9 @@ namespace
             {
                 n_demos = 0;
                 auto knob = registry.get<Component::Knob>(knob_entity);
-                knob.value = p[knob.index];
-                registry.replace<Component::Knob>(knob_entity, knob);
+                registry.patch<Component::Knob>(knob_entity
+                        , [&](auto& knob) { knob.value = p[knob.index]; }
+                        );
                 registry.replace<Component::Color>(knob_entity, color);
             }
         }
@@ -126,24 +121,25 @@ namespace
         entt::entity indicator;
     };
 
-    Component::Position get_indicator_position(entt::registry& registry, entt::entity knob)
+    Component::Position get_indicator_position(const entt::registry& registry, entt::entity entity)
     {
         constexpr float deg_to_rad = Simple::pi / 180.0f;
-        auto radius = registry.get<Component::Draggable>(knob).radius/2.0f - 15;
-        auto center = registry.get<Component::Position>(knob);
-        auto angle = (-120.0f - registry.get<Component::Knob>(knob).value * 300.0f) * deg_to_rad;
+        const auto& knob = registry.get<Component::Knob>(entity);
+        auto radius = knob.radius/2.0f - 15;
+        auto center = registry.get<Component::Position>(entity);
+        auto angle = (-120.0f - knob.value * 300.0f) * deg_to_rad;
         angle = Simple::wrap(angle, -Simple::pi, Simple::pi);
         return {center.x + radius * std::cos(angle), center.y + radius * std::sin(angle)};
     }
 
-    void update_knobview(entt::registry& registry, entt::entity knob)
+    void update_knobview(entt::registry& registry, entt::entity entity)
     {
-        auto knobview = registry.get<KnobView>(knob);
-        auto ring_color = System::hover_select_color(registry, knob);
-        auto fill_color = registry.get<Component::Color>(knob);
-        auto position = registry.get<Component::Position>(knob);
-        auto radius = registry.get<Component::Draggable>(knob).radius;
-        auto indicator_position = get_indicator_position(registry, knob);
+        auto knobview = registry.get<KnobView>(entity);
+        auto ring_color = System::hover_select_color(registry, entity);
+        auto fill_color = registry.get<Component::Color>(entity);
+        auto position = registry.get<Component::Position>(entity);
+        auto radius = registry.get<Component::Knob>(entity).radius;
+        auto indicator_position = get_indicator_position(registry, entity);
 
         auto emp_or_rep = [&](auto entity, auto radius, auto position, auto color, auto border, auto border_thick)
         {
@@ -161,17 +157,24 @@ namespace
         emp_or_rep(knobview.indicator, 15.0f, indicator_position, fill_color, Component::Color{0,0,0,1}, 3.0f);
     }
 
-    void construct_knobview(entt::registry& registry, entt::entity knob)
-    {
-        registry.emplace<KnobView>(knob, registry.create(), registry.create());
-        update_knobview(registry, knob);
-    }
-
     void destroy_knobview(entt::registry& registry, entt::entity knob)
     {
         auto& knobview = registry.get<KnobView>(knob);
         registry.destroy(knobview.background);
         registry.destroy(knobview.indicator);
+    }
+
+    void construct_knob(entt::registry& registry, entt::entity entity)
+    {
+        const auto& knob = registry.get<Component::Knob>(entity);
+        registry.emplace<Component::Position>(entity);
+        registry.emplace<Component::Color>(entity);
+        registry.emplace<Component::Draggable>(entity, knob.radius);
+
+        position_knob(registry, entity, registry.ctx<Component::Window>());
+
+        registry.emplace<KnobView>(entity, registry.create(), registry.create());
+        update_knobview(registry, entity);
     }
 }
 
@@ -179,8 +182,7 @@ namespace System
 {
     void Knob::setup_reactive_systems(entt::registry& registry)
     {
-        registry.on_construct<Component::Knob>().connect<&position_knob>();
-        registry.on_construct<Component::Knob>().connect<&construct_knobview>();
+        registry.on_construct<Component::Knob>().connect<&construct_knob>();
         registry.on_destroy<Component::Knob>().connect<&destroy_knobview>();
         registry.on_update<Component::Window>().connect<&on_window_update>();
 
@@ -200,12 +202,7 @@ namespace System
         for (int i = 0; i < Component::Demo::num_destinations; ++i)
         {
             auto knob = registry.create();
-            registry.emplace<Component::Position>(knob, 0.0f, 100.0f * i);
-            registry.emplace<Component::Selectable>(knob, false, Component::Selectable::Group::Knob);
-            registry.emplace<Component::Color>(knob);
-            registry.emplace<Component::SelectionHovered>(knob, false);
-            registry.emplace<Component::Draggable>(knob, 75.0f);
-            registry.emplace<Component::Knob>(knob, i);
+            registry.emplace<Component::Knob>(knob, i, 0.0f, 75.0f);
         }
     }
 

@@ -16,8 +16,8 @@ namespace Component
             Knob,
             Cursor,
             All,
-        } group;
-        bool _touched;
+        } group = Group::All;
+        bool _touched = false;
     };
 
     struct Selected {}; // tag struct to signal that a component is selected

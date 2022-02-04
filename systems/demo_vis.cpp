@@ -1,5 +1,5 @@
 #include "demo_vis.h"
-#include <iostream>
+#include "components/vis.h"
 #include "components/demo.h"
 #include "components/position.h"
 #include "components/color.h"
@@ -24,6 +24,7 @@ namespace
 
     void on_construct(entt::registry& registry, entt::entity entity)
     {
+        // should we ensure the components has position, color, source and dest?
         update_source(registry, entity);
         update_destination(registry, entity);
     }
@@ -33,11 +34,11 @@ namespace System
 {
     void DemoVis::setup_reactive_systems(entt::registry& registry)
     {
-        registry.on_construct<Component::Demo>().connect<&on_construct>();
+        registry.on_construct<Component::Vis>().connect<&on_construct>();
         registry.on_update<Component::Demo::Source>().connect<&update_source>();
         registry.on_update<Component::Demo::Destination>().connect<&update_destination>();
         updated_positions.connect(registry, entt::collector
-                .update<Component::Position>().where<Component::Demo>()
+                .update<Component::Position>().where<Component::Vis>()
                 );
     }
 

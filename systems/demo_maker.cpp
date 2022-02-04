@@ -3,6 +3,7 @@
 #include "components/color.h"
 #include "components/position.h"
 #include "components/draggable.h"
+#include "components/vis.h"
 
 namespace
 {
@@ -14,9 +15,8 @@ namespace
         registry.emplace<Component::Demo::Destination>(entity
                 , Component::Demo::Destination::Random().array() * 0.5f + 0.5f
                 );
-        registry.emplace<Component::Selectable>(entity, false, Component::Selectable::Group::Demo);
-        registry.emplace<Component::SelectionHovered>(entity, false);
         registry.emplace<Component::Draggable>(entity, 25.0f);
+        registry.emplace<Component::Vis>(entity);
     }
 }
 

@@ -19,6 +19,7 @@
 #include "systems/button.h"
 #include "systems/libmapper.h"
 #include "systems/demo_vis.h"
+#include "systems/edit_interact.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -44,8 +45,10 @@ int main()
         , System::DemoViewer
         , System::DemoDragger
         //, System::Interpolator
-        //, System::Cursor
+        , System::Cursor
+        //, System::DemoButtons
         , System::DemoVis
+        , System::EditInteract
         //, System::RecentMemory
         >();
 
