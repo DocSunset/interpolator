@@ -19,8 +19,6 @@ namespace
     struct InteractCursor{entt::entity entity;};
     struct NewDemoButton {};
     struct DeleteDemoButton {};
-    struct EditInteractButton {bool editing;};
-    struct Editing : public Component::Flag {};
 
     constexpr unsigned int cursor_radius = 30;
     constexpr float button_radius = 50;
@@ -43,28 +41,17 @@ namespace
 
         for (auto ent : registry.view<NewDemoButton>()) position_button(ent);
         for (auto ent : registry.view<DeleteDemoButton>()) position_button(ent);
-        for (auto ent : registry.view<EditInteractButton>()) position_button(ent);
     }
 
     void demo_buttons(entt::registry& registry, entt::entity entity)
     {
         if (registry.all_of<NewDemoButton>(entity))
         {
+            const auto cursor_entity = registry.ctx<EditCursor>().entity;
+            const auto& position = registry.get<Component::Position>(cursor_entity);
+            const auto source = System::position_to_source(registry, position);
+            const auto destination = System::query(registry, source);
             auto demo = registry.create();
-            Component::Demo::Source source;
-            Component::Demo::Destination destination;
-            if (registry.ctx<Editing>())
-            {
-                auto entity = registry.ctx<EditCursor>().entity;
-                const auto& position = registry.get<Component::Position>(entity);
-                source = System::position_to_source(registry, position);
-                destination = System::query(registry, source);
-            }
-            else
-            {
-                source = registry.ctx<Component::Demo::Source>();
-                destination = registry.ctx<Component::Demo::Destination>();
-            }
             registry.emplace<Component::Demo>(demo, demo);
             registry.replace<Component::Demo::Source>(demo, source);
             registry.replace<Component::Demo::Destination>(demo, destination);
@@ -78,10 +65,6 @@ namespace
             registry.destroy(view.begin(), view.end());
             registry.ctx<Component::PaintFlag>().set();
         }
-        else if (registry.all_of<EditInteractButton>(entity))
-        {
-            registry.ctx<Editing>().toggle();
-        }
     }
 }
 
@@ -93,12 +76,12 @@ namespace System
                 .update<Component::Draggable>()
                 .where<EditCursor>()
                 );
+
+        registry.on_construct<Component::ButtonPress>().connect<&demo_buttons>();
     }
 
     void EditInteract::prepare_registry(entt::registry& registry)
     {
-        registry.set<Editing>(true);
-
         auto edit_cursor_entity = registry.create();
         registry.emplace<EditCursor>(edit_cursor_entity, edit_cursor_entity);
         registry.emplace<Component::Cursor>(edit_cursor_entity, cursor_radius);
@@ -130,12 +113,6 @@ namespace System
         registry.emplace<Component::Button>(delete_demo_button, button_radius);
         registry.emplace<Component::Position>(delete_demo_button, -145.0f, -200.0f);
         registry.emplace<Component::Color>(delete_demo_button, 0.7f, 0.2f, 0.2f, 1.0f);
-
-        auto mode_button = registry.create();
-        registry.emplace<EditInteractButton>(mode_button);
-        registry.emplace<Component::Button>(mode_button, button_radius);
-        registry.emplace<Component::Position>(mode_button, -90.0f, -200.0f);
-        registry.emplace<Component::Color>(mode_button, 0.2f, 0.2f, 0.2f, 1.0f);
 
         registry.on_update<Component::Window>().connect<&update_window>();
     }
