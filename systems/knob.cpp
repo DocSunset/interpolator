@@ -52,7 +52,7 @@ namespace
             {
                 auto knob = registry.get<Component::Knob>(knob_entity);
                 registry.patch<Component::Knob>(knob_entity
-                        , [&](auto& knob) { knob.value = p[knob.index]; }
+                        , [&](auto& k) { k.value = p[k.index]; }
                         );
                 registry.replace<Component::Color>(knob_entity, color);
             }
@@ -88,7 +88,9 @@ namespace
             auto& knob = registry.get<Component::Knob>(entity);
 
             float delta = drag.delta.y / win.h;
-            registry.replace<Component::Knob>(entity, knob.index, Simple::clip(knob.value + delta));
+            registry.patch<Component::Knob>(entity
+                    , [&](auto& knob) { knob.value = Simple::clip(knob.value + delta); }
+                    );
             drag.delta = {0,0};
 
             std::size_t num_selected_demos = 0;
