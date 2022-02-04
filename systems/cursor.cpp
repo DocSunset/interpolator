@@ -62,7 +62,7 @@ namespace
         auto viewer = CursorView{registry.create(), registry.create()};
         registry.emplace<CursorView>(entity, viewer);
         registry.emplace<Component::Position>(entity);
-        registry.emplace<Component::Color>(entity);
+        registry.emplace<Component::Color>(entity,0.5f,0.5f,0.5f,1.0f);
         update_cursor(registry, entity);
     }
 }
