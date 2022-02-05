@@ -1,4 +1,4 @@
-#include "edit_interact.h"
+#include "editor.h"
 #include "components/cursor.h"
 #include "components/draggable.h"
 #include "components/flag.h"
@@ -70,7 +70,7 @@ namespace
 
 namespace System
 {
-    void EditInteract::setup_reactive_systems(entt::registry& registry)
+    void Editor::setup_reactive_systems(entt::registry& registry)
     {
         dragged.connect(registry, entt::collector
                 .update<Component::Draggable>()
@@ -80,7 +80,7 @@ namespace System
         registry.on_construct<Component::ButtonPress>().connect<&demo_buttons>();
     }
 
-    void EditInteract::prepare_registry(entt::registry& registry)
+    void Editor::prepare_registry(entt::registry& registry)
     {
         auto edit_cursor_entity = registry.create();
         registry.emplace<EditCursor>(edit_cursor_entity, edit_cursor_entity);
@@ -117,12 +117,12 @@ namespace System
         registry.on_update<Component::Window>().connect<&update_window>();
     }
 
-    void EditInteract::run(entt::registry& registry)
+    void Editor::run(entt::registry& registry)
     {
         drag_update_position(registry, dragged);
     }
 
-    void EditInteract::prepare_to_paint(entt::registry& registry)
+    void Editor::prepare_to_paint(entt::registry& registry)
     {
         constexpr auto hide = [](auto& color) {color.a = 0;};
         constexpr auto show = [](auto& color) {color.a = 1;};

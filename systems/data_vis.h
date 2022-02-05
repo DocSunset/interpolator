@@ -4,7 +4,7 @@
 
 namespace System
 {
-    class DemoVis : public System
+    class DataVis : public System
     {
         entt::observer updated_positions;
     public:
@@ -14,6 +14,6 @@ namespace System
         void run(entt::registry&) override;
         // void prepare_to_paint(entt::registry&) override;
         // void paint(entt::registry&) override;
-        ~DemoVis() = default;
+        ~DataVis() = default;
     };
 }

@@ -1,4 +1,4 @@
-#include "demo_maker.h"
+#include "demonstration.h"
 #include "components/demo.h"
 #include "components/draggable.h"
 #include "components/color.h"

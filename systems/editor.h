@@ -5,7 +5,7 @@
 namespace System
 {
     // perform a mapping from Demo::Source to Position and from Demo::Destination to Color
-    class EditInteract : public System
+    class Editor : public System
     {
         entt::observer dragged;
     public:
@@ -15,6 +15,6 @@ namespace System
         void run(entt::registry&) override;
         void prepare_to_paint(entt::registry&) override;
         // void paint(entt::registry&) override;
-        ~EditInteract() = default;
+        ~Editor() = default;
     };
 }

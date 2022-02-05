@@ -1,4 +1,4 @@
-#include "demo_vis.h"
+#include "data_vis.h"
 #include "components/vis.h"
 #include "components/demo.h"
 #include "components/position.h"
@@ -32,7 +32,7 @@ namespace
 
 namespace System
 {
-    void DemoVis::setup_reactive_systems(entt::registry& registry)
+    void DataVis::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_construct<Component::Vis>().connect<&on_construct>();
         registry.on_update<Component::Demo::Source>().connect<&update_source>();
@@ -42,7 +42,7 @@ namespace System
                 );
     }
 
-    void DemoVis::run(entt::registry& registry)
+    void DataVis::run(entt::registry& registry)
     {
         auto window = registry.ctx<Component::Window>();
         updated_positions.each([&](auto entity)

@@ -5,17 +5,17 @@
 #include "app.h"
 #include "systems/platform.h"
 #include "systems/draggable.h"
+#include "systems/demonstration.h"
 #include "systems/interpolator.h"
 #include "systems/knob.h"
-#include "systems/interpolator_visualizer.h"
 #include "systems/circle_painter.h"
 #include "systems/line_painter.h"
 #include "systems/text_painter.h"
 #include "systems/cursor.h"
 #include "systems/button.h"
 #include "systems/libmapper.h"
-#include "systems/demo_vis.h"
-#include "systems/edit_interact.h"
+#include "systems/data_vis.h"
+#include "systems/editor.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -37,8 +37,8 @@ int main()
         , System::Knob
         , System::Interpolator
         , System::Cursor
-        , System::DemoVis
-        , System::EditInteract
+        , System::DataVis
+        , System::Editor
         , System::Libmapper // syncs destination signals with registry
         >();
 
