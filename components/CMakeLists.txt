@@ -11,4 +11,5 @@ target_sources(interpolators-objects PRIVATE
     mouse_mode.h
     button.h
     cursor.h
+    grab.h grab.cpp
     )

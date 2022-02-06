@@ -16,4 +16,5 @@ target_sources(interpolators-objects PRIVATE
     data_vis.h data_vis.cpp
     common/vis.h common/vis.cpp
     editor.h editor.cpp
+    common/grab.h common/grab.cpp
     )

@@ -1,7 +1,6 @@
 #include "libmapper.h"
 
 #include <string>
-#include <iostream>
 #include <mapper/mapper_cpp.h>
 
 #include "components/button.h"
@@ -10,19 +9,69 @@
 #include "components/demo.h"
 #include "components/paint_flag.h"
 
-#include "systems/common/interpolator.h"
+#include "common/grab.h"
+#include "common/interpolator.h"
 
 namespace
 {
-    constexpr unsigned int num_inputs = 2;
-    constexpr unsigned int num_outputs = 6;
+    const char * registry_prop = "registry";
+    const char * index_prop = "index";
+    const char * state_prop = "state";
+
+    entt::registry& get_registry(mapper::Signal& sig)
+    {
+        auto * registry = (entt::registry*)(void*)(sig.device()[registry_prop]);
+        return *registry;
+    }
+
+    template<typename T> T& get_prop(mapper::Signal& sig, const char * name)
+    {
+        T * prop_ptr = (T*)(void*)sig[name];
+        assert(prop_ptr != nullptr);
+        return *prop_ptr;
+    }
+
+    auto do_schmitt_trigger(bool& state, float val)
+    {
+        if (state && val < 0.2)
+        {
+            state = false;
+            return Component::Grab::State::Grabbing;
+        }
+        else if (val > 0.8)
+        {
+            state = true;
+            return Component::Grab::State::Dropping;
+        } else return Component::Grab::State::Moving;
+    }
 
     void signal_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
-        auto * registry = (entt::registry*)(void*)(sig.device()["registry"]);
-        auto index = (uintptr_t)(void*)sig["index"];
-        auto& source = registry->ctx<Component::Demo::Source>();
+        auto& registry = get_registry(sig);
+        auto index = get_prop<std::size_t>(sig, index_prop);
+        auto& source = registry.ctx<Component::Demo::Source>();
         source[index] = val;
+    }
+
+    struct GrabEntity {entt::entity entity;};
+
+    void grab_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
+    {
+        auto& registry = get_registry(sig);
+        auto& grab_entity = registry.ctx<GrabEntity>().entity;
+        const auto& source = registry.ctx<Component::Demo::Source>();
+        auto transition = do_schmitt_trigger(get_prop<bool>(sig, state_prop), val);
+        System::patch_grab(registry, grab_entity, transition, source);
+    }
+
+    void delete_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
+    {
+        auto& registry = get_registry(sig);
+    }
+
+    void insert_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
+    {
+        auto& registry = get_registry(sig);
     }
 
     using SignalArray = mapper::Signal[Component::Demo::num_destinations];
@@ -32,7 +81,7 @@ namespace System
 {
     struct Libmapper::Implementation
     {
-        mapper::Device dev{"preset_interpolator"};
+        mapper::Device interpolator{"preset_interpolator"};
         Component::Demo demo{};
     };
 
@@ -43,37 +92,51 @@ namespace System
 
     void Libmapper::prepare_registry(entt::registry& registry)
     {
-        registry.set<mapper::Device>(pimpl->dev);
+        registry.set<mapper::Device>(pimpl->interpolator);
         registry.set<Component::Demo::Source>(Component::Demo::Source::Zero());
         registry.set<Component::Demo::Destination>(Component::Demo::Destination::Zero());
-        auto& signals = registry.set<SignalArray>();
+        auto& output_signals = registry.set<SignalArray>();
 
-        auto& dev = pimpl->dev;
+        auto& interpolator = pimpl->interpolator;
 
-        dev.set_property("registry", (void*)&registry);
+        interpolator.set_property(registry_prop, (void*)&registry);
 
         std::string input_name{"input"};
         std::string output_name{"output"};
         float min = 0;
         float max = 1;
-        for (uintptr_t i = 0; i < Component::Demo::num_sources; ++i)
+        for (std::size_t i = 0; i < Component::Demo::num_sources; ++i)
         {
-            dev .add_signal(mapper::Direction::INCOMING, input_name+std::to_string(i),
-                    1, mapper::Type::FLOAT, "normalized", &min, &max)
-                .set_property("index", (void*)i) // this is an ugly hack likely to cause trouble
+            auto index = (std::size_t*)calloc(1, sizeof(std::size_t));
+            *index = i;
+            interpolator.add_signal(mapper::Direction::INCOMING, input_name+std::to_string(i)
+                    , 1, mapper::Type::FLOAT, "normalized", &min, &max)
+                .set_property(index_prop, (void*)index)
                 .set_callback(signal_handler);
         }
-
         for (int i = 0; i < Component::Demo::num_destinations; ++i)
         {
-            signals[i] = dev.add_signal(mapper::Direction::OUTGOING, output_name+std::to_string(i),
-                    1, mapper::Type::FLOAT, "normalized", &min, &max);
+            output_signals[i] = interpolator.add_signal( mapper::Direction::OUTGOING
+                    , output_name+std::to_string(i)
+                    , 1 , mapper::Type::FLOAT, "normalized", &min, &max);
         }
+
+        auto add_edit_sig = [&](auto name, auto handler)
+        {
+            interpolator.add_signal(mapper::Direction::INCOMING, name
+                , 1 , mapper::Type::FLOAT, "normalized", &min, &max)
+            .set_property(state_prop, calloc(1,sizeof(bool)))
+            .set_callback(handler);
+        };
+        registry.emplace<Component::Grab>(registry.set<GrabEntity>(registry.create()).entity);
+        add_edit_sig("grab", grab_handler);
+        add_edit_sig("delete", delete_handler);
+        add_edit_sig("insert", insert_handler);
     }
 
     void Libmapper::run(entt::registry& registry)
     {
-        auto& dev = pimpl->dev;
+        auto& interpolator = pimpl->interpolator;
         const auto& source = registry.ctx<Component::Demo::Source>();
         auto& signal = registry.ctx<SignalArray>();
         auto& destination = registry.ctx<Component::Demo::Destination>();
