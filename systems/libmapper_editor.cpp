@@ -31,6 +31,7 @@ namespace
         for (auto entity : registry.view<Component::LibmapperHovered>())
             registry.erase<Component::LibmapperHovered>(entity);
         registry.emplace<Component::LibmapperHovered>(nearest);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void grab(entt::registry& registry, entt::entity nearest)

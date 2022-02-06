@@ -4,6 +4,7 @@
 #include "components/color.h"
 #include "components/circle.h"
 #include "components/vis.h"
+#include "components/grab.h"
 #include "systems/common/draggable.h"
 
 namespace
@@ -12,7 +13,9 @@ namespace
 
     void update_circle(entt::registry& registry, entt::entity entity)
     {
-        auto ring_color = System::hover_select_color(registry, entity);
+        auto mapper_hovered = registry.all_of<Component::LibmapperHovered>(entity);
+        auto ring_color = mapper_hovered ? Component::Color{0.9f,0.9f,0.1f,1.0f} 
+                                 : System::hover_select_color(registry, entity);
         auto fill_color = registry.get<Component::Color>(entity);
         auto position = registry.get<Component::Position>(entity);
         auto radius = registry.get<Component::Draggable>(entity).radius;
@@ -55,6 +58,8 @@ namespace System
                 .update<Component::Color>().where<Component::Demo>()
                 .update<Component::Selectable>().where<Component::Demo>()
                 .update<Component::SelectionHovered>().where<Component::Demo>()
+                .group<Component::LibmapperHovered>().where<Component::Demo>()
+                .group<Component::Demo>(entt::exclude<Component::LibmapperHovered>)
                 );
     }
 
