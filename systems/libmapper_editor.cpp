@@ -1,6 +1,8 @@
 #include "libmapper_editor.h"
 #include <limits>
 #include "components/grab.h"
+#include "components/draggable.h"
+#include "components/paint_flag.h"
 
 namespace
 {
@@ -39,7 +41,9 @@ namespace
     void drag(entt::registry& registry, const Component::Demo::Source& position)
     {
         auto grabbed = registry.ctx<Grabbed>().entity;
+        if (registry.all_of<Component::Grabbed>(grabbed)) return; // don't fight with draggable system
         registry.replace<Component::Demo::Source>(grabbed, position);
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void drop(entt::registry& registry, entt::entity nearest)
