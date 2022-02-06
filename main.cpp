@@ -16,6 +16,7 @@
 #include "systems/libmapper.h"
 #include "systems/data_vis.h"
 #include "systems/editor.h"
+#include "systems/libmapper_editor.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -33,6 +34,7 @@ int main()
         , System::TextPainter
         , System::Button
         , System::Draggable
+        , System::LibmapperEditor
         , System::Demonstration
         , System::Knob
         , System::Interpolator

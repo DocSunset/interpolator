@@ -8,8 +8,8 @@
 #include "components/position.h"
 #include "components/demo.h"
 #include "components/paint_flag.h"
+#include "components/grab.h"
 
-#include "common/grab.h"
 #include "common/interpolator.h"
 
 namespace
@@ -17,6 +17,7 @@ namespace
     const char * registry_prop = "registry";
     const char * index_prop = "index";
     const char * state_prop = "state";
+    struct GrabEntity {entt::entity entity;};
 
     entt::registry& get_registry(mapper::Signal& sig)
     {
@@ -33,16 +34,24 @@ namespace
 
     auto do_schmitt_trigger(bool& state, float val)
     {
-        if (state && val < 0.2)
+        if (state)
         {
-            state = false;
-            return Component::Grab::State::Grabbing;
+            if (val < 0.2)
+            {
+                state = false;
+                return Component::Grab::State::Dropping;
+            }
+            else return Component::Grab::State::Dragging;
         }
-        else if (val > 0.8)
+        else
         {
-            state = true;
-            return Component::Grab::State::Dropping;
-        } else return Component::Grab::State::Moving;
+            if (val > 0.8)
+            {
+                state = true;
+                return Component::Grab::State::Grabbing;
+            }
+            else return Component::Grab::State::Hovering;
+        }
     }
 
     void signal_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
@@ -51,9 +60,15 @@ namespace
         auto index = get_prop<std::size_t>(sig, index_prop);
         auto& source = registry.ctx<Component::Demo::Source>();
         source[index] = val;
+        registry.patch<Component::Grab>(registry.ctx<GrabEntity>().entity, [&](auto& grab)
+        {
+            grab.position[index] = val;
+            if (grab.state == Component::Grab::State::Grabbing)
+                grab.state = Component::Grab::State::Dragging;
+            if (grab.state == Component::Grab::State::Dropping)
+                grab.state = Component::Grab::State::Hovering;
+        });
     }
-
-    struct GrabEntity {entt::entity entity;};
 
     void grab_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
@@ -61,7 +76,7 @@ namespace
         auto& grab_entity = registry.ctx<GrabEntity>().entity;
         const auto& source = registry.ctx<Component::Demo::Source>();
         auto transition = do_schmitt_trigger(get_prop<bool>(sig, state_prop), val);
-        System::patch_grab(registry, grab_entity, transition, source);
+        registry.replace<Component::Grab>(grab_entity, transition, source);
     }
 
     void delete_handler(mapper::Signal&& sig, float val, mapper::Time&& t)

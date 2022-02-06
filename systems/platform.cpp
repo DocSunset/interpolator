@@ -19,7 +19,6 @@
 #include "components/repaint_timer.h"
 #include "components/circle.h"
 #include "common/vis.h"
-#include "common/grab.h"
 #include "gl/ll.h"
 #include "utility/mtof.h"
 
@@ -36,7 +35,7 @@ namespace System
         SDL_Window * window;
         SDL_GLContext gl;
         Component::Window win_size;
-        entt::registry::entity_type window_entity, mouse_entity, grab_entity;
+        entt::registry::entity_type window_entity, mouse_entity;
 
     public:
         // standard SDL setup boilerplate
@@ -122,9 +121,6 @@ namespace System
             registry.emplace<Component::RelativeMouseMode>(mouse_entity, false);
             registry.emplace<Component::MousePosition>(mouse_entity, Component::Position::Zero());
 
-            grab_entity = registry.create();
-            registry.emplace<Component::Grab>(grab_entity);
-            
             // set initial context
             registry.set<Component::ShiftModifier>(false);
         }
@@ -200,9 +196,6 @@ namespace System
                         );
                 auto& mouse_position = registry.get<Component::MousePosition>(mouse_entity);
                 mouse_position = {p.x, p.y};
-                patch_grab(registry, grab_entity, Component::Grab::State::Moving
-                          , position_to_source(registry, mouse_position)
-                          );
                 break;
             }
             case SDL_MOUSEBUTTONDOWN:
@@ -221,9 +214,6 @@ namespace System
                                 , position
                                 , current.up_position
                                 );
-                        patch_grab(registry, grab_entity, Component::Grab::State::Grabbing
-                                  , position_to_source(registry, position)
-                                  );
                         break;
                     }
                     case SDL_BUTTON_MIDDLE:
@@ -250,9 +240,6 @@ namespace System
                                 , current.down_position
                                 , position
                                 );
-                        patch_grab(registry, grab_entity, Component::Grab::State::Dropping
-                                  , position_to_source(registry, position)
-                                  );
                         break;
                     }
                     case SDL_BUTTON_MIDDLE:

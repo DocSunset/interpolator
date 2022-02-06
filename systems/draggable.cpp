@@ -235,6 +235,7 @@ namespace System
                 .connect<&entt::registry::emplace_or_replace<Component::Selectable>>();
             registry.on_construct<Component::Draggable>()
                 .connect<&set_group>();
+
             registry.on_update<Component::MouseMotion>()
                 .connect<&Draggable::Implementation::on_mouse_motion>(*this);
             registry.on_update<Component::LeftMouseButton>()
