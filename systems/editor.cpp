@@ -124,7 +124,7 @@ namespace System
 
     void Editor::prepare_to_paint(entt::registry& registry)
     {
-        constexpr auto hide = [](auto& color) {color.a = 0;};
+        constexpr auto hide = [](auto& color) {color.a = 0.2;};
         constexpr auto show = [](auto& color) {color.a = 1;};
         auto interact_cursor = registry.ctx<InteractCursor>().entity;
         auto edit_cursor = registry.ctx<EditCursor>().entity;

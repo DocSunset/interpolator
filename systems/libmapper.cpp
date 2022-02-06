@@ -68,6 +68,7 @@ namespace
             if (grab.state == Component::Grab::State::Dropping)
                 grab.state = Component::Grab::State::Hovering;
         });
+        registry.ctx<Component::PaintFlag>().set();
     }
 
     void grab_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
