@@ -17,4 +17,5 @@ target_sources(interpolators-objects PRIVATE
     common/vis.h common/vis.cpp
     editor.h editor.cpp
     libmapper_editor.h libmapper_editor.cpp
+    common/insert_demo.h common/insert_demo.cpp
     )

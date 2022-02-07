@@ -9,9 +9,11 @@
 #include "components/vis.h"
 #include "components/color.h"
 #include "components/position.h"
-#include "systems/common/vis.h"
-#include "systems/common/interpolator.h"
-#include "systems/common/draggable.h"
+
+#include "common/vis.h"
+#include "common/interpolator.h"
+#include "common/draggable.h"
+#include "common/insert_demo.h"
 
 namespace
 {
@@ -51,13 +53,7 @@ namespace
             const auto& position = registry.get<Component::Position>(cursor_entity);
             const auto source = System::position_to_source(registry, position);
             const auto destination = registry.ctx<Component::Demo::Destination>();
-            auto demo = registry.create();
-            registry.emplace<Component::Demo>(demo, demo);
-            registry.replace<Component::Demo::Source>(demo, source);
-            registry.replace<Component::Demo::Destination>(demo, destination);
-            registry.replace<Component::Selectable>(demo, true, Component::Selectable::Group::Demo);
-            registry.emplace<Component::Selected>(demo);
-            registry.ctx<Component::PaintFlag>().set();
+            System::insert_demo(registry, source, destination);
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
