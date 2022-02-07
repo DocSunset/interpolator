@@ -45,15 +45,13 @@ namespace System
     void DataVis::run(entt::registry& registry)
     {
         auto window = registry.ctx<Component::Window>();
+        registry.on_update<Component::Demo::Source>().disconnect<&update_source>();
         updated_positions.each([&](auto entity)
         {
-            auto& source = registry.get<Component::Demo::Source>(entity);
             const auto& position = registry.get<Component::Position>(entity);
-
-            // we assign here instead of using registry.replace
-            // to ensure that we don't trigger an update event that would cause
-            // the position to be updated again...
-            source = position_to_source(registry, position);
+            auto new_source = position_to_source(registry, position);
+            registry.replace<Component::Demo::Source>(entity, new_source);
         });
+        registry.on_update<Component::Demo::Source>().connect<&update_source>();
     }
 }

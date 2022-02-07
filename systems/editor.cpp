@@ -13,8 +13,7 @@
 #include "common/vis.h"
 #include "common/interpolator.h"
 #include "common/draggable.h"
-#include "common/insert_demo.h"
-#include "common/delete_demo.h"
+#include "common/editor.h"
 
 namespace
 {

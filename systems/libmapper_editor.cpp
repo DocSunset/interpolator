@@ -3,8 +3,7 @@
 #include "components/libmapper_editor.h"
 #include "components/draggable.h"
 #include "components/paint_flag.h"
-#include "common/insert_demo.h"
-#include "common/delete_demo.h"
+#include "common/editor.h"
 
 namespace
 {

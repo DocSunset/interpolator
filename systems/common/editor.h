@@ -8,4 +8,8 @@ namespace System
             , const Component::Demo::Source&
             , const Component::Demo::Destination&
             );
+
+    void delete_selected_demos(entt::registry&);
+
+    void delete_demo(entt::registry&, entt::entity);
 }
