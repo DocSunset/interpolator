@@ -4,7 +4,7 @@
 #include "components/color.h"
 #include "components/circle.h"
 #include "components/vis.h"
-#include "components/grab.h"
+#include "components/libmapper_editor.h"
 #include "systems/common/draggable.h"
 
 namespace

@@ -1,8 +1,10 @@
 #include "libmapper_editor.h"
 #include <limits>
-#include "components/grab.h"
+#include "components/libmapper_editor.h"
 #include "components/draggable.h"
 #include "components/paint_flag.h"
+#include "common/insert_demo.h"
+#include "common/delete_demo.h"
 
 namespace
 {
@@ -27,6 +29,7 @@ namespace
 
     void hover(entt::registry& registry, entt::entity nearest)
     {
+        if (nearest == entt::null) return;
         if (registry.all_of<Component::LibmapperHovered>(nearest)) return;
         for (auto entity : registry.view<Component::LibmapperHovered>())
             registry.erase<Component::LibmapperHovered>(entity);
@@ -36,18 +39,20 @@ namespace
 
     void grab(entt::registry& registry, entt::entity nearest)
     {
+        if (nearest == entt::null) return;
         registry.set<Grabbed>(nearest);
     }
 
     void drag(entt::registry& registry, const Component::Demo::Source& position)
     {
         auto grabbed = registry.ctx<Grabbed>().entity;
+        if (grabbed == entt::null) return;
         if (registry.all_of<Component::Grabbed>(grabbed)) return; // don't fight with draggable system
         registry.replace<Component::Demo::Source>(grabbed, position);
         registry.ctx<Component::PaintFlag>().set();
     }
 
-    void drop(entt::registry& registry, entt::entity nearest)
+    void drop(entt::registry& registry)
     {
         registry.set<Grabbed>(entt::null);
     }
@@ -67,16 +72,38 @@ namespace
                 drag(registry, grab_comp.position);
                 break;
             case Component::Grab::State::Dropping:
-                drop(registry, get_nearest(registry, grab_comp.position));
+                drop(registry);
                 break;
         }
+    }
+
+    void delete_demo(entt::registry& registry, entt::entity _)
+    {
+        const auto& source = registry.ctx<Component::Demo::Source>();
+        auto nearest = get_nearest(registry, source);
+        if (nearest == entt::null) return;
+        System::delete_demo(registry, get_nearest(registry, source));
+    }
+
+    void insert_demo(entt::registry& registry, entt::entity _)
+    {
+        const auto& source = registry.ctx<Component::Demo::Source>();
+        const auto& destination = registry.ctx<Component::Demo::Destination>();
+        System::insert_demo(registry, source, destination);
     }
 }
 
 namespace System
 {
+    void LibmapperEditor::prepare_registry(entt::registry& registry)
+    {
+        registry.set<Grabbed>(entt::null);
+    }
+
     void LibmapperEditor::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_update<Component::Grab>().connect<&on_grab>();
+        registry.on_update<Component::LibmapperDeleteDemo>().connect<&::delete_demo>();
+        registry.on_update<Component::LibmapperInsertDemo>().connect<&::insert_demo>();
     }
 }

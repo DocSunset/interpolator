@@ -15,5 +15,7 @@ namespace Component
         Demo::Source position = Demo::Source::Zero();
     };
 
+    struct LibmapperInsertDemo {};
+    struct LibmapperDeleteDemo {};
     struct LibmapperHovered {};
 }

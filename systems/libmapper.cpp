@@ -8,16 +8,17 @@
 #include "components/position.h"
 #include "components/demo.h"
 #include "components/paint_flag.h"
-#include "components/grab.h"
+#include "components/libmapper_editor.h"
 
 #include "common/interpolator.h"
 
+// signal handlers
 namespace
 {
     const char * registry_prop = "registry";
     const char * index_prop = "index";
     const char * state_prop = "state";
-    struct GrabEntity {entt::entity entity;};
+    struct EditorEntity {entt::entity entity;};
 
     entt::registry& get_registry(mapper::Signal& sig)
     {
@@ -60,7 +61,7 @@ namespace
         auto index = get_prop<std::size_t>(sig, index_prop);
         auto& source = registry.ctx<Component::Demo::Source>();
         source[index] = val;
-        registry.patch<Component::Grab>(registry.ctx<GrabEntity>().entity, [&](auto& grab)
+        registry.patch<Component::Grab>(registry.ctx<EditorEntity>().entity, [&](auto& grab)
         {
             grab.position[index] = val;
             if (grab.state == Component::Grab::State::Grabbing)
@@ -74,20 +75,28 @@ namespace
     void grab_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
         auto& registry = get_registry(sig);
-        auto& grab_entity = registry.ctx<GrabEntity>().entity;
+        auto& editor = registry.ctx<EditorEntity>().entity;
         const auto& source = registry.ctx<Component::Demo::Source>();
         auto transition = do_schmitt_trigger(get_prop<bool>(sig, state_prop), val);
-        registry.replace<Component::Grab>(grab_entity, transition, source);
+        registry.replace<Component::Grab>(editor, transition, source);
     }
 
     void delete_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
         auto& registry = get_registry(sig);
+        auto& editor = registry.ctx<EditorEntity>().entity;
+        auto transition = do_schmitt_trigger(get_prop<bool>(sig, state_prop), val);
+        if (transition == Component::Grab::State::Grabbing)
+            registry.replace<Component::LibmapperDeleteDemo>(editor);
     }
 
     void insert_handler(mapper::Signal&& sig, float val, mapper::Time&& t)
     {
         auto& registry = get_registry(sig);
+        auto& editor = registry.ctx<EditorEntity>().entity;
+        auto transition = do_schmitt_trigger(get_prop<bool>(sig, state_prop), val);
+        if (transition == Component::Grab::State::Grabbing)
+            registry.replace<Component::LibmapperInsertDemo>(editor);
     }
 
     using SignalArray = mapper::Signal[Component::Demo::num_destinations];
@@ -144,7 +153,12 @@ namespace System
             .set_property(state_prop, calloc(1,sizeof(bool)))
             .set_callback(handler);
         };
-        registry.emplace<Component::Grab>(registry.set<GrabEntity>(registry.create()).entity);
+        auto editor = registry.create();
+        registry.set<EditorEntity>(editor);
+        registry.emplace<Component::Grab>(editor);
+        registry.emplace<Component::LibmapperDeleteDemo>(editor);
+        registry.emplace<Component::LibmapperInsertDemo>(editor);
+
         add_edit_sig("grab", grab_handler);
         add_edit_sig("delete", delete_handler);
         add_edit_sig("insert", insert_handler);
