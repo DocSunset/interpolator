@@ -14,6 +14,7 @@
 #include "common/interpolator.h"
 #include "common/draggable.h"
 #include "common/insert_demo.h"
+#include "common/delete_demo.h"
 
 namespace
 {
@@ -57,9 +58,7 @@ namespace
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
-            auto view = registry.view<Component::Demo, Component::Selected>();
-            registry.destroy(view.begin(), view.end());
-            registry.ctx<Component::PaintFlag>().set();
+            System::delete_selected_demos(registry);
         }
     }
 }
