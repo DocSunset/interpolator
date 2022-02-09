@@ -32,10 +32,12 @@ namespace
 
     void prepare_demo(entt::registry& registry, entt::entity entity)
     {
-        registry.emplace<Component::Demo::Source>(entity
+        if (not registry.all_of<Component::Demo::Source>(entity))
+            registry.emplace<Component::Demo::Source>(entity
                 , Component::Demo::Source::Random().array() * 0.5f + 0.5f
                 );
-        registry.emplace<Component::Demo::Destination>(entity
+        if (not registry.all_of<Component::Demo::Destination>(entity))
+            registry.emplace<Component::Demo::Destination>(entity
                 , Component::Demo::Destination::Random().array() * 0.5f + 0.5f
                 );
         registry.emplace<Component::Draggable>(entity, demo_radius);

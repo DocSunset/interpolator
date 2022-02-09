@@ -12,4 +12,5 @@ target_sources(interpolators-objects PRIVATE
     button.h
     cursor.h
     libmapper_editor.h
+    time.h
     )

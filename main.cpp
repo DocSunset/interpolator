@@ -17,6 +17,7 @@
 #include "systems/data_vis.h"
 #include "systems/editor.h"
 #include "systems/libmapper_editor.h"
+#include "systems/saving_logging.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -42,6 +43,7 @@ int main()
         , System::DataVis
         , System::Editor
         , System::Libmapper // syncs destination signals with registry
+        , System::SavingLogging
         >();
 
 #ifdef __EMSCRIPTEN__

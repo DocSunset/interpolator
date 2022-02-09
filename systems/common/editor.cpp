@@ -11,9 +11,9 @@ namespace System
             )
     {
         auto demo = registry.create();
+        registry.emplace<Component::Demo::Source>(demo, source);
+        registry.emplace<Component::Demo::Destination>(demo, destination);
         registry.emplace<Component::Demo>(demo, demo);
-        registry.replace<Component::Demo::Source>(demo, source);
-        registry.replace<Component::Demo::Destination>(demo, destination);
         registry.replace<Component::Selectable>(demo, true, Component::Selectable::Group::Demo);
         registry.emplace<Component::Selected>(demo);
         registry.ctx<Component::PaintFlag>().set();

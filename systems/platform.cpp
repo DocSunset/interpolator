@@ -18,6 +18,7 @@
 #include "components/paint_flag.h"
 #include "components/repaint_timer.h"
 #include "components/circle.h"
+#include "components/time.h"
 #include "common/vis.h"
 #include "gl/ll.h"
 #include "utility/mtof.h"
@@ -123,6 +124,7 @@ namespace System
 
             // set initial context
             registry.set<Component::ShiftModifier>(false);
+            registry.set<Component::Time>(SDL_GetTicks64());
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
@@ -152,9 +154,9 @@ namespace System
             SDL_Event ev;
             dev.poll();
             auto got_event = SDL_WaitEventTimeout(&ev, 10);
-            registry.set<std::chrono::system_clock::time_point>(std::chrono::system_clock::now());
             if (got_event) do
             {
+                registry.set<Component::Time>(SDL_GetTicks64());
                 auto win = registry.get<Component::Window>(window_entity);
             switch (ev.type)
             {
@@ -286,7 +288,7 @@ namespace System
         void run(entt::registry& registry)
         {
             poll_events(registry);
-            auto now = SDL_GetTicks();
+            auto now = SDL_GetTicks64();
             // repaint roughly 60 frames per second
             if ((now - last_time) > 16)
             {
