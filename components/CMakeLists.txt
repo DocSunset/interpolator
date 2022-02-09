@@ -13,4 +13,6 @@ target_sources(interpolators-objects PRIVATE
     cursor.h
     libmapper_editor.h
     time.h
+    save_file.h
+    argcv.h
     )

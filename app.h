@@ -6,6 +6,7 @@
 #include "components/quit_flag.h"
 #include "components/paint_flag.h"
 #include "components/repaint_timer.h"
+#include "components/argcv.h"
 #include "gl/ll/error.h"
 
 template<class ... Systems>
@@ -30,12 +31,13 @@ public:
         }
     }
 
-    App()
+    App(int argc, char ** argv)
         : systems()
     {
         registry.set<Component::QuitFlag>(false);
         registry.set<Component::PaintFlag>(true);
         registry.set<Component::RepaintTimer>(true);
+        registry.set<Component::ArgCV>(argc, argv);
         std::apply([&](auto& ... system) { (system.construct_system(), ...) ;}, systems);
         std::apply([&](auto& ... system) { (system.setup_reactive_systems(registry), ...) ;}, systems);
         std::apply([&](auto& ... system) { (system.prepare_registry(registry), ...) ;}, systems);

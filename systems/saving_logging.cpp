@@ -1,7 +1,9 @@
 #include "saving_logging.h"
 #include <iostream>
+#include <fstream>
 #include "components/demo.h"
 #include "components/time.h"
+#include "components/save_file.h"
 
 namespace
 {
@@ -28,6 +30,44 @@ namespace
         return registry.ctx<Component::Time>();
     }
 
+    void print_demo(const Component::Demo::Source& source
+            , const Component::Demo::Destination& destination
+            , std::ostream& out = std::cout
+            )
+    {
+        out << "source:[";
+        for (std::size_t i = 0; i < Component::Demo::num_sources - 1; ++i)
+        {
+            out << source[i] << ",";
+        }
+        out << source[Component::Demo::num_sources - 1] << "],";
+
+        out << "destination:[";
+        for (std::size_t i = 0; i < Component::Demo::num_destinations - 1; ++i)
+        {
+            out << destination[i] << ",";
+        }
+        out << destination[Component::Demo::num_destinations - 1] << "]";
+    }
+
+    void save(const entt::registry& registry)
+    {
+        auto savefile = registry.ctx<Component::SaveFile>();
+        auto out = std::basic_ofstream<char>(savefile.filename, std::ios_base::trunc);
+
+        out << "{\n";
+        int i = 0;
+        for (auto entity : registry.view<Component::Demo>())
+        {
+            const auto& source = registry.get<Component::Demo::Source>(entity);
+            const auto& destination = registry.get<Component::Demo::Destination>(entity);
+            out << i++ << ":{";
+            print_demo(source, destination, out);
+            out << "},\n";
+        }
+        out << "}\n";
+    }
+
     void log_event(const char * name
             , entt::entity entity
             , const Component::Demo::Source& source
@@ -39,19 +79,9 @@ namespace
             << "event=\"" << name
             << "\",id=" << (uint64_t)entity << ",";
 
-        std::cout << "source=[";
-        for (std::size_t i = 0; i < Component::Demo::num_sources - 1; ++i)
-        {
-            std::cout << source[i] << ",";
-        }
-        std::cout << source[Component::Demo::num_sources - 1] << "],";
+        print_demo(source, destination);
 
-        std::cout << "destination=[";
-        for (std::size_t i = 0; i < Component::Demo::num_destinations - 1; ++i)
-        {
-            std::cout << destination[i] << ",";
-        }
-        std::cout << destination[Component::Demo::num_destinations - 1] << "]}\n";
+        std::cout << "}\n";
     }
 
 
@@ -61,6 +91,7 @@ namespace
         const auto& source = registry.get<Component::Demo::Source>(entity);
         const auto& destination = registry.get<Component::Demo::Destination>(entity);
         log_event(name, entity, source, destination, get_time(registry));
+        save(registry);
     }
 
     void reset_cache(entt::registry& registry)
@@ -91,6 +122,7 @@ namespace
         if (cache.entity == entt::null) return; // nothing to flush
         log_event(cache.name, cache.entity, cache.source, cache.destination, cache.time);
         reset_cache(registry);
+        save(registry);
     }
 
     void update(const char * name, entt::registry& registry, entt::entity entity)
@@ -120,10 +152,13 @@ namespace System
     void SavingLogging::run(entt::registry& registry)
     {
         const auto& cache = registry.ctx<UpdateCache>();
-        auto now = get_time(registry);
-        if (now.point - cache.time.point > 500)
+        if (cache.entity != entt::null)
         {
-            flush_update(registry);
+            auto now = get_time(registry);
+            if (now.point - cache.time.point > 500)
+            {
+                flush_update(registry);
+            }
         }
     }
 }

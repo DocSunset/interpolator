@@ -26,7 +26,7 @@ void loop(void * app)
 }
 #endif
 
-int main()
+int main(int argc, char ** argv)
 {
     auto app = App
         < System::Platform // also polls libmapper
@@ -44,7 +44,7 @@ int main()
         , System::Editor
         , System::Libmapper // syncs destination signals with registry
         , System::SavingLogging
-        >();
+        >(argc, argv);
 
 #ifdef __EMSCRIPTEN__
     emscripten_set_main_loop_arg(&loop, &app, -1, 1);

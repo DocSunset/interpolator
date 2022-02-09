@@ -19,6 +19,8 @@
 #include "components/repaint_timer.h"
 #include "components/circle.h"
 #include "components/time.h"
+#include "components/argcv.h"
+#include "components/save_file.h"
 #include "common/vis.h"
 #include "gl/ll.h"
 #include "utility/mtof.h"
@@ -125,6 +127,10 @@ namespace System
             // set initial context
             registry.set<Component::ShiftModifier>(false);
             registry.set<Component::Time>(SDL_GetTicks64());
+
+            auto args = registry.ctx<Component::ArgCV>();
+            if (args.argc > 1) registry.set<Component::SaveFile>(args.argv[1]);
+            else registry.set<Component::SaveFile>();
         }
 
         // this should arguably delete the window and so on, but since the app is quitting...
