@@ -1,9 +1,12 @@
 #include "saving_logging.h"
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <sstream>
 #include "components/demo.h"
 #include "components/time.h"
 #include "components/save_file.h"
+#include "common/editor.h"
 
 namespace
 {
@@ -35,19 +38,17 @@ namespace
             , std::ostream& out = std::cout
             )
     {
-        out << "source:[";
-        for (std::size_t i = 0; i < Component::Demo::num_sources - 1; ++i)
+        out << "s ";
+        for (std::size_t i = 0; i < Component::Demo::num_sources; ++i)
         {
-            out << source[i] << ",";
+            out << source[i] << " ";
         }
-        out << source[Component::Demo::num_sources - 1] << "],";
 
-        out << "destination:[";
-        for (std::size_t i = 0; i < Component::Demo::num_destinations - 1; ++i)
+        out << "d ";
+        for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
         {
-            out << destination[i] << ",";
+            out << destination[i] << " ";
         }
-        out << destination[Component::Demo::num_destinations - 1] << "]";
     }
 
     void save(const entt::registry& registry)
@@ -55,17 +56,13 @@ namespace
         auto savefile = registry.ctx<Component::SaveFile>();
         auto out = std::basic_ofstream<char>(savefile.filename, std::ios_base::trunc);
 
-        out << "{\n";
-        int i = 0;
         for (auto entity : registry.view<Component::Demo>())
         {
             const auto& source = registry.get<Component::Demo::Source>(entity);
             const auto& destination = registry.get<Component::Demo::Destination>(entity);
-            out << i++ << ":{";
             print_demo(source, destination, out);
-            out << "},\n";
+            out << "\n";
         }
-        out << "}\n";
     }
 
     void log_event(const char * name
@@ -76,10 +73,12 @@ namespace
             )
     {
         std::cout << "{time=" << time.point 
-            << "event=\"" << name
-            << "\",id=" << (uint64_t)entity << ",";
+            << "event=\"" << name << "\","
+            << "id=" << (uint64_t)entity << ",";
 
+        std::cout << "demo=[";
         print_demo(source, destination);
+        std::cout << "]";
 
         std::cout << "}\n";
     }
@@ -132,21 +131,53 @@ namespace
         if (cache.entity != entt::null && cache.entity != entity) flush_update(registry);
         cache_update(name, registry, entity);
     }
+
+    void load(entt::registry& registry)
+    {
+        registry.on_construct<Component::Demo>().disconnect<&log_atomic_event>(insert_event);
+        registry.on_destroy<Component::Demo>().disconnect<&log_atomic_event>(delete_event);
+
+        auto savefile = registry.ctx<Component::SaveFile>();
+        auto in = std::basic_ifstream<char>(savefile.filename);
+        auto source = Component::Demo::Source();
+        auto destination = Component::Demo::Destination();
+        std::string line;
+
+        // this will probably need to be fixed when source/dest dimensions start changing
+        while (std::getline(in, line))
+        {
+            auto s = std::istringstream(line);
+            char _;
+            s.get(_); s.get(_); // out << "s ";
+            for (std::size_t i = 0; i < Component::Demo::num_sources; ++i)
+            {
+                s >> source[i]; // out << source[i] << " ";
+            }
+
+            s.get(_); s.get(_); // out << "d ";
+            for (std::size_t i = 0; i < Component::Demo::num_destinations; ++i)
+            {
+                s >> destination[i]; // out << destination[i] << " ";
+            }
+
+            System::insert_demo(registry, source, destination);
+        }
+
+        registry.on_construct<Component::Demo>().connect<&log_atomic_event>(insert_event);
+        registry.on_destroy<Component::Demo>().connect<&log_atomic_event>(delete_event);
+    }
 }
 
 namespace System
 {
-    void SavingLogging::setup_reactive_systems(entt::registry& registry)
-    {
-        registry.on_construct<Component::Demo>().connect<&log_atomic_event>(insert_event);
-        registry.on_destroy<Component::Demo>().connect<&log_atomic_event>(delete_event);
-        registry.on_update<Component::Demo::Source>().connect<&update>(source_update_event);
-        registry.on_update<Component::Demo::Destination>().connect<&update>(destination_update_event);
-    }
-
     void SavingLogging::prepare_registry(entt::registry& registry)
     {
         reset_cache(registry);
+        load(registry);
+        registry.on_update<Component::Demo::Source>().connect<&update>(source_update_event);
+        registry.on_update<Component::Demo::Destination>().connect<&update>(destination_update_event);
+        // reactive systems for this system are exceptionally connected here so
+        // that demos and updates caused during setup are not logged
     }
 
     void SavingLogging::run(entt::registry& registry)

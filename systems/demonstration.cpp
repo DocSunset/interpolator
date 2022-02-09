@@ -65,15 +65,6 @@ namespace System
                 );
     }
 
-    void Demonstration::prepare_registry(entt::registry& registry)
-    {
-        for (int i = 0; i < 5; ++i)
-        {
-            auto entity = registry.create();
-            registry.emplace<Component::Demo>(entity, entity);
-        }
-    }
-
     void Demonstration::run(entt::registry& registry)
     {
         drag_update_position(registry, dragged);
