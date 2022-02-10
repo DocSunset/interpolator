@@ -15,4 +15,5 @@ target_sources(interpolators-objects PRIVATE
     time.h
     save_file.h
     argcv.h
+    update.h
     )

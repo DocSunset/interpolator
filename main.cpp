@@ -18,6 +18,7 @@
 #include "systems/editor.h"
 #include "systems/libmapper_editor.h"
 #include "systems/saving_logging.h"
+#include "systems/update_tracker.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -44,6 +45,7 @@ int main(int argc, char ** argv)
         , System::Editor
         , System::Libmapper // syncs destination signals with registry
         , System::SavingLogging
+        , System::UpdateTracker
         >(argc, argv);
 
 #ifdef __EMSCRIPTEN__

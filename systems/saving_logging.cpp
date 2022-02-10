@@ -3,8 +3,7 @@
 #include <fstream>
 #include <string>
 #include <sstream>
-#include "components/demo.h"
-#include "components/time.h"
+#include "components/update.h"
 #include "components/save_file.h"
 #include "common/editor.h"
 
@@ -13,25 +12,6 @@ namespace
     // is it necessary to record *how* edits are made, i.e. with the mouse or
     // via libmapper signals? Would it be enough to ask participants after
     // about their use and preference for these modalities?
-
-    struct UpdateCache
-    {
-        const char * name;
-        entt::entity entity;
-        Component::Demo::Source source;
-        Component::Demo::Destination destination;
-        Component::Time time;
-    };
-
-    const char * insert_event = "insert";
-    const char * delete_event = "delete";
-    const char * source_update_event = "update_source";
-    const char * destination_update_event = "update_destination";
-
-    Component::Time get_time(entt::registry& registry)
-    {
-        return registry.ctx<Component::Time>();
-    }
 
     void print_demo(const Component::Demo::Source& source
             , const Component::Demo::Destination& destination
@@ -51,6 +31,20 @@ namespace
         }
     }
 
+    void log_event(const entt::registry& registry, entt::entity entity)
+    {
+        const auto& update = registry.get<Component::Update>(entity);
+        std::cout << "{time=" << update.time.point 
+            << "event=\"" << Component::update_name(update.type) << "\","
+            << "id=" << (uint64_t)update.entity << ",";
+
+        std::cout << "demo=[";
+        print_demo(update.source, update.destination);
+        std::cout << "]";
+
+        std::cout << "}\n";
+    }
+
     void save(const entt::registry& registry)
     {
         auto savefile = registry.ctx<Component::SaveFile>();
@@ -65,77 +59,16 @@ namespace
         }
     }
 
-    void log_event(const char * name
-            , entt::entity entity
-            , const Component::Demo::Source& source
-            , const Component::Demo::Destination& destination
-            , Component::Time time
-            )
+    void on_update(const entt::registry& registry, entt::entity entity)
     {
-        std::cout << "{time=" << time.point 
-            << "event=\"" << name << "\","
-            << "id=" << (uint64_t)entity << ",";
-
-        std::cout << "demo=[";
-        print_demo(source, destination);
-        std::cout << "]";
-
-        std::cout << "}\n";
-    }
-
-
-    void log_atomic_event(const char * name, entt::registry& registry, entt::entity entity)
-    {
-        if (not registry.all_of<Component::Demo>(entity)) return;
-        const auto& source = registry.get<Component::Demo::Source>(entity);
-        const auto& destination = registry.get<Component::Demo::Destination>(entity);
-        log_event(name, entity, source, destination, get_time(registry));
+        log_event(registry, entity);
         save(registry);
-    }
-
-    void reset_cache(entt::registry& registry)
-    {
-        registry.set<UpdateCache>(UpdateCache
-                { .name = ""
-                , .entity = entt::null
-                , .source = Component::Demo::Source::Zero()
-                , .destination = Component::Demo::Destination::Zero()
-                , .time = Component::Time{0}
-                });
-    }
-
-    void cache_update(const char * name, entt::registry& registry, entt::entity entity)
-    {
-        // save the name, time, entity, source, and destination in last updated
-        auto& cache = registry.ctx<UpdateCache>();
-        cache.name = name;
-        cache.entity = entity;
-        cache.source = registry.get<Component::Demo::Source>(entity);
-        cache.destination = registry.get<Component::Demo::Destination>(entity);
-        cache.time = get_time(registry);
-    }
-
-    void flush_update(entt::registry& registry)
-    {
-        auto& cache = registry.ctx<UpdateCache>();
-        if (cache.entity == entt::null) return; // nothing to flush
-        log_event(cache.name, cache.entity, cache.source, cache.destination, cache.time);
-        reset_cache(registry);
-        save(registry);
-    }
-
-    void update(const char * name, entt::registry& registry, entt::entity entity)
-    {
-        if (not registry.all_of<Component::Demo>(entity)) return;
-        auto& cache = registry.ctx<UpdateCache>();
-        if (cache.entity != entt::null && cache.entity != entity) flush_update(registry);
-        cache_update(name, registry, entity);
     }
 
     void load(entt::registry& registry)
     {
-        registry.on_construct<Component::Demo>().disconnect<&log_atomic_event>(insert_event);
-        registry.on_destroy<Component::Demo>().disconnect<&log_atomic_event>(delete_event);
+        for (auto entity : registry.view<Component::Demo>())
+            System::delete_demo(registry, entity);
 
         auto savefile = registry.ctx<Component::SaveFile>();
         auto in = std::basic_ifstream<char>(savefile.filename);
@@ -162,34 +95,18 @@ namespace
 
             System::insert_demo(registry, source, destination);
         }
-
-        registry.on_construct<Component::Demo>().connect<&log_atomic_event>(insert_event);
-        registry.on_destroy<Component::Demo>().connect<&log_atomic_event>(delete_event);
     }
 }
 
 namespace System
 {
-    void SavingLogging::prepare_registry(entt::registry& registry)
+    void SavingLogging::setup_reactive_systems(entt::registry& registry)
     {
-        reset_cache(registry);
-        load(registry);
-        registry.on_update<Component::Demo::Source>().connect<&update>(source_update_event);
-        registry.on_update<Component::Demo::Destination>().connect<&update>(destination_update_event);
-        // reactive systems for this system are exceptionally connected here so
-        // that demos and updates caused during setup are not logged
+        registry.on_update<Component::Update>().connect<&on_update>();
     }
 
-    void SavingLogging::run(entt::registry& registry)
+    void SavingLogging::prepare_registry(entt::registry& registry)
     {
-        const auto& cache = registry.ctx<UpdateCache>();
-        if (cache.entity != entt::null)
-        {
-            auto now = get_time(registry);
-            if (now.point - cache.time.point > 500)
-            {
-                flush_update(registry);
-            }
-        }
+        load(registry);
     }
 }

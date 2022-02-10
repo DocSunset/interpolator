@@ -19,4 +19,5 @@ target_sources(interpolators-objects PRIVATE
     libmapper_editor.h libmapper_editor.cpp
     common/editor.h common/editor.cpp
     saving_logging.h saving_logging.cpp
+    update_tracker.h update_tracker.cpp
     )
