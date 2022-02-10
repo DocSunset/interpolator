@@ -160,9 +160,9 @@ namespace System
             SDL_Event ev;
             dev.poll();
             auto got_event = SDL_WaitEventTimeout(&ev, 10);
+            registry.set<Component::Time>(SDL_GetTicks64());
             if (got_event) do
             {
-                registry.set<Component::Time>(SDL_GetTicks64());
                 auto win = registry.get<Component::Window>(window_entity);
             switch (ev.type)
             {
