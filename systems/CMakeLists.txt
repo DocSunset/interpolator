@@ -20,4 +20,6 @@ target_sources(interpolators-objects PRIVATE
     common/editor.h common/editor.cpp
     saving_logging.h saving_logging.cpp
     update_tracker.h update_tracker.cpp
+    pca.h pca.cpp
+    private/pca.h private/pca.cpp
     )

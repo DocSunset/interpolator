@@ -1,4 +1,5 @@
 #include "update_tracker.h"
+#include <cassert>
 #include "components/update.h"
 
 namespace
@@ -20,9 +21,11 @@ namespace
         registry.replace<Component::Update>(update_entity, update);
     }
 
-    void log_atomic_event(Component::Update::Type type, entt::registry& registry, entt::entity entity)
+    template<Component::Update::Type type>
+    void log_atomic_event(entt::registry& registry, entt::entity entity)
     {
         if (not registry.all_of<Component::Demo>(entity)) return;
+        static_assert(type == Component::Update::Type::Insert || type == Component::Update::Type::Delete);
         const auto& source = registry.get<Component::Demo::Source>(entity);
         const auto& destination = registry.get<Component::Demo::Destination>(entity);
         log_event(registry, Component::Update{type
@@ -62,7 +65,8 @@ namespace
         reset_cache(registry);
     }
 
-    void update(Component::Update::Type type, entt::registry& registry, entt::entity entity)
+    template<Component::Update::Type type>
+    void update(entt::registry& registry, entt::entity entity)
     {
         if (not registry.all_of<Component::Demo>(entity)) return;
         auto& cache = registry.ctx<Component::Update>();
@@ -75,18 +79,23 @@ namespace System
 {
     void UpdateTracker::prepare_registry(entt::registry& registry)
     {
-        // reactive systems for this system are exceptionally connected here so
-        // that demos and updates caused during setup are not logged
+    }
+
+    void UpdateTracker::setup_reactive_systems(entt::registry& registry)
+    {
         reset_cache(registry);
         registry.set<Updater>(registry.create());
         registry.emplace<Component::Update>(registry.ctx<Updater>().entity
                 , registry.ctx<Component::Update>()
                 );
-
-        registry.on_construct<Component::Demo>().connect<&log_atomic_event>(Component::Update::Type::Insert);
-        registry.on_destroy<Component::Demo>().connect<&log_atomic_event>(Component::Update::Type::Delete);
-        registry.on_update<Component::Demo::Source>().connect<&update>(Component::Update::Type::Source);
-        registry.on_update<Component::Demo::Destination>().connect<&update>(Component::Update::Type::Destination);
+        registry.on_construct<Component::Demo>()
+            .connect<&log_atomic_event<Component::Update::Type::Insert>>();
+        registry.on_destroy<Component::Demo>()
+            .connect<&log_atomic_event<Component::Update::Type::Delete>>();
+        registry.on_update<Component::Demo::Source>()
+            .connect<&update<Component::Update::Type::Source>>();
+        registry.on_update<Component::Demo::Destination>()
+            .connect<&update<Component::Update::Type::Destination>>();
     }
 
     void UpdateTracker::run(entt::registry& registry)

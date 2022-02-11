@@ -67,6 +67,8 @@ namespace
 
     void load(entt::registry& registry)
     {
+        registry.on_update<Component::Update>().disconnect<&on_update>();
+
         for (auto entity : registry.view<Component::Demo>())
             System::delete_demo(registry, entity);
 
@@ -95,6 +97,8 @@ namespace
 
             System::insert_demo(registry, source, destination);
         }
+
+        registry.on_update<Component::Update>().connect<&on_update>();
     }
 }
 
