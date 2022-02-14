@@ -65,6 +65,10 @@ endif()
     endif()
     target_include_directories(interpolators-tests PRIVATE ${CMAKE_CURRENT_LIST_DIR})
 
+    find_package(Eigen3 REQUIRED NO_MODULE)
+    target_link_libraries(interpolators-tests PRIVATE Eigen3::Eigen)
+
+
 add_subdirectory(systems)
 add_subdirectory(components)
 add_subdirectory(dataset)

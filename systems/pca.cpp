@@ -10,8 +10,8 @@ namespace System
         using namespace Private::PCA;
         registry.set<SourceDataset>();
         registry.set<DestinationDataset>();
-        registry.set<Component::SourcePCA>();
-        registry.set<Component::DestinationPCA>();
+        reset(registry.set<Component::SourcePCA>());
+        reset(registry.set<Component::DestinationPCA>());
         registry.on_update<Component::Update>().connect<&regenerate_pca>();
     }
 }

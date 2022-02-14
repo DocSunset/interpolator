@@ -1,5 +1,7 @@
 #include "vis.h"
+#include <iostream>
 #include "components/window.h"
+#include "components/pca.h"
 
 namespace System
 {
@@ -14,10 +16,13 @@ namespace System
             )
     {
         const auto& window = registry.ctx<Component::Window>();
-
-        return { window.w * (source[0] - 0.5f)
-               , window.h * (source[1] - 0.5f)
-               };
+        const auto& pca = registry.ctx<Component::SourcePCA>();
+        Eigen::Vector2f pos = pca.projection * (source - pca.mean);
+        Component::Position position = 
+                { window.w * (pos.x() - 0.5f)
+                , window.h * (pos.y() - 0.5f)
+                };
+        return position;
     }
 
     Component::Demo::Source position_to_source(const entt::registry& registry
@@ -25,9 +30,12 @@ namespace System
             )
     {
         const auto& window = registry.ctx<Component::Window>();
-        return { 0.5f + (position.x / window.w)
-               , 0.5f + (position.y / window.h)
-               };
+        const auto& pca = registry.ctx<Component::SourcePCA>();
+        Eigen::Vector2f src2;
+        src2 <<  0.5f + (position.x / window.w)
+               , 0.5f + (position.y / window.h);
+        Component::Demo::Source source = (pca.inverse_projection * src2) + pca.mean;
+        return source;
     }
 
     Component::Color destination_to_color(const entt::registry& registry, entt::entity entity)

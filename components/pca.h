@@ -5,11 +5,11 @@ namespace Component
 {
     template<std::size_t _original, std::size_t _reduced> struct _PCA
     {
-        static constexpr std::size_t Original = _original;
-        static constexpr std::size_t Reduced = _reduced;
-        Eigen::MatrixXf mean;
-        Eigen::MatrixXf projection;
-        Eigen::MatrixXf inverse_projection;
+        static constexpr std::size_t Original() { return _original; }
+        static constexpr std::size_t Reduced() { return _reduced; }
+        Eigen::Matrix<float, _original, 1> mean;
+        Eigen::Matrix<float, _reduced, _original> projection;
+        Eigen::Matrix<float, _original, _reduced> inverse_projection;
     };
 
     struct SourcePCA : public _PCA<Demo::num_sources, 2> {};

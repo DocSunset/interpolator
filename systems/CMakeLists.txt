@@ -23,3 +23,7 @@ target_sources(interpolators-objects PRIVATE
     pca.h pca.cpp
     private/pca.h private/pca.cpp
     )
+
+target_sources(interpolators-tests PRIVATE
+    private/pca.test.cpp
+    )

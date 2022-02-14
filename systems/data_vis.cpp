@@ -4,6 +4,7 @@
 #include "components/position.h"
 #include "components/color.h"
 #include "components/window.h"
+#include "components/pca.h"
 #include "common/vis.h"
 
 namespace
@@ -20,6 +21,18 @@ namespace
         registry.emplace_or_replace<Component::Color>(entity
                 , System::destination_to_color(registry, entity)
                 );
+    }
+
+    void update_sources(entt::registry& registry, entt::entity _)
+    {
+        for (auto entity : registry.view<Component::Demo>())
+            update_source(registry, entity);
+    }
+
+    void update_destinations(entt::registry& registry, entt::entity _)
+    {
+        for (auto entity : registry.view<Component::Demo>())
+            update_destination(registry, entity);
     }
 
     void on_construct(entt::registry& registry, entt::entity entity)
@@ -40,8 +53,8 @@ namespace System
     void DataVis::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_construct<Component::Vis>().connect<&on_construct>();
-        registry.on_update<Component::Demo::Source>().connect<&update_source>();
-        registry.on_update<Component::Demo::Destination>().connect<&update_destination>();
+        registry.on_update<Component::Demo::Source>().connect<&update_sources>();
+        registry.on_update<Component::Demo::Destination>().connect<&update_destinations>();
         updated_positions.connect(registry, entt::collector
                 .update<Component::Position>().where<Component::Vis>()
                 );

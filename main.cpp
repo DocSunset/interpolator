@@ -42,12 +42,12 @@ int main(int argc, char ** argv)
         , System::Knob
         , System::Interpolator
         , System::Cursor
-        , System::DataVis
         , System::Editor
-        , System::Libmapper // syncs destination signals with registry
-        , System::SavingLogging
         , System::UpdateTracker
+        , System::SavingLogging
         , System::PCA
+        , System::DataVis
+        , System::Libmapper // syncs destination signals with registry
         >(argc, argv);
 
 #ifdef __EMSCRIPTEN__
