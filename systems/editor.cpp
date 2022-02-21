@@ -118,12 +118,12 @@ namespace System
 
     void Editor::prepare_to_paint(entt::registry& registry)
     {
-        constexpr auto hide = [](auto& color) {color.a = 0.2;};
-        constexpr auto show = [](auto& color) {color.a = 1;};
+        constexpr auto hide = [](auto& color) {color[3] = 0.2;};
+        constexpr auto show = [](auto& color) {color[3] = 1;};
         auto interact_cursor = registry.ctx<InteractCursor>().entity;
         auto edit_cursor = registry.ctx<EditCursor>().entity;
         auto source = registry.ctx<Component::Demo::Source>();
-        auto destination = query(registry, source);
+        auto destination = source_to_destination(registry, source);
         registry.replace<Component::Demo::Source>(interact_cursor, source);
         registry.replace<Component::Demo::Destination>(interact_cursor, destination);
         if (destination != registry.ctx<Component::Demo::Destination>())

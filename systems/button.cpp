@@ -71,8 +71,8 @@ namespace System
             auto color = registry.get_or_emplace<Color>(e, Color{1,1,1,1});
             auto radius = view.get<Component::Button>(e).radius;
             registry.emplace_or_replace<Circle>(e, Circle
-                    { .color = {color.r, color.g, color.b, color.a}
-                    , .border = {color.r, color.g, color.b, color.a}
+                    { .color = {color[0], color[1], color[2], color[3]}
+                    , .border = {color[0], color[1], color[2], color[3]}
                     , .position = {position.x, position.y}
                     , .radius = radius
                     , .border_thickness = 0

@@ -22,8 +22,8 @@ namespace
 
         registry.emplace_or_replace<Component::Circle>(entity,
                     Component::Circle
-                    { {fill_color.r, fill_color.g, fill_color.b, fill_color.a}
-                    , {ring_color.r, ring_color.g, ring_color.b, ring_color.a}
+                    { {fill_color[0], fill_color[1], fill_color[2], fill_color[3]}
+                    , {ring_color[0], ring_color[1], ring_color[2], ring_color[3]}
                     , {position.x, position.y}
                     , radius
                     , 5

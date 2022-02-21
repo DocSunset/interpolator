@@ -147,8 +147,8 @@ namespace
         {
             registry.emplace_or_replace<Component::Circle>(entity,
                     Component::Circle
-                    { {color.r, color.g, color.b, color.a}
-                    , {border.r, border.g, border.b, border.a}
+                    { {color[0], color[1], color[2], color[3]}
+                    , {border[0], border[1], border[2], border[3]}
                     , {position.x, position.y}
                     , radius
                     , border_thick

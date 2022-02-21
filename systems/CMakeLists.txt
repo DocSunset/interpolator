@@ -10,7 +10,7 @@ target_sources(interpolators-objects PRIVATE
     text_painter.h text_painter.cpp
     cursor.h cursor.cpp
     common/draggable.h common/draggable.cpp
-    common/interpolator.h common/interpolator.cpp
+    common/interpolator.h common/interpolator_source_to_destination.cpp
     button.h button.cpp
     libmapper.h libmapper.cpp
     data_vis.h data_vis.cpp
@@ -20,4 +20,7 @@ target_sources(interpolators-objects PRIVATE
     common/editor.h common/editor.cpp
     saving_logging.h saving_logging.cpp
     update_tracker.h update_tracker.cpp
+    common/interpolator_position_to_source.cpp
+    common/interpolator_source_to_position.cpp
+    common/interpolator_destination_to_color.cpp
     )

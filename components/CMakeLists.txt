@@ -3,7 +3,7 @@ target_sources(interpolators-objects PRIVATE
     demo.h
     window.h
     position.h position.cpp
-    color.h color.cpp
+    color.h
     draggable.h
     mouse_button.h
     modifier_keys.h
