@@ -34,7 +34,7 @@ namespace
     void log_event(const entt::registry& registry, entt::entity entity)
     {
         const auto& update = registry.get<Component::Update>(entity);
-        std::cout << "{time=" << update.time.point 
+        std::cout << "{time=" << update.time.point << ","
             << "event=\"" << Component::update_name(update.type) << "\","
             << "id=" << (uint64_t)update.entity << ",";
 
