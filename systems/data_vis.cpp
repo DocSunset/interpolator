@@ -28,6 +28,11 @@ namespace
         update_source(registry, entity);
         update_destination(registry, entity);
     }
+
+    void on_window(entt::registry& registry, entt::entity entity)
+    {
+        for (auto entity : registry.view<Component::Demo>()) update_source(registry, entity);
+    }
 }
 
 namespace System
@@ -40,11 +45,11 @@ namespace System
         updated_positions.connect(registry, entt::collector
                 .update<Component::Position>().where<Component::Vis>()
                 );
+        registry.on_update<Component::Window>().connect<&on_window>();
     }
 
     void DataVis::run(entt::registry& registry)
     {
-        auto window = registry.ctx<Component::Window>();
         registry.on_update<Component::Demo::Source>().disconnect<&update_source>();
         updated_positions.each([&](auto entity)
         {
