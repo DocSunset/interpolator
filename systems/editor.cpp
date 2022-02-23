@@ -9,6 +9,7 @@
 #include "components/vis.h"
 #include "components/color.h"
 #include "components/position.h"
+#include "components/manual_vis.h"
 
 #include "common/vis.h"
 #include "common/interpolator.h"
@@ -19,6 +20,7 @@ namespace
 {
     struct EditCursor{entt::entity entity;};
     struct InteractCursor{entt::entity entity;};
+    struct ManualVisFlag{entt::entity entity;};
     struct NewDemoButton {};
     struct DeleteDemoButton {};
 
@@ -76,6 +78,10 @@ namespace System
 
     void Editor::prepare_registry(entt::registry& registry)
     {
+        auto manual_vis_entity = registry.create();
+        registry.emplace<ManualVisFlag>(manual_vis_entity, manual_vis_entity);
+        registry.emplace<Component::ManualVis>(manual_vis_entity, registry.set<Component::ManualVis>(true));
+
         auto edit_cursor_entity = registry.create();
         registry.emplace<EditCursor>(edit_cursor_entity, edit_cursor_entity);
         registry.emplace<Component::Cursor>(edit_cursor_entity, cursor_radius);
@@ -113,7 +119,11 @@ namespace System
 
     void Editor::run(entt::registry& registry)
     {
-        drag_update_position(registry, dragged);
+        if (registry.ctx<Component::ManualVis>()) drag_update_position(registry, dragged);
+        else dragged.each([&](const auto entity)
+        {
+            registry.get<Component::Draggable>(entity).delta = {0,0};
+        });
     }
 
     void Editor::prepare_to_paint(entt::registry& registry)

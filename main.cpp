@@ -14,7 +14,7 @@
 #include "systems/cursor.h"
 #include "systems/button.h"
 #include "systems/libmapper.h"
-//#include "systems/data_vis.h"
+#include "systems/data_vis.h"
 #include "systems/editor.h"
 #include "systems/libmapper_editor.h"
 #include "systems/saving_logging.h"
@@ -41,7 +41,7 @@ int main(int argc, char ** argv)
         , System::Knob
         , System::Interpolator
         , System::Cursor
-        //, System::DataVis
+        , System::DataVis
         , System::Editor
         , System::Libmapper // syncs destination signals with registry
         , System::SavingLogging

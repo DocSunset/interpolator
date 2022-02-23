@@ -30,6 +30,9 @@ namespace
                     });
     }
 
+    // before a demonstration is constructed, the user may first emplace source,
+    // destination, position, and color attributes. If these are not already attached
+    // to the entity when the demonstration is constructed, defaults will be added.
     void prepare_demo(entt::registry& registry, entt::entity entity)
     {
         if (not registry.all_of<Component::Demo::Source>(entity))
@@ -40,6 +43,10 @@ namespace
             registry.emplace<Component::Demo::Destination>(entity
                 , Component::Demo::Destination::Random().array() * 0.5f + 0.5f
                 );
+        if (not registry.all_of<Component::Position>(entity))
+            registry.emplace<Component::Position>(entity, 0.0f, 0.0f);
+        if (not registry.all_of<Component::Color>(entity))
+            registry.emplace<Component::Color>(entity, 1.0f, 1.0f, 1.0f, 1.0f);
         registry.emplace<Component::Draggable>(entity, demo_radius);
         registry.emplace<Component::Vis>(entity);
         update_circle(registry, entity);
