@@ -142,6 +142,11 @@ namespace System
         auto destination = source_to_destination(registry, source);
         registry.replace<Component::Demo::Source>(interact_cursor, source);
         registry.replace<Component::Demo::Destination>(interact_cursor, destination);
+        if (registry.ctx<Component::ManualVis>())
+        {
+            registry.replace<Component::Position>(interact_cursor, source_to_position(registry, source));
+            registry.replace<Component::Color>(interact_cursor, destination_to_color(registry, destination));
+        }
         if (destination != registry.ctx<Component::Demo::Destination>())
         {
             registry.patch<Component::Color>(interact_cursor, hide);

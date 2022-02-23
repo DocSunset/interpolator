@@ -3,16 +3,13 @@
 #include <fstream>
 #include <string>
 #include <sstream>
+#include "components/manual_vis.h"
 #include "components/update.h"
 #include "components/save_file.h"
 #include "common/editor.h"
 
 namespace
 {
-    // is it necessary to record *how* edits are made, i.e. with the mouse or
-    // via libmapper signals? Would it be enough to ask participants after
-    // about their use and preference for these modalities?
-
     void print_demo(const Component::Demo::Source& source
             , const Component::Demo::Destination& destination
             , std::ostream& out = std::cout
@@ -29,6 +26,15 @@ namespace
         {
             out << destination[i] << " ";
         }
+    }
+
+    void print_manual_vis(const Component::Position& position
+            , const Component::Color& color
+            , std::ostream& out = std::cout
+            )
+    {
+        out << "p " << position.x << " " << position.y 
+            << " c " << color[0] << " " << color[1] << " " << color[2] << " ";
     }
 
     void log_event(const entt::registry& registry, entt::entity entity)
@@ -55,6 +61,10 @@ namespace
             const auto& source = registry.get<Component::Demo::Source>(entity);
             const auto& destination = registry.get<Component::Demo::Destination>(entity);
             print_demo(source, destination, out);
+            auto maybe_position = registry.try_get<Component::ManualPosition>(entity);
+            auto maybe_color = registry.try_get<Component::ManualColor>(entity);
+            if (maybe_position != nullptr && maybe_color != nullptr)
+                print_manual_vis(maybe_position->value, maybe_color->value, out);
             out << "\n";
         }
     }
@@ -74,9 +84,11 @@ namespace
         auto in = std::basic_ifstream<char>(savefile.filename);
         auto source = Component::Demo::Source();
         auto destination = Component::Demo::Destination();
+        auto position = Component::Position();
+        auto color = Component::Color();
         std::string line;
 
-        // this will probably need to be fixed when source/dest dimensions start changing
+        // this will probably need to be fixed when source/dest dimensions start changing at runtime
         while (std::getline(in, line))
         {
             auto s = std::istringstream(line);
@@ -93,7 +105,20 @@ namespace
                 s >> destination[i]; // out << destination[i] << " ";
             }
 
-            System::insert_demo(registry, source, destination);
+            s.get(_); s.get(_); // "p "
+            s >> position.x;
+            s >> position.y;
+
+            s.get(_); s.get(_);
+            s >> color[0];
+            s >> color[1];
+            s >> color[2];
+
+            auto demo = System::insert_demo(registry, source, destination);
+            registry.emplace_or_replace<Component::Position>(demo, position);
+            registry.emplace_or_replace<Component::Color>(demo, color);
+            registry.emplace_or_replace<Component::ManualPosition>(demo, position);
+            registry.emplace_or_replace<Component::ManualColor>(demo, color);
         }
     }
 }

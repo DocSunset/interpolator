@@ -4,6 +4,7 @@
 #include "components/draggable.h"
 #include "components/paint_flag.h"
 #include "common/editor.h"
+#include "common/interpolator.h"
 
 namespace
 {
@@ -88,7 +89,10 @@ namespace
     {
         const auto& source = registry.ctx<Component::Demo::Source>();
         const auto& destination = registry.ctx<Component::Demo::Destination>();
-        System::insert_demo(registry, source, destination);
+        System::insert_demo(registry, source, destination
+                , System::source_to_position(registry, source)
+                , System::destination_to_color(registry, destination)
+                );
     }
 }
 
