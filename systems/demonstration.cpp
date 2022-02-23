@@ -9,8 +9,6 @@
 
 namespace
 {
-    constexpr float demo_radius = 25;
-
     void update_circle(entt::registry& registry, entt::entity entity)
     {
         auto mapper_hovered = registry.all_of<Component::LibmapperHovered>(entity);
@@ -18,14 +16,13 @@ namespace
                                  : System::hover_select_color(registry, entity);
         auto fill_color = registry.get<Component::Color>(entity);
         auto position = registry.get<Component::Position>(entity);
-        auto radius = registry.get<Component::Draggable>(entity).radius;
 
         registry.emplace_or_replace<Component::Circle>(entity,
                     Component::Circle
                     { {fill_color[0], fill_color[1], fill_color[2], fill_color[3]}
                     , {ring_color[0], ring_color[1], ring_color[2], ring_color[3]}
                     , {position.x, position.y}
-                    , radius
+                    , Component::Demo::radius
                     , 5
                     });
     }
@@ -35,19 +32,7 @@ namespace
     // to the entity when the demonstration is constructed, defaults will be added.
     void prepare_demo(entt::registry& registry, entt::entity entity)
     {
-        if (not registry.all_of<Component::Demo::Source>(entity))
-            registry.emplace<Component::Demo::Source>(entity
-                , Component::Demo::Source::Random().array() * 0.5f + 0.5f
-                );
-        if (not registry.all_of<Component::Demo::Destination>(entity))
-            registry.emplace<Component::Demo::Destination>(entity
-                , Component::Demo::Destination::Random().array() * 0.5f + 0.5f
-                );
-        if (not registry.all_of<Component::Position>(entity))
-            registry.emplace<Component::Position>(entity, 0.0f, 0.0f);
-        if (not registry.all_of<Component::Color>(entity))
-            registry.emplace<Component::Color>(entity, 1.0f, 1.0f, 1.0f, 1.0f);
-        registry.emplace<Component::Draggable>(entity, demo_radius);
+        registry.emplace<Component::Draggable>(entity, Component::Demo::radius);
         registry.emplace<Component::Vis>(entity);
         update_circle(registry, entity);
     }

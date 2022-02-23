@@ -55,7 +55,13 @@ namespace
             const auto& position = registry.get<Component::Position>(cursor_entity);
             const auto source = System::position_to_source(registry, position);
             const auto destination = registry.ctx<Component::Demo::Destination>();
-            System::insert_demo(registry, source, destination);
+            if (registry.ctx<Component::ManualVis>())
+            {
+                auto color = System::destination_to_color(registry, destination);
+                System::insert_demo(registry, source, destination, position, color);
+            }
+            else
+                System::insert_demo(registry, source, destination);
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {

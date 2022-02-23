@@ -199,6 +199,7 @@ namespace
     void set_group(entt::registry& registry, entt::entity entity)
     {
         auto& selectable = registry.get<Component::Selectable>(entity);
+        if (selectable.group != Component::Selectable::Group::All) return;
         if (registry.all_of<Component::Demo>(entity)) selectable.group = Component::Selectable::Group::Demo;
         else if (registry.all_of<Component::Knob>(entity)) selectable.group = Component::Selectable::Group::Knob;
         else if (registry.all_of<Component::Cursor>(entity)) selectable.group = Component::Selectable::Group::Cursor;
