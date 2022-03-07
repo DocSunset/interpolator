@@ -9,16 +9,6 @@
 
 namespace
 {
-    struct BackupPosition
-    {
-        Component::Position value;
-    };
-
-    struct BackupColor
-    {
-        Component::Color value;
-    };
-
     void update_source(entt::registry& registry, entt::entity entity)
     {
         if (registry.ctx<Component::ManualVis>()) return;
@@ -69,28 +59,28 @@ namespace
     {
         if (not registry.all_of<Component::Demo>(entity)) return;
         auto p = registry.get<Component::Position>(entity);
-        registry.emplace_or_replace<BackupPosition>(entity, p);
+        registry.emplace_or_replace<Component::ManualPosition>(entity, p);
     }
 
     void track_color(entt::registry& registry, entt::entity entity)
     {
         if (not registry.all_of<Component::Demo>(entity)) return;
         auto c = registry.get<Component::Color>(entity);
-        registry.emplace_or_replace<BackupColor>(entity, c);
+        registry.emplace_or_replace<Component::ManualColor>(entity, c);
     }
 
     void restore_backups(entt::registry& registry)
     {
         for (auto entity : registry.view<Component::Demo>())
         {
-            if (registry.all_of<BackupPosition>(entity))
+            if (registry.all_of<Component::ManualPosition>(entity))
             {
-                auto p = registry.get<BackupPosition>(entity).value;
+                auto p = registry.get<Component::ManualPosition>(entity).value;
                 registry.replace<Component::Position>(entity, p);
             }
-            if (registry.all_of<BackupColor>(entity))
+            if (registry.all_of<Component::ManualColor>(entity))
             {
-                auto c = registry.get<BackupColor>(entity).value;
+                auto c = registry.get<Component::ManualColor>(entity).value;
                 registry.replace<Component::Color>(entity, c);
             }
         }
