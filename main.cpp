@@ -20,7 +20,7 @@
 #include "systems/saving_logging.h"
 #include "systems/update_tracker.h"
 #include "systems/demo_dest_knobs.h"
-#include "systems/demo_dest_knobs.h"
+#include "systems/manual_color_knobs.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -42,7 +42,7 @@ int main(int argc, char ** argv)
         , System::Demonstration
         , System::DemoDestKnobs // has to run before knob so drag applies after sync
         , System::Knob
-       // , System::ManualColorKnobs
+        , System::ManualColorKnobs
         , System::Interpolator
         , System::Cursor
         , System::DataVis

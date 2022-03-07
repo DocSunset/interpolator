@@ -35,7 +35,7 @@ namespace
     void sync_knob_values(entt::registry& registry)
     {
         registry.on_update<Component::Knob>().disconnect<&on_update>();
-        auto knobs = registry.view<Component::Knob>();
+        auto knobs = registry.view<Component::Knob, DemoKnob>();
         auto selected_demos = registry.view<Component::Demo, Component::Selected>();
         Component::Color color{0.0f,0.0f,0.0f,0.0f};
 
