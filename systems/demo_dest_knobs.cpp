@@ -9,8 +9,11 @@
 
 namespace
 {
+    struct DemoKnob {};
+
     void on_update(entt::registry& registry, entt::entity entity)
     {
+        if (not registry.all_of<DemoKnob>(entity)) return;
         const auto& knob = registry.get<Component::Knob>(entity);
         std::size_t num_selected_demos = 0;
         auto view = registry.view<Component::Selected, Component::Demo>();
@@ -86,6 +89,7 @@ namespace System
         for (int i = 0; i < Component::Demo::num_destinations; ++i)
         {
             auto knob = registry.create();
+            registry.emplace<DemoKnob>(knob);
             registry.emplace<Component::Knob>(knob, i, 0.0f, 75.0f);
         }
     }
