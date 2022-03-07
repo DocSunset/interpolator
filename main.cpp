@@ -40,9 +40,9 @@ int main(int argc, char ** argv)
         , System::Draggable
         , System::LibmapperEditor
         , System::Demonstration
-        , System::DemoDestKnobs // has to run before knob so drag applies after sync
-        , System::Knob
+        , System::DemoDestKnobs // knobs have to run before knob so dragging applies after sync
         , System::ManualColorKnobs
+        , System::Knob
         , System::Interpolator
         , System::Cursor
         , System::DataVis

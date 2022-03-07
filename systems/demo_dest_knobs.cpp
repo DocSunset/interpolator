@@ -60,9 +60,10 @@ namespace
             for (auto demo : selected_demos)
             {
                 auto dcolor = registry.get<Component::Color>(demo);
-                p += (1.0 / n_demos) * (registry.get<Component::Demo::Destination>(demo) - p);
+                auto dest = registry.get<Component::Demo::Destination>(demo);
+                p += dest / n_demos;
+                color += dcolor / n_demos;
             }
-            color = System::destination_to_color(registry, p);
             for (auto knob_entity : knobs)
             {
                 n_demos = 0;

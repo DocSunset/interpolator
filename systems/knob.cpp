@@ -58,15 +58,14 @@ namespace
         emp_or_rep(knobview.indicator, 15.0f, indicator_position, fill_color, Component::Color{0,0,0,1}, 3.0f);
     }
 
-    void position_knob(entt::registry& registry, entt::entity entity, const Component::Window& window, int index)
+    void position_knob(entt::registry& registry, entt::entity entity, float right, float& top)
     {
         constexpr float padding = 5;
         auto knob = registry.get<Component::Knob>(entity);
         float radius = padding + knob.radius;
-        float top_left_x = (window.w / 2.0f) - radius;
-        float top_left_y = (window.h / 2.0f) - radius;
+        top = top - radius;
 
-        registry.replace<Component::Position>(entity, top_left_x, top_left_y - (index * radius));
+        registry.replace<Component::Position>(entity, right - radius, top);
         update_knobview(registry, entity);
     }
 
@@ -74,8 +73,10 @@ namespace
     {
         const auto& window = registry.ctx<Component::Window>();
         auto knobs = registry.view<Component::Knob>();
+        float right = window.w / 2.0f;
+        float top = window.h / 2.0f;
         int i = 0;
-        for (auto knob : knobs) position_knob(registry, knob, window, i++);
+        for (auto knob : knobs) position_knob(registry, knob, right, top);
     }
 
 
@@ -92,9 +93,7 @@ namespace
         registry.emplace<Component::Position>(entity);
         registry.emplace<Component::Color>(entity);
         registry.emplace<Component::Draggable>(entity, knob.radius);
-
         registry.emplace<KnobView>(entity, registry.create(), registry.create());
-        update_knobview(registry, entity);
     }
 
     void drag_knobs(entt::registry& registry, entt::observer& dragged)

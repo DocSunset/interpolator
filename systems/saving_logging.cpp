@@ -113,12 +113,9 @@ namespace
             s >> color[0];
             s >> color[1];
             s >> color[2];
+            color[3] = 1;
 
-            auto demo = System::insert_demo(registry, source, destination);
-            registry.emplace_or_replace<Component::Position>(demo, position);
-            registry.emplace_or_replace<Component::Color>(demo, color);
-            registry.emplace_or_replace<Component::ManualPosition>(demo, position);
-            registry.emplace_or_replace<Component::ManualColor>(demo, color);
+            auto demo = System::insert_demo(registry, source, destination, position, color);
         }
     }
 }
