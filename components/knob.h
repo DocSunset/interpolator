@@ -7,5 +7,6 @@ namespace Component
         int index;
         float value;
         float radius;
+        float delta;
     };
 }

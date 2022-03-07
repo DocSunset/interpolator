@@ -23,4 +23,5 @@ target_sources(interpolators-objects PRIVATE
     common/interpolator_position_to_source.cpp
     common/interpolator_source_to_position.cpp
     common/interpolator_destination_to_color.cpp
+    demo_dest_knobs.h demo_dest_knobs.cpp
     )
