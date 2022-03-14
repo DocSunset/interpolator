@@ -35,9 +35,19 @@ namespace
         pca.mean = dataset.colwise().mean();
         Eigen::JacobiSVD<Eigen::Matrix<double, Eigen::Dynamic, PCA::Original()>>
             svd(dataset.rowwise() - dataset.colwise().mean(), Eigen::ComputeFullV);
-        auto matrixV = svd.matrixV();
-        pca.inverse_projection = matrixV.leftCols(PCA::Reduced());
-        pca.projection = pca.inverse_projection.transpose();
+        auto V = svd.matrixV().leftCols(PCA::Reduced());
+        Eigen::VectorXd S = svd.singularValues();
+        S = S(Eigen::seqN(0,PCA::Reduced()));
+        S = S.array().sqrt();
+        S = S * 0.5;
+
+        std::cout << "Dataset dims: " << dataset.rows() << " " << dataset.cols() << "\n";
+        std::cout << "V:\n" << V << "\n\n";
+        std::cout << "S:\n" << S << "\n\n";
+
+        pca.projection = S.asDiagonal() * V.transpose();
+        S = S.array().inverse();
+        pca.inverse_projection = V * S.asDiagonal();
 
         std::cout << "Projection:\n" << pca.projection << "\n\n";
     }
