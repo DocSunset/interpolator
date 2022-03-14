@@ -2,6 +2,8 @@
 #include <entt/entt.hpp>
 #include "time.h"
 #include "demo.h"
+#include "position.h"
+#include "color.h"
 
 namespace Component
 {
@@ -13,11 +15,15 @@ namespace Component
             Delete,
             Source,
             Destination,
+            Position,
+            Color,
             None,
         } type;
         entt::entity entity;
         Component::Demo::Source source;
         Component::Demo::Destination destination;
+        Component::Position position;
+        Component::Color color;
         Component::Time time;
     };
 

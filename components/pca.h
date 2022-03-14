@@ -7,9 +7,9 @@ namespace Component
     {
         static constexpr std::size_t Original() { return _original; }
         static constexpr std::size_t Reduced() { return _reduced; }
-        Eigen::Matrix<float, _original, 1> mean;
-        Eigen::Matrix<float, _reduced, _original> projection;
-        Eigen::Matrix<float, _original, _reduced> inverse_projection;
+        Eigen::Matrix<double, _original, 1> mean;
+        Eigen::Matrix<double, _reduced, _original> projection;
+        Eigen::Matrix<double, _original, _reduced> inverse_projection;
     };
 
     struct SourcePCA : public _PCA<Demo::num_sources, 2> {};

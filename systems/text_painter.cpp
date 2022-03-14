@@ -201,7 +201,7 @@ namespace System
                 }
                 glyph[i] = Glyph
                         { field_range_pixels
-                        , { text.color.r, text.color.g, text.color.b, text.color.a }
+                        , { text.color[0], text.color[1], text.color[2], text.color[3] }
                         , { (left   + artery_glyph.planeBounds.l * text.font_size) / (window.w / 2.0f)
                           , (bottom + artery_glyph.planeBounds.b * text.font_size) / (window.h / 2.0f)
                           , (left   + artery_glyph.planeBounds.r * text.font_size) / (window.w / 2.0f)

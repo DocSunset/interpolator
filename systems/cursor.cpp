@@ -36,8 +36,8 @@ namespace
 
         Line line_h, line_v;
         line_h = line_v = Line
-            { .color = {color.r, color.g, color.b, color.a}
-            , .border = {color.r, color.g, color.b, color.a}
+            { .color = {color[0], color[1], color[2], color[3]}
+            , .border = {color[0], color[1], color[2], color[3]}
             , .start_position = {position.x, position.y}
             , .end_position = {position.x, position.y}
             , .line_thickness = 1

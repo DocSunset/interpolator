@@ -17,10 +17,10 @@ namespace System
     {
         const auto& window = registry.ctx<Component::Window>();
         const auto& pca = registry.ctx<Component::SourcePCA>();
-        Eigen::Vector2f pos = pca.projection * (source - pca.mean);
+        Eigen::Vector2d pos = pca.projection * (source - pca.mean);
         Component::Position position = 
-                { window.w * (pos.x() - 0.5f)
-                , window.h * (pos.y() - 0.5f)
+                { window.w * pos.x()
+                , window.h * pos.y()
                 };
         return position;
     }
@@ -31,9 +31,9 @@ namespace System
     {
         const auto& window = registry.ctx<Component::Window>();
         const auto& pca = registry.ctx<Component::SourcePCA>();
-        Eigen::Vector2f src2;
-        src2 <<  0.5f + (position.x / window.w)
-               , 0.5f + (position.y / window.h);
+        Eigen::Vector2d src2;
+        src2 <<  position.x / window.w
+               , position.y / window.h;
         Component::Demo::Source source = (pca.inverse_projection * src2) + pca.mean;
         return source;
     }

@@ -20,6 +20,8 @@
 #include "systems/saving_logging.h"
 #include "systems/update_tracker.h"
 #include "systems/pca.h"
+#include "systems/demo_dest_knobs.h"
+#include "systems/manual_color_knobs.h"
 
 #ifdef __EMSCRIPTEN__
 void loop(void * app)
@@ -39,6 +41,8 @@ int main(int argc, char ** argv)
         , System::Draggable
         , System::LibmapperEditor
         , System::Demonstration
+        , System::DemoDestKnobs // knobs have to run before knob so dragging applies after sync
+        , System::ManualColorKnobs
         , System::Knob
         , System::Interpolator
         , System::Cursor

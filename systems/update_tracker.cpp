@@ -1,6 +1,7 @@
 #include "update_tracker.h"
 #include <cassert>
 #include "components/update.h"
+#include "components/manual_vis.h"
 
 namespace
 {
@@ -28,10 +29,14 @@ namespace
         static_assert(type == Component::Update::Type::Insert || type == Component::Update::Type::Delete);
         const auto& source = registry.get<Component::Demo::Source>(entity);
         const auto& destination = registry.get<Component::Demo::Destination>(entity);
+        const auto& position = registry.get<Component::ManualPosition>(entity).value;
+        const auto& color = registry.get<Component::ManualColor>(entity).value;
         log_event(registry, Component::Update{type
                 , entity
                 , source
                 , destination
+                , position
+                , color
                 , get_time(registry)
                 });
     }
@@ -43,17 +48,22 @@ namespace
                 , .entity = entt::null
                 , .source = Component::Demo::Source::Zero()
                 , .destination = Component::Demo::Destination::Zero()
+                , .position = Component::Position::Zero()
+                , .color = Component::Color::Zero()
                 , .time = Component::Time{0}
                 });
     }
 
-    void cache_update(Component::Update::Type type, entt::registry& registry, entt::entity entity)
+    template<Component::Update::Type type>
+    void cache_update(entt::registry& registry, entt::entity entity)
     {
         auto& cache = registry.ctx<Component::Update>();
         cache.type = type;
         cache.entity = entity;
         cache.source = registry.get<Component::Demo::Source>(entity);
         cache.destination = registry.get<Component::Demo::Destination>(entity);
+        cache.position = registry.get<Component::ManualPosition>(entity).value;
+        cache.color = registry.get<Component::ManualColor>(entity).value;
         cache.time = get_time(registry);
     }
 
@@ -71,16 +81,12 @@ namespace
         if (not registry.all_of<Component::Demo>(entity)) return;
         auto& cache = registry.ctx<Component::Update>();
         if (cache.entity != entt::null && cache.entity != entity) flush_update(registry);
-        cache_update(type, registry, entity);
+        cache_update<type>(registry, entity);
     }
 }
 
 namespace System
 {
-    void UpdateTracker::prepare_registry(entt::registry& registry)
-    {
-    }
-
     void UpdateTracker::setup_reactive_systems(entt::registry& registry)
     {
         reset_cache(registry);
@@ -88,14 +94,12 @@ namespace System
         registry.emplace<Component::Update>(registry.ctx<Updater>().entity
                 , registry.ctx<Component::Update>()
                 );
-        registry.on_construct<Component::Demo>()
-            .connect<&log_atomic_event<Component::Update::Type::Insert>>();
-        registry.on_destroy<Component::Demo>()
-            .connect<&log_atomic_event<Component::Update::Type::Delete>>();
-        registry.on_update<Component::Demo::Source>()
-            .connect<&update<Component::Update::Type::Source>>();
-        registry.on_update<Component::Demo::Destination>()
-            .connect<&update<Component::Update::Type::Destination>>();
+        registry.on_construct<Component::Demo>().connect<&log_atomic_event<Component::Update::Type::Insert>>();
+        registry.on_destroy<Component::Demo>().connect<&log_atomic_event<Component::Update::Type::Delete>>();
+        registry.on_update<Component::Demo::Source>().connect<&update<Component::Update::Type::Source>>();
+        registry.on_update<Component::Demo::Destination>().connect<&update<Component::Update::Type::Destination>>();
+        registry.on_update<Component::ManualPosition>().connect<&update<Component::Update::Type::Position>>();
+        registry.on_update<Component::ManualColor>().connect<&update<Component::Update::Type::Color>>();
     }
 
     void UpdateTracker::run(entt::registry& registry)

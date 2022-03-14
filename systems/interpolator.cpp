@@ -36,7 +36,7 @@ namespace System
         {
             auto source = position_to_source(registry, position);
             auto& destination = registry.ctx<Component::Demo::Destination>();
-            audition(registry, query(registry, source));
+            audition(registry, source_to_destination(registry, source));
         }
 
         void hid_override_query(entt::registry& registry, const Component::Position& position)
@@ -81,7 +81,7 @@ namespace System
             auto& destination = registry.ctx<Component::Demo::Destination>();
             if (source != cache)
             {
-                destination = query(registry, source); 
+                destination = source_to_destination(registry, source); 
                 cache = source;
                 registry.ctx<Component::PaintFlag>().set();
             }

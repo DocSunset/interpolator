@@ -4,14 +4,14 @@
 namespace
 {
     template<typename ViewEachPack>
-    Component::Demo::Source source(ViewEachPack& pack)
+    Component::Demo::Destination source(ViewEachPack& pack)
     {
         auto &&[entity, demo, src, dst] = pack;
         return src;
     }
 
     template<typename ViewEachPack>
-    Component::Demo::Destination destination(ViewEachPack& pack)
+    Component::Color destination(ViewEachPack& pack)
     {
         auto &&[entity, demo, src, dst] = pack;
         return dst;
@@ -32,10 +32,10 @@ namespace
 
 namespace System
 {
-    Component::Demo::Destination query(entt::registry& registry, Component::Demo::Source q)
+    Component::Color destination_to_color(entt::registry& registry, Component::Demo::Destination q)
     {
-        using Src = Component::Demo::Source;
-        using Dst = Component::Demo::Destination;
+        using Src = Component::Demo::Destination;
+        using Dst = Component::Color;
 
         std::size_t i = 0;
         auto demo = registry.view<Component::Demo, Src, Dst>().each();

@@ -30,10 +30,10 @@ namespace
     }
 
     template<typename PCA>
-    void _analyse(PCA& pca, const Eigen::MatrixXf& dataset)
+    void _analyse(PCA& pca, const Eigen::MatrixXd& dataset)
     {
         pca.mean = dataset.colwise().mean();
-        Eigen::JacobiSVD<Eigen::Matrix<float, Eigen::Dynamic, PCA::Original()>>
+        Eigen::JacobiSVD<Eigen::Matrix<double, Eigen::Dynamic, PCA::Original()>>
             svd(dataset.rowwise() - dataset.colwise().mean(), Eigen::ComputeFullV);
         auto matrixV = svd.matrixV();
         pca.inverse_projection = matrixV.leftCols(PCA::Reduced());
@@ -91,8 +91,8 @@ namespace Private::PCA
         }
     }
 
-    void _analyse(Component::SourcePCA& pca, const Eigen::MatrixXf& dataset) { return ::_analyse(pca, dataset); }
-    void _analyse(Component::DestinationPCA& pca, const Eigen::MatrixXf& dataset) { return ::_analyse(pca, dataset); }
+    void _analyse(Component::SourcePCA& pca, const Eigen::MatrixXd& dataset) { return ::_analyse(pca, dataset); }
+    void _analyse(Component::DestinationPCA& pca, const Eigen::MatrixXd& dataset) { return ::_analyse(pca, dataset); }
     void reset(Component::SourcePCA& pca) { return ::reset(pca); }
     void reset(Component::DestinationPCA& pca) { return ::reset(pca); }
 

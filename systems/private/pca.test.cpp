@@ -9,8 +9,8 @@ TEST_CASE("PCA computes according to expectation", "[pca]")
 
     SECTION("PCA of aligned unit vectors gives identity matrix")
     {
-        Eigen::MatrixXf dataset(4,6);
-        Eigen::MatrixXf expected(2,6);
+        Eigen::MatrixXd dataset(4,6);
+        Eigen::MatrixXd expected(2,6);
         dataset << 1,0,0,0,0,0,
                    0,1,0,0,0,0,
                    0,-1,0,0,0,0,

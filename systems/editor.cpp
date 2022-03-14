@@ -9,6 +9,7 @@
 #include "components/vis.h"
 #include "components/color.h"
 #include "components/position.h"
+#include "components/manual_vis.h"
 
 #include "common/vis.h"
 #include "common/interpolator.h"
@@ -19,6 +20,7 @@ namespace
 {
     struct EditCursor{entt::entity entity;};
     struct InteractCursor{entt::entity entity;};
+    struct ManualVisFlag{entt::entity entity;};
     struct NewDemoButton {};
     struct DeleteDemoButton {};
 
@@ -53,7 +55,13 @@ namespace
             const auto& position = registry.get<Component::Position>(cursor_entity);
             const auto source = System::position_to_source(registry, position);
             const auto destination = registry.ctx<Component::Demo::Destination>();
-            System::insert_demo(registry, source, destination);
+            if (registry.ctx<Component::ManualVis>())
+            {
+                auto color = System::destination_to_color(registry, destination);
+                System::insert_demo(registry, source, destination, position, color);
+            }
+            else
+                System::insert_demo(registry, source, destination);
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
@@ -76,6 +84,10 @@ namespace System
 
     void Editor::prepare_registry(entt::registry& registry)
     {
+        auto manual_vis_entity = registry.create();
+        registry.emplace<ManualVisFlag>(manual_vis_entity, manual_vis_entity);
+        registry.emplace<Component::ManualVis>(manual_vis_entity, registry.set<Component::ManualVis>(false));
+
         auto edit_cursor_entity = registry.create();
         registry.emplace<EditCursor>(edit_cursor_entity, edit_cursor_entity);
         registry.emplace<Component::Cursor>(edit_cursor_entity, cursor_radius);
@@ -113,19 +125,28 @@ namespace System
 
     void Editor::run(entt::registry& registry)
     {
-        drag_update_position(registry, dragged);
+        if (registry.ctx<Component::ManualVis>()) drag_update_position(registry, dragged);
+        else dragged.each([&](const auto entity)
+        {
+            registry.get<Component::Draggable>(entity).delta = {0,0};
+        });
     }
 
     void Editor::prepare_to_paint(entt::registry& registry)
     {
-        constexpr auto hide = [](auto& color) {color.a = 0.2;};
-        constexpr auto show = [](auto& color) {color.a = 1;};
+        constexpr auto hide = [](auto& color) {color[3] = 0.2;};
+        constexpr auto show = [](auto& color) {color[3] = 1;};
         auto interact_cursor = registry.ctx<InteractCursor>().entity;
         auto edit_cursor = registry.ctx<EditCursor>().entity;
         auto source = registry.ctx<Component::Demo::Source>();
-        auto destination = query(registry, source);
+        auto destination = source_to_destination(registry, source);
         registry.replace<Component::Demo::Source>(interact_cursor, source);
         registry.replace<Component::Demo::Destination>(interact_cursor, destination);
+        if (registry.ctx<Component::ManualVis>())
+        {
+            registry.replace<Component::Position>(interact_cursor, source_to_position(registry, source));
+            registry.replace<Component::Color>(interact_cursor, destination_to_color(registry, destination));
+        }
         if (destination != registry.ctx<Component::Demo::Destination>())
         {
             registry.patch<Component::Color>(interact_cursor, hide);
