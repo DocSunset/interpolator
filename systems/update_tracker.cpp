@@ -26,10 +26,14 @@ namespace
         if (not registry.all_of<Component::Demo>(entity)) return;
         const auto& source = registry.get<Component::Demo::Source>(entity);
         const auto& destination = registry.get<Component::Demo::Destination>(entity);
+        const auto& position = registry.get<Component::Position>(entity);
+        const auto& color = registry.get<Component::Color>(entity);
         log_event(registry, Component::Update{type
                 , entity
                 , source
                 , destination
+                , position
+                , color
                 , get_time(registry)
                 });
     }
@@ -41,6 +45,8 @@ namespace
                 , .entity = entt::null
                 , .source = Component::Demo::Source::Zero()
                 , .destination = Component::Demo::Destination::Zero()
+                , .position = Component::Position::Zero()
+                , .color = Component::Color::Zero()
                 , .time = Component::Time{0}
                 });
     }
@@ -53,6 +59,8 @@ namespace
         cache.entity = entity;
         cache.source = registry.get<Component::Demo::Source>(entity);
         cache.destination = registry.get<Component::Demo::Destination>(entity);
+        cache.position = registry.get<Component::Position>(entity);
+        cache.color = registry.get<Component::Color>(entity);
         cache.time = get_time(registry);
     }
 
@@ -88,6 +96,8 @@ namespace System
         registry.on_destroy<Component::Demo>().connect<&log_atomic_event<Component::Update::Type::Delete>>();
         registry.on_update<Component::Demo::Source>().connect<&update<Component::Update::Type::Source>>();
         registry.on_update<Component::Demo::Destination>().connect<&update<Component::Update::Type::Destination>>();
+        registry.on_update<Component::Position>().connect<&update<Component::Update::Type::Position>>();
+        registry.on_update<Component::Color>().connect<&update<Component::Update::Type::Color>>();
     }
 
     void UpdateTracker::run(entt::registry& registry)

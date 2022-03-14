@@ -46,6 +46,7 @@ namespace
 
         std::cout << "demo=[";
         print_demo(update.source, update.destination);
+        print_manual_vis(update.position, update.color);
         std::cout << "]";
 
         std::cout << "}\n";
@@ -63,8 +64,9 @@ namespace
             print_demo(source, destination, out);
             auto maybe_position = registry.try_get<Component::ManualPosition>(entity);
             auto maybe_color = registry.try_get<Component::ManualColor>(entity);
-            if (maybe_position != nullptr && maybe_color != nullptr)
-                print_manual_vis(maybe_position->value, maybe_color->value, out);
+            print_manual_vis(maybe_position ? maybe_position->value : registry.get<Component::Position>(entity)
+                    , maybe_color ? maybe_color->value : registry.get<Component::Color>(entity)
+                    , out);
             out << "\n";
         }
     }

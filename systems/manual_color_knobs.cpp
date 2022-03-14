@@ -14,6 +14,9 @@ namespace
     {
         if (not registry.all_of<ColorKnob>(entity)) return;
         auto& knob = registry.get<Component::Knob>(entity);
+        if (knob.delta == 0) return;
+
+        // drag knob
         std::size_t num_selected_demos = 0;
         auto view = registry.view<Component::Selected, Component::Demo>();
         for (auto entity : view)
