@@ -1,5 +1,6 @@
 #include "update_tracker.h"
 #include "components/update.h"
+#include "components/manual_vis.h"
 
 namespace
 {
@@ -26,8 +27,8 @@ namespace
         if (not registry.all_of<Component::Demo>(entity)) return;
         const auto& source = registry.get<Component::Demo::Source>(entity);
         const auto& destination = registry.get<Component::Demo::Destination>(entity);
-        const auto& position = registry.get<Component::Position>(entity);
-        const auto& color = registry.get<Component::Color>(entity);
+        const auto& position = registry.get<Component::ManualPosition>(entity).value;
+        const auto& color = registry.get<Component::ManualColor>(entity).value;
         log_event(registry, Component::Update{type
                 , entity
                 , source
@@ -59,8 +60,8 @@ namespace
         cache.entity = entity;
         cache.source = registry.get<Component::Demo::Source>(entity);
         cache.destination = registry.get<Component::Demo::Destination>(entity);
-        cache.position = registry.get<Component::Position>(entity);
-        cache.color = registry.get<Component::Color>(entity);
+        cache.position = registry.get<Component::ManualPosition>(entity).value;
+        cache.color = registry.get<Component::ManualColor>(entity).value;
         cache.time = get_time(registry);
     }
 
@@ -96,8 +97,8 @@ namespace System
         registry.on_destroy<Component::Demo>().connect<&log_atomic_event<Component::Update::Type::Delete>>();
         registry.on_update<Component::Demo::Source>().connect<&update<Component::Update::Type::Source>>();
         registry.on_update<Component::Demo::Destination>().connect<&update<Component::Update::Type::Destination>>();
-        registry.on_update<Component::Position>().connect<&update<Component::Update::Type::Position>>();
-        registry.on_update<Component::Color>().connect<&update<Component::Update::Type::Color>>();
+        registry.on_update<Component::ManualPosition>().connect<&update<Component::Update::Type::Position>>();
+        registry.on_update<Component::ManualColor>().connect<&update<Component::Update::Type::Color>>();
     }
 
     void UpdateTracker::run(entt::registry& registry)

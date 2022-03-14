@@ -21,9 +21,9 @@ namespace
         auto view = registry.view<Component::Selected, Component::Demo>();
         for (auto entity : view)
         {
-            registry.patch<Component::Color>(entity, [&](auto& c)
+            registry.patch<Component::ManualColor>(entity, [&](auto& c)
             {
-                c[knob.index] = Simple::clip(c[knob.index] + knob.delta);
+                c.value[knob.index] = Simple::clip(c.value[knob.index] + knob.delta);
             });
             ++num_selected_demos;
         }
@@ -38,7 +38,7 @@ namespace
         for (auto demo : selected_demos)
         {
             ++n_demos;
-            auto dcolor = registry.get<Component::Color>(demo);
+            auto dcolor = registry.get<Component::ManualColor>(demo).value;
             color += (dcolor - color) / n_demos;
         }
 

@@ -2,6 +2,7 @@
 #include "components/draggable.h"
 #include "components/paint_flag.h"
 #include "components/vis.h"
+#include "components/manual_vis.h"
 
 namespace System
 {
@@ -16,7 +17,9 @@ namespace System
         registry.emplace<Component::Demo::Source>(demo, source);
         registry.emplace<Component::Demo::Destination>(demo, destination);
         registry.emplace<Component::Position>(demo, position);
+        registry.emplace<Component::ManualPosition>(demo, position);
         registry.emplace<Component::Color>(demo, color);
+        registry.emplace<Component::ManualColor>(demo, color);
         registry.emplace<Component::Demo>(demo, demo);
         registry.replace<Component::Selectable>(demo, true, Component::Selectable::Group::Demo);
         registry.emplace<Component::Selected>(demo);

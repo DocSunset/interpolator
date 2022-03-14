@@ -86,7 +86,7 @@ namespace System
     {
         auto manual_vis_entity = registry.create();
         registry.emplace<ManualVisFlag>(manual_vis_entity, manual_vis_entity);
-        registry.emplace<Component::ManualVis>(manual_vis_entity, registry.set<Component::ManualVis>(true));
+        registry.emplace<Component::ManualVis>(manual_vis_entity, registry.set<Component::ManualVis>(false));
 
         auto edit_cursor_entity = registry.create();
         registry.emplace<EditCursor>(edit_cursor_entity, edit_cursor_entity);

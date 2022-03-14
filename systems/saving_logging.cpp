@@ -62,11 +62,9 @@ namespace
             const auto& source = registry.get<Component::Demo::Source>(entity);
             const auto& destination = registry.get<Component::Demo::Destination>(entity);
             print_demo(source, destination, out);
-            auto maybe_position = registry.try_get<Component::ManualPosition>(entity);
-            auto maybe_color = registry.try_get<Component::ManualColor>(entity);
-            print_manual_vis(maybe_position ? maybe_position->value : registry.get<Component::Position>(entity)
-                    , maybe_color ? maybe_color->value : registry.get<Component::Color>(entity)
-                    , out);
+            const auto& position = registry.get<Component::ManualPosition>(entity).value;
+            const auto& color = registry.get<Component::ManualColor>(entity).value;
+            print_manual_vis(position, color, out);
             out << "\n";
         }
     }

@@ -58,15 +58,15 @@ namespace
     void track_position(entt::registry& registry, entt::entity entity)
     {
         if (not registry.all_of<Component::Demo>(entity)) return;
-        auto p = registry.get<Component::Position>(entity);
-        registry.emplace_or_replace<Component::ManualPosition>(entity, p);
+        auto p = registry.get<Component::ManualPosition>(entity);
+        registry.emplace_or_replace<Component::Position>(entity, p.value);
     }
 
     void track_color(entt::registry& registry, entt::entity entity)
     {
         if (not registry.all_of<Component::Demo>(entity)) return;
-        auto c = registry.get<Component::Color>(entity);
-        registry.emplace_or_replace<Component::ManualColor>(entity, c);
+        auto c = registry.get<Component::ManualColor>(entity);
+        registry.emplace_or_replace<Component::Color>(entity, c.value);
     }
 
     void restore_backups(entt::registry& registry)
@@ -96,15 +96,15 @@ namespace
 
             restore_backups(registry);
 
-            registry.on_construct<Component::Position>().connect<&track_position>();
-            registry.on_update<Component::Position>().connect<&track_position>();
-            registry.on_construct<Component::Color>().connect<&track_color>();
-            registry.on_update<Component::Color>().connect<&track_color>();
+            registry.on_construct<Component::ManualPosition>().connect<&track_position>();
+            registry.on_update<Component::ManualPosition>().connect<&track_position>();
+            registry.on_construct<Component::ManualColor>().connect<&track_color>();
+            registry.on_update<Component::ManualColor>().connect<&track_color>();
         }
         else
         {
-            registry.on_update<Component::Position>().disconnect<&track_position>();
-            registry.on_update<Component::Color>().disconnect<&track_color>();
+            registry.on_update<Component::ManualPosition>().disconnect<&track_position>();
+            registry.on_update<Component::ManualColor>().disconnect<&track_color>();
             registry.on_construct<Component::Vis>().connect<&on_construct>();
             registry.on_update<Component::Demo::Source>().connect<&update_source>();
             registry.on_update<Component::Demo::Destination>().connect<&update_destination>();

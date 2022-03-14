@@ -1,5 +1,5 @@
 #include "draggable.h"
-#include "components/position.h"
+#include "components/manual_vis.h"
 #include "components/draggable.h"
 
 namespace System
@@ -10,7 +10,7 @@ namespace System
         {
             auto& p    = registry.get<Component::Position>(entity);
             auto& drag = registry.get<Component::Draggable>(entity);
-            registry.replace<Component::Position>(entity, p + drag.delta);
+            registry.replace<Component::ManualPosition>(entity, p + drag.delta);
             drag.delta = {0, 0};
         });
     }
