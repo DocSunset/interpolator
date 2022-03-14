@@ -76,10 +76,8 @@ namespace
 
 namespace System
 {
-    void UpdateTracker::prepare_registry(entt::registry& registry)
+    void UpdateTracker::setup_reactive_systems(entt::registry& registry)
     {
-        // reactive systems for this system are exceptionally connected here so
-        // that demos and updates caused during setup are not logged
         reset_cache(registry);
         registry.set<Updater>(registry.create());
         registry.emplace<Component::Update>(registry.ctx<Updater>().entity

@@ -124,11 +124,13 @@ namespace System
 {
     void SavingLogging::setup_reactive_systems(entt::registry& registry)
     {
-        registry.on_update<Component::Update>().connect<&on_update>();
     }
 
     void SavingLogging::prepare_registry(entt::registry& registry)
     {
         load(registry);
+
+        // this reactive system is exceptionally started here to avoid logging when loading
+        registry.on_update<Component::Update>().connect<&on_update>();
     }
 }
