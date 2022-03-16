@@ -134,6 +134,8 @@ namespace System
         registry.emplace<Component::Color>(delete_demo_button, 0.7f, 0.2f, 0.2f, 1.0f);
 
         registry.on_update<Component::Window>().connect<&update_window>();
+
+        registry.set<Component::CursorMode>(Component::CursorMode::Edit);
     }
 
     void Editor::run(entt::registry& registry)
@@ -150,8 +152,8 @@ namespace System
 
     void Editor::prepare_to_paint(entt::registry& registry)
     {
-        constexpr auto hide = [](auto& color) {color[3] = 0.2;};
-        constexpr auto show = [](auto& color) {color[3] = 1;};
+        constexpr auto hide = [](auto& cursor) {cursor.hidden = true;};
+        constexpr auto show = [](auto& cursor) {cursor.hidden = false;};
         auto interact_cursor = registry.ctx<InteractCursor>().entity;
         auto edit_cursor = registry.ctx<EditCursor>().entity;
         auto source = registry.ctx<Component::Demo::Source>();
@@ -165,13 +167,15 @@ namespace System
         }
         if (destination != registry.ctx<Component::Demo::Destination>())
         {
-            registry.patch<Component::Color>(interact_cursor, hide);
-            registry.patch<Component::Color>(edit_cursor, show);
+            registry.patch<Component::Cursor>(interact_cursor, hide);
+            registry.patch<Component::Cursor>(edit_cursor, show);
+            registry.set<Component::CursorMode>(Component::CursorMode::Edit);
         }
         else
         {
-            registry.patch<Component::Color>(interact_cursor, show);
-            registry.patch<Component::Color>(edit_cursor, hide);
+            registry.patch<Component::Cursor>(interact_cursor, show);
+            registry.patch<Component::Cursor>(edit_cursor, hide);
+            registry.set<Component::CursorMode>(Component::CursorMode::Interact);
         }
     }
 }

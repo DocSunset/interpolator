@@ -21,7 +21,8 @@ namespace
     {
         entt::entity h;
         entt::entity v;
-        entt::entity r;
+        entt::entity i;
+        entt::entity o;
     };
 
     void update_cursor(entt::registry& registry, entt::entity entity)
@@ -38,8 +39,8 @@ namespace
 
         Line line_h, line_v;
         line_h = line_v = Line
-            { .color = {1,1,1,0.8}
-            , .border = {1,1,1,0.8}
+            { .color = {1,1,1,cursor.hidden ? 0.2f : 0.8f}
+            , .border = {1,1,1,cursor.hidden ? 0.2f : 0.8f}
             , .start_position = {position.x, position.y}
             , .end_position = {position.x, position.y}
             , .line_thickness = 1
@@ -54,23 +55,26 @@ namespace
         line_v.start_position[1] = line_v.start_position[1] - cursor.radius;
         line_v.end_position[1] = line_v.end_position[1] + cursor.radius;
 
-        auto ring = Circle
-            { .color = {color[0], color[1], color[2], 0.1}
+        auto inner_ring = Circle
+            { .color = {0,0,0,0}
             , .border = {color[0], color[1], color[2], color[3]}
             , .position = {position.x, position.y}
-            , .radius = 12
+            , .radius = 0.5f * cursor.radius
             , .border_thickness = 3
             };
+        auto outer_ring = inner_ring;
+        outer_ring.radius = 1.5f * cursor.radius;
 
         registry.emplace_or_replace<Line>(viewer.h, line_h);
         registry.emplace_or_replace<Line>(viewer.v, line_v);
-        registry.emplace_or_replace<Circle>(viewer.r, ring);
+        registry.emplace_or_replace<Circle>(viewer.i, inner_ring);
+        registry.emplace_or_replace<Circle>(viewer.o, outer_ring);
         registry.ctx<PaintFlag>().set(); // for when this is called from construct_cursor
     }
 
     void construct_cursor(entt::registry& registry, entt::entity entity)
     {
-        auto viewer = CursorView{registry.create(), registry.create(), registry.create()};
+        auto viewer = CursorView{registry.create(), registry.create(), registry.create(), registry.create()};
         registry.emplace<CursorView>(entity, viewer);
         registry.emplace<Component::Position>(entity);
         registry.emplace<Component::Color>(entity,0.5f,0.5f,0.5f,1.0f);
@@ -85,6 +89,7 @@ namespace System
         registry.on_construct<Component::Cursor>().connect<&construct_cursor>();
 
         updated.connect(registry, entt::collector
+                .update<Component::Cursor>()
                 .update<Component::Position>().where<Component::Cursor>()
                 .update<Component::Color>().where<Component::Cursor>()
                 .update<Component::Demo::Source>().where<Component::Cursor>()

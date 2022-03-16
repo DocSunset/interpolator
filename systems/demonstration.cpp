@@ -5,6 +5,7 @@
 #include "components/circle.h"
 #include "components/vis.h"
 #include "components/libmapper_editor.h"
+#include "components/cursor.h"
 #include "systems/common/draggable.h"
 
 namespace
@@ -12,8 +13,9 @@ namespace
     void update_circle(entt::registry& registry, entt::entity entity)
     {
         auto mapper_hovered = registry.all_of<Component::LibmapperHovered>(entity);
-        auto ring_color = mapper_hovered ? Component::Color{0.9f,0.9f,0.1f,1.0f} 
-                                 : System::hover_select_color(registry, entity);
+        auto ring_color = mapper_hovered && registry.ctx<Component::CursorMode>() == Component::CursorMode::Interact
+                ?  Component::Color{0.9f,0.9f,0.1f,1.0f} 
+                : System::hover_select_color(registry, entity);
         auto fill_color = registry.get<Component::Color>(entity);
         auto position = registry.get<Component::Position>(entity);
 
