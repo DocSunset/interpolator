@@ -61,7 +61,13 @@ namespace
                 System::insert_demo(registry, source, destination, position, color);
             }
             else
+            {
                 System::insert_demo(registry, source, destination);
+                auto edit_cursor = registry.ctx<EditCursor>().entity;
+                auto source = registry.get<Component::Demo::Source>(edit_cursor);
+                auto position = System::source_to_position(registry, source);
+                registry.replace<Component::Position>(edit_cursor, position);
+            }
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
@@ -98,6 +104,7 @@ namespace System
                 , Component::Position::Zero()
                 , Component::Position::Zero()
                 );
+        registry.emplace<Component::Demo::Source>(edit_cursor_entity);
         registry.set<EditCursor>(EditCursor{edit_cursor_entity});
 
         auto interact_cursor_entity = registry.create();
@@ -125,11 +132,14 @@ namespace System
 
     void Editor::run(entt::registry& registry)
     {
-        if (registry.ctx<Component::ManualVis>()) drag_update_position(registry, dragged);
-        else dragged.each([&](const auto entity)
+        if (dragged.size())
         {
-            registry.get<Component::Draggable>(entity).delta = {0,0};
-        });
+            drag_update_position(registry, dragged);
+            auto edit_cursor = registry.ctx<EditCursor>().entity;
+            auto position = registry.get<Component::Position>(edit_cursor);
+            auto source = position_to_source(registry, position);
+            registry.replace<Component::Demo::Source>(edit_cursor, source);
+        }
     }
 
     void Editor::prepare_to_paint(entt::registry& registry)

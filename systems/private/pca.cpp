@@ -3,6 +3,7 @@
 #include <Eigen/SVD>
 #include "components/update.h"
 #include "components/pca.h"
+#include "components/paint_flag.h"
 
 namespace
 {
@@ -41,15 +42,9 @@ namespace
         S = S.array().sqrt();
         S = S * 0.5;
 
-        std::cout << "Dataset dims: " << dataset.rows() << " " << dataset.cols() << "\n";
-        std::cout << "V:\n" << V << "\n\n";
-        std::cout << "S:\n" << S << "\n\n";
-
         pca.projection = S.asDiagonal() * V.transpose();
         S = S.array().inverse();
         pca.inverse_projection = V * S.asDiagonal();
-
-        std::cout << "Projection:\n" << pca.projection << "\n\n";
     }
 
     template<typename PCA>
@@ -75,6 +70,8 @@ namespace
             reset(pca);
         }
         else _analyse(pca, dataset);
+        registry.replace<PCA>(registry.ctx<Dataset>().entity, pca);
+        registry.ctx<Component::PaintFlag>().set();
     }
 }
 

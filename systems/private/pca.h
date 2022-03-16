@@ -17,6 +17,7 @@ namespace Private::PCA
         using Vector = Component::Demo::Source;
         using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Cols>;
         Matrix matrix;
+        entt::entity entity;
     };
 
     struct DestinationDataset
@@ -25,5 +26,6 @@ namespace Private::PCA
         using Vector = Component::Demo::Destination;
         using Matrix = Eigen::Matrix<double, Eigen::Dynamic, Cols>;
         Matrix matrix;
+        entt::entity entity;
     };
 }

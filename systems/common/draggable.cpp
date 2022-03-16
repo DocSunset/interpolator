@@ -10,7 +10,11 @@ namespace System
         {
             auto& p    = registry.get<Component::Position>(entity);
             auto& drag = registry.get<Component::Draggable>(entity);
-            registry.replace<Component::ManualPosition>(entity, p + drag.delta);
+            auto newp = p + drag.delta;
+            if (registry.all_of<Component::ManualPosition>(entity))
+                registry.replace<Component::ManualPosition>(entity, newp);
+            else
+                registry.replace<Component::Position>(entity, newp);
             drag.delta = {0, 0};
         });
     }

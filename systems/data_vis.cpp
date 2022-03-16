@@ -13,6 +13,7 @@ namespace
     void update_source(entt::registry& registry, entt::entity entity)
     {
         if (registry.ctx<Component::ManualVis>()) return;
+        if (not registry.all_of<Component::Vis>(entity)) return;
         registry.replace<Component::Position>(entity
                 , System::source_to_position(registry, entity)
                 );
@@ -20,13 +21,14 @@ namespace
 
     void update_sources(entt::registry& registry)
     {
-        for (auto entity : registry.view<Component::Demo>())
+        for (auto entity : registry.view<Component::Vis>())
              update_source(registry, entity);
     }
 
     void update_destination(entt::registry& registry, entt::entity entity)
     {
         if (registry.ctx<Component::ManualVis>()) return;
+        if (not registry.all_of<Component::Vis>(entity)) return;
         registry.replace<Component::Color>(entity
                 , System::destination_to_color(registry, entity)
                 );
@@ -34,11 +36,11 @@ namespace
 
     void update_destinations(entt::registry& registry)
     {
-        for (auto entity : registry.view<Component::Demo>())
+        for (auto entity : registry.view<Component::Vis>())
              update_destination(registry, entity);
     }
 
-    void on_source_update(entt::registry& registry, entt::entity _)
+    void on_source_update(entt::registry& registry, entt::entity entity)
     {
         update_sources(registry);
     }
@@ -102,8 +104,10 @@ namespace
         if (registry.ctx<Component::ManualVis>())
         {
             registry.on_construct<Component::Vis>().disconnect<&on_construct>();
-            registry.on_update<Component::Demo::Source>().disconnect<&on_source_update>();
-            registry.on_update<Component::Demo::Destination>().disconnect<&on_destination_update>();
+            registry.on_update<Component::Demo::Source>().disconnect<&update_source>();
+            registry.on_update<Component::Demo::Destination>().disconnect<&update_destination>();
+            registry.on_update<Component::SourcePCA>().disconnect<&on_source_update>();
+            registry.on_update<Component::DestinationPCA>().disconnect<&on_destination_update>();
 
             restore_backups(registry);
 
@@ -116,8 +120,10 @@ namespace
             registry.on_update<Component::ManualColor>().disconnect<&track_color>();
 
             registry.on_construct<Component::Vis>().connect<&on_construct>();
-            registry.on_update<Component::Demo::Source>().connect<&on_source_update>();
-            registry.on_update<Component::Demo::Destination>().connect<&on_destination_update>();
+            registry.on_update<Component::Demo::Source>().connect<&update_source>();
+            registry.on_update<Component::Demo::Destination>().connect<&update_destination>();
+            registry.on_update<Component::SourcePCA>().connect<&on_source_update>();
+            registry.on_update<Component::DestinationPCA>().connect<&on_destination_update>();
             update_sources(registry);
             update_destinations(registry);
         }
