@@ -30,12 +30,14 @@ namespace System
     void delete_selected_demos(entt::registry& registry)
     {
         auto view = registry.view<Component::Demo, Component::Selected>();
+        for (auto entity : view) view.get<Component::Demo>(entity).destroyed = true;
         registry.destroy(view.begin(), view.end());
         registry.ctx<Component::PaintFlag>().set();
     }
 
     void delete_demo(entt::registry& registry, entt::entity entity)
     {
+        registry.get<Component::Demo>(entity).destroyed = true; // this is a nasty hack to enable dataset and save file updates to run reactively without using observers. This should not be necessary, and the only place I'm presently aware of where it is required is to enable the edit cursor position to be updated immediately after inserting a demo
         registry.destroy(entity);
         registry.ctx<Component::PaintFlag>().set();
     }

@@ -14,10 +14,14 @@ namespace
         // TODO: granularly update dataset based on updated demo in entity
         // for now, just copy all of the vectors
         auto view = registry.view<Component::Demo>();
-        dataset.matrix.resize(view.size(), Dataset::Cols);
+        std::size_t size = 0;
+        for (auto d : view) if (not registry.get<Component::Demo>(d).destroyed) ++size;
+        dataset.matrix.resize(size, Dataset::Cols);
         std::size_t row = 0;
         for (auto d : view)
         {
+            if (registry.get<Component::Demo>(d).destroyed) continue;
+
             const auto& v = registry.get<typename Dataset::Vector>(d);
             std::size_t col = 0;
             for (auto f : v)

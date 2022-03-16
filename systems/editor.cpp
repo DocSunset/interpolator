@@ -27,7 +27,6 @@ namespace
     constexpr unsigned int cursor_radius = 30;
     constexpr float button_radius = 50;
 
-
     void update_window(entt::registry& registry, entt::entity entity)
     {
         const auto& window = registry.ctx<Component::Window>();
@@ -47,6 +46,15 @@ namespace
         for (auto ent : registry.view<DeleteDemoButton>()) position_button(ent);
     }
 
+    void update_edit_cursor(entt::registry& registry)
+    {
+        if (registry.ctx<Component::ManualVis>()) return;
+        auto edit_cursor = registry.ctx<EditCursor>().entity;
+        auto source = registry.get<Component::Demo::Source>(edit_cursor);
+        auto position = System::source_to_position(registry, source);
+        registry.replace<Component::Position>(edit_cursor, position);
+    }
+
     void demo_buttons(entt::registry& registry, entt::entity entity)
     {
         if (registry.all_of<NewDemoButton>(entity))
@@ -63,15 +71,13 @@ namespace
             else
             {
                 System::insert_demo(registry, source, destination);
-                auto edit_cursor = registry.ctx<EditCursor>().entity;
-                auto source = registry.get<Component::Demo::Source>(edit_cursor);
-                auto position = System::source_to_position(registry, source);
-                registry.replace<Component::Position>(edit_cursor, position);
+                update_edit_cursor(registry);
             }
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
             System::delete_selected_demos(registry);
+            update_edit_cursor(registry);
         }
     }
 }

@@ -59,6 +59,7 @@ namespace
 
         for (auto entity : registry.view<Component::Demo>())
         {
+            if (registry.get<Component::Demo>(entity).destroyed) continue;
             const auto& source = registry.get<Component::Demo::Source>(entity);
             const auto& destination = registry.get<Component::Demo::Destination>(entity);
             print_demo(source, destination, out);

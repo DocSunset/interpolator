@@ -14,5 +14,6 @@ namespace Component
         using Destination = Eigen::Matrix<double, num_destinations, 1>;
 
         entt::entity id;
+        bool destroyed = false;
     };
 }
