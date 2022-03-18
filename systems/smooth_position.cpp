@@ -8,6 +8,12 @@ namespace
 {
     struct SmoothingStatus {float diff;};
 
+    void on_construct(entt::registry& registry, entt::entity entity)
+    {
+        const auto& sp = registry.get<Component::SmoothPosition>(entity);
+        registry.emplace_or_replace<Component::Position>(entity, sp.x, sp.y);
+    }
+
     auto update_status(entt::registry& registry, entt::entity entity)
     {
         const auto& current_position = registry.get<Component::Position>(entity);
@@ -18,7 +24,7 @@ namespace
 
     void smooth(entt::registry& registry, entt::entity entity)
     {
-        constexpr float s = 0.5;
+        constexpr float s = 0.3;
         const auto & [smoothing, current_position, target_position] = update_status(registry, entity);
 
         if (smoothing.diff > 0.001) registry.patch<Component::Position>(entity, [&](auto& position)
@@ -39,7 +45,7 @@ namespace System
 {
     void SmoothPosition::setup_reactive_systems(entt::registry& registry)
     {
-        registry.on_construct<Component::SmoothPosition>().connect<&entt::registry::emplace_or_replace<Component::Position>>();
+        registry.on_construct<Component::SmoothPosition>().connect<&on_construct>();
         registry.on_update<Component::SmoothPosition>().connect<&update_status>();
     }
 

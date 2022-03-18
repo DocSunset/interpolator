@@ -47,15 +47,6 @@ namespace
         for (auto ent : registry.view<DeleteDemoButton>()) position_button(ent);
     }
 
-    void update_edit_cursor(entt::registry& registry)
-    {
-        if (registry.ctx<Component::ManualVis>()) return;
-        auto edit_cursor = registry.ctx<EditCursor>().entity;
-        auto source = registry.get<Component::Demo::Source>(edit_cursor);
-        auto position = System::source_to_position(registry, source);
-        registry.replace<Component::Position>(edit_cursor, position);
-    }
-
     void demo_buttons(entt::registry& registry, entt::entity entity)
     {
         if (registry.all_of<NewDemoButton>(entity))
@@ -64,21 +55,12 @@ namespace
             const auto& position = registry.get<Component::Position>(cursor_entity);
             const auto source = System::position_to_source(registry, position);
             const auto destination = registry.ctx<Component::Demo::Destination>();
-            if (registry.ctx<Component::ManualVis>())
-            {
-                auto color = System::destination_to_color(registry, destination);
-                System::insert_demo(registry, source, destination, position, color);
-            }
-            else
-            {
-                System::insert_demo(registry, source, destination);
-                update_edit_cursor(registry);
-            }
+            auto color = System::destination_to_color(registry, destination);
+            System::insert_demo(registry, source, destination, position, color);
         }
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
             System::delete_selected_demos(registry);
-            update_edit_cursor(registry);
         }
     }
 }
@@ -145,10 +127,6 @@ namespace System
         if (dragged.size())
         {
             drag_update_position(registry, dragged);
-            auto edit_cursor = registry.ctx<EditCursor>().entity;
-            auto position = registry.get<Component::Position>(edit_cursor);
-            auto source = position_to_source(registry, position);
-            registry.replace<Component::Demo::Source>(edit_cursor, source);
         }
     }
 
@@ -162,6 +140,7 @@ namespace System
         auto destination = source_to_destination(registry, source);
         registry.replace<Component::Demo::Source>(interact_cursor, source);
         registry.replace<Component::Demo::Destination>(interact_cursor, destination);
+
         if (registry.ctx<Component::ManualVis>())
         {
             registry.replace<Component::Position>(interact_cursor, source_to_position(registry, source));
