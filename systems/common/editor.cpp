@@ -3,6 +3,7 @@
 #include "components/paint_flag.h"
 #include "components/vis.h"
 #include "components/manual_vis.h"
+#include "components/smooth_position.h"
 
 namespace System
 {
@@ -16,7 +17,7 @@ namespace System
         auto demo = registry.create();
         registry.emplace<Component::Demo::Source>(demo, source);
         registry.emplace<Component::Demo::Destination>(demo, destination);
-        registry.emplace<Component::Position>(demo, position);
+        registry.emplace<Component::SmoothPosition>(demo, position);
         registry.emplace<Component::ManualPosition>(demo, position);
         registry.emplace<Component::Color>(demo, color);
         registry.emplace<Component::ManualColor>(demo, color);

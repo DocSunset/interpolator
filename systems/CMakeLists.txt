@@ -27,6 +27,7 @@ target_sources(interpolators-objects PRIVATE
     manual_color_knobs.h manual_color_knobs.cpp
     pca.h pca.cpp
     private/pca.h private/pca.cpp
+    smooth_position.h smooth_position.cpp
     )
 
 target_sources(interpolators-tests PRIVATE

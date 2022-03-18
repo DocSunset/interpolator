@@ -16,4 +16,5 @@ target_sources(interpolators-objects PRIVATE
     save_file.h
     argcv.h
     update.h
+    smooth_position.h
     )

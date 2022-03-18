@@ -18,11 +18,13 @@
 #include "systems/pca.h"
 #include "systems/demo_dest_knobs.h"
 #include "systems/manual_color_knobs.h"
+#include "systems/smooth_position.h"
 
 int main(int argc, char ** argv)
 {
     auto app = App
         < System::Platform // also polls libmapper
+        , System::SmoothPosition
         , System::CirclePainter
         , System::LinePainter
         , System::TextPainter

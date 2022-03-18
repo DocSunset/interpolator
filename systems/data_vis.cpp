@@ -6,6 +6,7 @@
 #include "components/window.h"
 #include "components/pca.h"
 #include "components/manual_vis.h"
+#include "components/smooth_position.h"
 #include "common/vis.h"
 
 namespace
@@ -14,7 +15,8 @@ namespace
     {
         if (registry.ctx<Component::ManualVis>()) return;
         if (not registry.all_of<Component::Vis>(entity)) return;
-        registry.replace<Component::Position>(entity
+        if (registry.all_of<Component::Demo>(entity) && registry.get<Component::Demo>(entity).destroyed) return;
+        registry.replace<Component::SmoothPosition>(entity
                 , System::source_to_position(registry, entity)
                 );
     }

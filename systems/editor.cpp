@@ -10,6 +10,7 @@
 #include "components/color.h"
 #include "components/position.h"
 #include "components/manual_vis.h"
+#include "components/smooth_position.h"
 
 #include "common/vis.h"
 #include "common/interpolator.h"
@@ -118,6 +119,7 @@ namespace System
         registry.emplace<Component::Cursor>(interact_cursor_entity, cursor_radius);
         registry.emplace<Component::Demo::Source>(interact_cursor_entity);
         registry.emplace<Component::Demo::Destination>(interact_cursor_entity);
+        registry.emplace<Component::SmoothPosition>(interact_cursor_entity);
         registry.emplace<Component::Vis>(interact_cursor_entity);
         registry.set<InteractCursor>(InteractCursor{interact_cursor_entity});
 
