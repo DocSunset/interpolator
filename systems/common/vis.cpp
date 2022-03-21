@@ -2,6 +2,8 @@
 #include <iostream>
 #include "components/window.h"
 #include "components/pca.h"
+#include "color_spaces.h"
+#include <simple/boundaries.h>
 
 namespace System
 {
@@ -19,8 +21,8 @@ namespace System
         const auto& pca = registry.ctx<Component::SourcePCA>();
         Eigen::Vector2d pos = pca.projection * (source - pca.mean);
         Component::Position position = 
-                { window.w * pos.x()
-                , window.h * pos.y()
+                { window.w/2 * pos.x()
+                , window.h/2 * pos.y()
                 };
         return position;
     }
@@ -48,10 +50,19 @@ namespace System
             , const Component::Demo::Destination& destination
             )
     {
-        return { destination[0]
-               , destination[1]
-               , destination[2]
-               , 1.0f
-               };
+        const auto& pca = registry.ctx<Component::DestinationPCA>();
+        auto col = pca.projection * (destination - pca.mean);
+        auto h = 360 * Simple::clip(col.x() * 0.5 + 0.5);
+        auto s = Simple::clip(col.y() * 0.5 + 0.5);
+        auto l = Simple::clip(col.z() * 0.5 + 0.5);
+        Component::Color color =
+                { h
+                , std::sqrt(s)
+                , l
+                , 1.0f
+                };
+        color = System::hsla2rgba(color);
+        std::cout << "x: " << col.x() * 0.5 + 0.5 << " y: " << col.y() * 0.5 + 0.5 << " z: " << col.z() * 0.5 + 0.5 << " x: " << color.x() << " y: " << color.y() << " z: " << color.z() << "\n";
+        return color;
     }
 }

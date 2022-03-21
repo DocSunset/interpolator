@@ -38,13 +38,13 @@ namespace
     void _analyse(PCA& pca, const Eigen::MatrixXd& dataset)
     {
         pca.mean = dataset.colwise().mean();
+
         Eigen::JacobiSVD<Eigen::Matrix<double, Eigen::Dynamic, PCA::Original()>>
             svd(dataset.rowwise() - dataset.colwise().mean(), Eigen::ComputeFullV);
         auto V = svd.matrixV().leftCols(PCA::Reduced());
-        Eigen::VectorXd S = svd.singularValues();
-        S = S(Eigen::seqN(0,PCA::Reduced()));
+
+        Eigen::MatrixXd S = svd.singularValues()(Eigen::seqN(0,PCA::Reduced()));
         S = S.array().sqrt();
-        S = S * 0.5;
 
         pca.projection = S.asDiagonal() * V.transpose();
         S = S.array().inverse();
