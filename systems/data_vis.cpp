@@ -91,7 +91,7 @@ namespace
             if (registry.all_of<Component::ManualPosition>(entity))
             {
                 auto p = registry.get<Component::ManualPosition>(entity).value;
-                registry.replace<Component::Position>(entity, p);
+                registry.replace<Component::SmoothPosition>(entity, p);
             }
             if (registry.all_of<Component::ManualColor>(entity))
             {

@@ -24,6 +24,7 @@ namespace
     struct ManualVisFlag{entt::entity entity;};
     struct NewDemoButton {};
     struct DeleteDemoButton {};
+    struct VisModeButton {};
 
     constexpr unsigned int cursor_radius = 30;
     constexpr float button_radius = 50;
@@ -45,6 +46,7 @@ namespace
 
         for (auto ent : registry.view<NewDemoButton>()) position_button(ent);
         for (auto ent : registry.view<DeleteDemoButton>()) position_button(ent);
+        for (auto ent : registry.view<VisModeButton>()) position_button(ent);
     }
 
     void demo_buttons(entt::registry& registry, entt::entity entity)
@@ -61,6 +63,12 @@ namespace
         else if (registry.all_of<DeleteDemoButton>(entity))
         {
             System::delete_selected_demos(registry);
+        }
+        else if (registry.all_of<VisModeButton>(entity))
+        {
+            auto& mv = registry.ctx<Component::ManualVis>();
+            mv.toggle();
+            registry.replace<Component::ManualVis>(registry.ctx<ManualVisFlag>().entity, bool(mv));
         }
     }
 }
@@ -80,7 +88,7 @@ namespace System
     void Editor::prepare_registry(entt::registry& registry)
     {
         auto manual_vis_entity = registry.create();
-        registry.emplace<ManualVisFlag>(manual_vis_entity, manual_vis_entity);
+        registry.set<ManualVisFlag>(manual_vis_entity);
         registry.emplace<Component::ManualVis>(manual_vis_entity, registry.set<Component::ManualVis>(false));
 
         auto edit_cursor_entity = registry.create();
@@ -116,6 +124,12 @@ namespace System
         registry.emplace<Component::Button>(delete_demo_button, button_radius);
         registry.emplace<Component::Position>(delete_demo_button, -145.0f, -200.0f);
         registry.emplace<Component::Color>(delete_demo_button, 0.7f, 0.2f, 0.2f, 1.0f);
+
+        auto vis_mode_button = registry.create();
+        registry.emplace<VisModeButton>(vis_mode_button);
+        registry.emplace<Component::Button>(vis_mode_button, button_radius);
+        registry.emplace<Component::Position>(vis_mode_button, -80.0f, -200.0f);
+        registry.emplace<Component::Color>(vis_mode_button, 0.99f, 0.99f, 0.0f, 1.0f);
 
         registry.on_update<Component::Window>().connect<&update_window>();
 

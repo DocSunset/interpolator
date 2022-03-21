@@ -62,7 +62,6 @@ namespace System
                 , 1.0f
                 };
         color = System::hsla2rgba(color);
-        std::cout << "x: " << col.x() * 0.5 + 0.5 << " y: " << col.y() * 0.5 + 0.5 << " z: " << col.z() * 0.5 + 0.5 << " x: " << color.x() << " y: " << color.y() << " z: " << color.z() << "\n";
         return color;
     }
 }
