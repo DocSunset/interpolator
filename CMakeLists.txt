@@ -29,11 +29,14 @@ add_library(interpolators-objects OBJECT)
     find_package(Eigen3 REQUIRED NO_MODULE)
     target_link_libraries(interpolators-objects PRIVATE Eigen3::Eigen)
 
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(LIBLO REQUIRED IMPORTED_TARGET liblo)
+    target_link_libraries(interpolators-objects PRIVATE PkgConfig::LIBLO)
+    pkg_check_modules(LIBMAPPER REQUIRED IMPORTED_TARGET libmapper)
+    target_link_libraries(interpolators-objects PRIVATE PkgConfig::LIBMAPPER)
+
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR})
     target_include_directories(interpolators-objects PRIVATE ${CMAKE_CURRENT_LIST_DIR}/3rdparty/artery-font-format)
-    target_include_directories(interpolators-objects PRIVATE /usr/local/include)
-    target_link_libraries(interpolators-objects PRIVATE /usr/local/lib/libmapper.so)
-    target_link_libraries(interpolators-objects PRIVATE /usr/local/lib/liblo.so)
 
 add_executable(interpolators-tests testmain.cpp)
     set_property(TARGET interpolators-tests PROPERTY CXX_STANDARD 17)
