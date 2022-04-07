@@ -19,6 +19,7 @@
 #include "systems/demo_dest_knobs.h"
 #include "systems/manual_color_knobs.h"
 #include "systems/smooth_position.h"
+#include "systems/source_knobs.h"
 
 int main(int argc, char ** argv)
 {
@@ -33,6 +34,7 @@ int main(int argc, char ** argv)
         , System::LibmapperEditor
         , System::Demonstration
         , System::DemoDestKnobs // knobs have to run before knob so dragging applies after sync
+        , System::SourceKnobs
         , System::ManualColorKnobs
         , System::Knob
         , System::Interpolator

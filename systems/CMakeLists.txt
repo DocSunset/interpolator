@@ -29,6 +29,7 @@ target_sources(interpolators-objects PRIVATE
     private/pca.h private/pca.cpp
     smooth_position.h smooth_position.cpp
     common/color_spaces.h common/color_spaces.cpp
+    source_knobs.h source_knobs.cpp
     )
 
 target_sources(interpolators-tests PRIVATE
