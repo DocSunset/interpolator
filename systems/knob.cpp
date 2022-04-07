@@ -58,27 +58,6 @@ namespace
         emp_or_rep(knobview.indicator, 15.0f, indicator_position, fill_color, Component::Color{0,0,0,1}, 3.0f);
     }
 
-    void position_knob(entt::registry& registry, entt::entity entity, float right, float& top)
-    {
-        constexpr float padding = 5;
-        auto knob = registry.get<Component::Knob>(entity);
-        float radius = padding + knob.radius;
-        top = top - radius;
-
-        registry.replace<Component::Position>(entity, right - radius, top);
-        update_knobview(registry, entity);
-    }
-
-    void position_knobs(entt::registry& registry, entt::entity _)
-    {
-        const auto& window = registry.ctx<Component::Window>();
-        auto knobs = registry.view<Component::Knob>();
-        float right = window.w / 2.0f;
-        float top = window.h / 2.0f;
-        int i = 0;
-        for (auto knob : knobs) position_knob(registry, knob, right, top);
-    }
-
 
     void destroy_knobview(entt::registry& registry, entt::entity knob)
     {
@@ -90,7 +69,7 @@ namespace
     void construct_knob(entt::registry& registry, entt::entity entity)
     {
         const auto& knob = registry.get<Component::Knob>(entity);
-        registry.emplace<Component::Position>(entity);
+        registry.emplace_or_replace<Component::Position>(entity);
         registry.emplace<Component::Color>(entity);
         registry.emplace<Component::Draggable>(entity, knob.radius);
         registry.emplace<KnobView>(entity, registry.create(), registry.create());
@@ -121,12 +100,11 @@ namespace System
     void Knob::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_construct<Component::Knob>().connect<&construct_knob>();
-        registry.on_construct<Component::Knob>().connect<&position_knobs>();
         registry.on_destroy<Component::Knob>().connect<&destroy_knobview>();
-        registry.on_update<Component::Window>().connect<&position_knobs>();
 
         updated_knobs.connect(registry, entt::collector
                 .update<Component::Knob>()
+                .update<Component::Position>().where<Component::Knob>()
                 );
 
         dragged.connect(registry, entt::collector

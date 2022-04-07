@@ -6,7 +6,7 @@ namespace Component
 {
     struct Demo
     {
-        static constexpr std::size_t num_sources = 2;
+        static constexpr std::size_t num_sources = 22;
         static constexpr std::size_t num_destinations = 6;
         static constexpr float radius = 25;
 

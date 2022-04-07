@@ -4,12 +4,33 @@
 #include "components/draggable.h"
 #include "components/demo.h"
 #include "components/position.h"
+#include "components/window.h"
 #include "systems/common/vis.h"
 #include <simple/boundaries.h>
 
 namespace
 {
     struct DemoKnob {};
+
+    void position_knob(entt::registry& registry, entt::entity entity, float right, float& top)
+    {
+        constexpr float padding = 5;
+        auto knob = registry.get<Component::Knob>(entity);
+        float radius = padding + knob.radius;
+        top = top - radius;
+
+        registry.emplace_or_replace<Component::Position>(entity, right - radius, top);
+    }
+
+    void position_knobs(entt::registry& registry, entt::entity _)
+    {
+        auto knobs = registry.view<DemoKnob, Component::Knob>();
+        const auto& window = registry.ctx<Component::Window>();
+        float right = window.w / 2.0f;
+        float top = window.h / 2.0f;
+        int i = 0;
+        for (auto knob : knobs) position_knob(registry, knob, right, top);
+    }
 
     void on_update(entt::registry& registry, entt::entity entity)
     {
@@ -83,6 +104,8 @@ namespace System
     void DemoDestKnobs::setup_reactive_systems(entt::registry& registry)
     {
         registry.on_update<Component::Knob>().connect<&on_update>();
+        registry.on_construct<Component::Knob>().connect<&position_knobs>();
+        registry.on_update<Component::Window>().connect<&position_knobs>();
     }
 
     void DemoDestKnobs::prepare_registry(entt::registry& registry)
