@@ -9,6 +9,8 @@
 #include "components/smooth_position.h"
 #include "common/vis.h"
 
+#include <iostream>
+
 namespace
 {
     void update_source(entt::registry& registry, entt::entity entity)
@@ -19,6 +21,7 @@ namespace
         registry.replace<Component::SmoothPosition>(entity
                 , System::source_to_position(registry, entity)
                 );
+        auto win = registry.ctx<Component::Window>();
     }
 
     void update_sources(entt::registry& registry)

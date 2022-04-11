@@ -21,8 +21,8 @@ namespace System
         const auto& pca = registry.ctx<Component::SourcePCA>();
         Eigen::Vector2d pos = pca.projection * (source - pca.mean);
         Component::Position position = 
-                { window.w/2 * pos.x()
-                , window.h/2 * pos.y()
+                { 0.7*window.w/2 * pos.x()
+                , 0.8*window.h/2 * pos.y()
                 };
         return position;
     }

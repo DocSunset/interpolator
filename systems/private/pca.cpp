@@ -1,5 +1,4 @@
 #include "pca.h"
-#include <iostream>
 #include <Eigen/SVD>
 #include "components/update.h"
 #include "components/pca.h"
@@ -39,16 +38,29 @@ namespace
     {
         pca.mean = dataset.colwise().mean();
 
+        //std::cout << "**********analysis***********\n";
+        //std::cout << dataset << "\n\n";
+        //std::cout << pca.mean << "\n\n";
+
         Eigen::JacobiSVD<Eigen::Matrix<double, Eigen::Dynamic, PCA::Original()>>
             svd(dataset.rowwise() - dataset.colwise().mean(), Eigen::ComputeFullV);
         auto V = svd.matrixV().leftCols(PCA::Reduced());
 
+        //std::cout << V << "\n\n";
+        //std::cout << svd.singularValues() << "\n\n";
         Eigen::MatrixXd S = svd.singularValues()(Eigen::seqN(0,PCA::Reduced()));
-        S = S.array().sqrt();
+        //std::cout << S << "\n\n";
+        S = (S.array() + 0.000001).sqrt(); // array + arbitrary epsilon to avoid divide by zero errors
+        //std::cout << S << "\n\n";
 
-        pca.projection = S.asDiagonal() * V.transpose();
-        S = S.array().inverse();
+
+        Eigen::MatrixXd Sinv = S.array().inverse();
+        pca.projection = Sinv.asDiagonal() * V.transpose();
         pca.inverse_projection = V * S.asDiagonal();
+        
+        //std::cout << pca.projection << "\n\n";
+        //for (auto& row : dataset.rowwise())
+        //    std::cout << pca.projection * row.transpose() << "\n";
     }
 
     template<typename PCA>
